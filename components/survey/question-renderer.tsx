@@ -7,6 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { SurveyNode, PresentationData } from "@/types";
 
+// Componente para renderizar HTML básico de forma segura
+function HtmlDescription({ html, className }: { html: string; className?: string }) {
+  return (
+    <div
+      className={className}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
 interface QuestionRendererProps {
   node: SurveyNode;
   onAnswer: (answer: {
@@ -103,9 +113,10 @@ export function QuestionRenderer({ node, onAnswer }: QuestionRendererProps) {
             {presentationData.title}
           </h1>
           {presentationData.description && (
-            <p className="text-xl text-gray-600 max-w-lg mx-auto">
-              {presentationData.description}
-            </p>
+            <HtmlDescription
+              html={presentationData.description}
+              className="text-xl text-gray-600 max-w-lg mx-auto [&>p]:mb-2 [&>br]:block"
+            />
           )}
         </div>
 
@@ -178,7 +189,10 @@ export function QuestionRenderer({ node, onAnswer }: QuestionRendererProps) {
             {singleChoiceData.title}
           </h2>
           {singleChoiceData.description && (
-            <p className="text-lg text-gray-600">{singleChoiceData.description}</p>
+            <HtmlDescription
+              html={singleChoiceData.description}
+              className="text-lg text-gray-600 [&>p]:mb-2 [&>br]:block"
+            />
           )}
         </div>
 
@@ -238,7 +252,10 @@ export function QuestionRenderer({ node, onAnswer }: QuestionRendererProps) {
             {multipleChoiceData.title}
           </h2>
           {multipleChoiceData.description && (
-            <p className="text-lg text-gray-600">{multipleChoiceData.description}</p>
+            <HtmlDescription
+              html={multipleChoiceData.description}
+              className="text-lg text-gray-600 [&>p]:mb-2 [&>br]:block"
+            />
           )}
           <p className="text-sm text-gray-500 italic">Selecione todas que se aplicam</p>
         </div>
@@ -306,7 +323,10 @@ export function QuestionRenderer({ node, onAnswer }: QuestionRendererProps) {
             {ratingData.title}
           </h2>
           {ratingData.description && (
-            <p className="text-lg text-gray-600">{ratingData.description}</p>
+            <HtmlDescription
+              html={ratingData.description}
+              className="text-lg text-gray-600 [&>p]:mb-2 [&>br]:block"
+            />
           )}
         </div>
 
