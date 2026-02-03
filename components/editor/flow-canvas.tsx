@@ -160,12 +160,12 @@ function FlowCanvasInner() {
           position="bottom-left"
           className="bg-white border border-gray-200 rounded-lg"
         />
-        <Panel position="top-left" className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-4">
-          <div className="space-y-1">
-            <h2 className="font-semibold text-gray-900">Editor de Pesquisa</h2>
-            <p className="text-xs text-gray-500">
+        <Panel position="top-left" className="bg-white/95 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-sm font-medium text-gray-700">
               {nodes.length} {nodes.length === 1 ? "pergunta" : "perguntas"}
-            </p>
+            </span>
           </div>
         </Panel>
       </ReactFlow>
