@@ -12,6 +12,9 @@ import {
   Trash2,
   Eye,
   Loader2,
+  Code,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,15 +25,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Survey, DashboardStats } from "@/types/survey";
+import { useSession } from "next-auth/react";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [embedModalOpen, setEmbedModalOpen] = useState(false);
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [embedSize, setEmbedSize] = useState<"small" | "medium" | "large">("medium");
 
   useEffect(() => {
     fetchData();
@@ -102,6 +117,37 @@ export default function DashboardPage() {
     });
   };
 
+  const getSurveysListUrl = () => {
+    if (typeof window === "undefined" || !session?.user?.id) return "";
+    return `${window.location.origin}/surveys/user/${session.user.id}`;
+  };
+
+  const getEmbedDimensions = () => {
+    const sizes = {
+      small: { width: 400, height: 450 },
+      medium: { width: 600, height: 550 },
+      large: { width: 800, height: 650 },
+    };
+    return sizes[embedSize];
+  };
+
+  const getEmbedCode = () => {
+    const { width, height } = getEmbedDimensions();
+    return `<iframe
+  src="${getSurveysListUrl()}?embed=true"
+  width="${width}"
+  height="${height}"
+  frameborder="0"
+  style="border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"
+></iframe>`;
+  };
+
+  const handleCopyEmbed = async () => {
+    await navigator.clipboard.writeText(getEmbedCode());
+    setCopiedEmbed(true);
+    setTimeout(() => setCopiedEmbed(false), 2000);
+  };
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -112,14 +158,108 @@ export default function DashboardPage() {
             Gerencie suas pesquisas e acompanhe os resultados
           </p>
         </div>
-        <Button onClick={handleCreateSurvey} disabled={creating}>
-          {creating ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Plus className="w-4 h-4 mr-2" />
-          )}
-          Nova Pesquisa
-        </Button>
+        <div className="flex items-center gap-2">
+          <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Code className="w-4 h-4 mr-2" />
+                Incorporar Lista
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Code className="w-5 h-5" />
+                  Incorporar Lista de Pesquisas
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <p className="text-sm text-slate-500">
+                  Copie o código abaixo para incorporar uma lista de todas as suas pesquisas publicadas no seu site.
+                </p>
+
+                {/* Size Selection */}
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-2 block">
+                    Tamanho do Widget
+                  </label>
+                  <div className="flex gap-2">
+                    {(["small", "medium", "large"] as const).map((size) => (
+                      <Button
+                        key={size}
+                        variant={embedSize === size ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setEmbedSize(size)}
+                      >
+                        {size === "small" && "Pequeno (400x450)"}
+                        {size === "medium" && "Médio (600x550)"}
+                        {size === "large" && "Grande (800x650)"}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Embed Code */}
+                <div className="relative">
+                  <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 text-sm overflow-x-auto">
+                    <code>{getEmbedCode()}</code>
+                  </pre>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={handleCopyEmbed}
+                  >
+                    {copiedEmbed ? (
+                      <>
+                        <Check className="w-4 h-4 mr-1 text-green-600" />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copiar
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Preview */}
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-2 block">
+                    Prévia
+                  </label>
+                  <div className="border rounded-lg p-4 bg-slate-50">
+                    <div className="flex justify-center">
+                      <iframe
+                        src={`${getSurveysListUrl()}?embed=true`}
+                        width={Math.min(getEmbedDimensions().width, 500)}
+                        height={Math.min(getEmbedDimensions().height, 350)}
+                        style={{
+                          border: "none",
+                          borderRadius: "12px",
+                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Apenas pesquisas com status &quot;Publicada&quot; aparecerão no widget.
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button onClick={handleCreateSurvey} disabled={creating}>
+            {creating ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-2" />
+            )}
+            Nova Pesquisa
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
