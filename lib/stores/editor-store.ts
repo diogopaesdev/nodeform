@@ -22,6 +22,7 @@ interface EditorState {
   enableScoring: boolean;
   timeLimit?: number;
   prize?: string;
+  status: Survey["status"];
   isConfigured: boolean; // Se o modal inicial foi preenchido
 
   // Actions para nodes
@@ -43,6 +44,7 @@ interface EditorState {
   setEnableScoring: (enable: boolean) => void;
   setTimeLimit: (time: number | undefined) => void;
   setPrize: (prize: string | undefined) => void;
+  setStatus: (status: Survey["status"]) => void;
   setIsConfigured: (configured: boolean) => void;
   loadSurvey: (survey: Survey) => void;
   clearSurvey: () => void;
@@ -65,6 +67,7 @@ export const useEditorStore = create<EditorState>()(
       enableScoring: true,
       timeLimit: undefined,
       prize: undefined,
+      status: "draft" as Survey["status"],
       isConfigured: false,
 
       // Node actions
@@ -141,6 +144,8 @@ export const useEditorStore = create<EditorState>()(
 
       setPrize: (prize) => set({ prize: prize }),
 
+      setStatus: (status) => set({ status }),
+
       setIsConfigured: (configured) => set({ isConfigured: configured }),
 
       loadSurvey: (survey) => {
@@ -153,6 +158,7 @@ export const useEditorStore = create<EditorState>()(
           enableScoring: survey.enableScoring ?? true,
           timeLimit: survey.timeLimit,
           prize: survey.prize,
+          status: survey.status,
           isConfigured,
           nodes: survey.nodes,
           edges: survey.edges,
@@ -167,6 +173,7 @@ export const useEditorStore = create<EditorState>()(
           enableScoring: true,
           timeLimit: undefined,
           prize: undefined,
+          status: "draft" as Survey["status"],
           isConfigured: false,
           nodes: [],
           edges: [],
@@ -188,7 +195,7 @@ export const useEditorStore = create<EditorState>()(
           edges: state.edges,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          status: "draft" as const,
+          status: state.status,
           responseCount: 0,
         };
       },
@@ -202,6 +209,7 @@ export const useEditorStore = create<EditorState>()(
         enableScoring: state.enableScoring,
         timeLimit: state.timeLimit,
         prize: state.prize,
+        status: state.status,
         isConfigured: state.isConfigured,
         nodes: state.nodes,
         edges: state.edges,

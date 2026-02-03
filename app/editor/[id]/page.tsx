@@ -13,6 +13,9 @@ import {
   Gift,
   FileText,
   Settings,
+  Globe,
+  FileEdit,
+  Archive,
 } from "lucide-react";
 import { FlowCanvas } from "@/components/editor/flow-canvas";
 import { EditorSidebar } from "@/components/editor/editor-sidebar";
@@ -27,6 +30,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { useEditorStore } from "@/lib/stores";
 import { Survey } from "@/types/survey";
 
@@ -51,12 +61,14 @@ export default function EditorPage({
     enableScoring,
     timeLimit,
     prize,
+    status,
     isConfigured,
     setEnableScoring,
     setSurveyTitle,
     setSurveyDescription,
     setTimeLimit,
     setPrize,
+    setStatus,
     setIsConfigured,
     loadSurvey,
     clearSurvey,
@@ -178,6 +190,30 @@ export default function EditorPage({
   const handleTitleSubmit = () => {
     setEditingTitle(false);
     handleSave();
+  };
+
+  const handleUpdateStatus = async (newStatus: Survey["status"]) => {
+    setStatus(newStatus);
+    try {
+      await fetch(`/api/surveys/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  const getStatusBadge = (currentStatus: Survey["status"]) => {
+    const variants = {
+      draft: { label: "Rascunho", className: "bg-slate-100 text-slate-700" },
+      published: { label: "Publicada", className: "bg-green-100 text-green-700" },
+      finished: { label: "Finalizada", className: "bg-blue-100 text-blue-700" },
+      archived: { label: "Arquivada", className: "bg-amber-100 text-amber-700" },
+    };
+    const variant = variants[currentStatus];
+    return <Badge className={variant.className}>{variant.label}</Badge>;
   };
 
   if (loading) {
@@ -330,6 +366,43 @@ export default function EditorPage({
           >
             <Settings className="w-4 h-4" />
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="cursor-pointer">
+                {getStatusBadge(status)}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => handleUpdateStatus("draft")}
+                className={status === "draft" ? "bg-slate-100" : ""}
+              >
+                <FileEdit className="w-4 h-4 mr-2 text-slate-600" />
+                Rascunho
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleUpdateStatus("published")}
+                className={status === "published" ? "bg-slate-100" : ""}
+              >
+                <Globe className="w-4 h-4 mr-2 text-green-600" />
+                Publicar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleUpdateStatus("finished")}
+                className={status === "finished" ? "bg-slate-100" : ""}
+              >
+                <Check className="w-4 h-4 mr-2 text-blue-600" />
+                Finalizar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleUpdateStatus("archived")}
+                className={status === "archived" ? "bg-slate-100" : ""}
+              >
+                <Archive className="w-4 h-4 mr-2 text-amber-600" />
+                Arquivar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="flex items-center gap-4">
