@@ -36,7 +36,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { useEditorStore } from "@/lib/stores";
 import { Survey } from "@/types/survey";
 
@@ -207,13 +206,17 @@ export default function EditorPage({
 
   const getStatusBadge = (currentStatus: Survey["status"]) => {
     const variants = {
-      draft: { label: "Rascunho", className: "bg-slate-100 text-slate-700" },
-      published: { label: "Publicada", className: "bg-green-100 text-green-700" },
-      finished: { label: "Finalizada", className: "bg-blue-100 text-blue-700" },
-      archived: { label: "Arquivada", className: "bg-amber-100 text-amber-700" },
+      draft: { label: "Rascunho", className: "bg-gray-100 text-gray-600 hover:bg-gray-200" },
+      published: { label: "Publicada", className: "bg-green-100 text-green-700 hover:bg-green-200" },
+      finished: { label: "Finalizada", className: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+      archived: { label: "Arquivada", className: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
     };
     const variant = variants[currentStatus];
-    return <Badge className={variant.className}>{variant.label}</Badge>;
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium transition-colors ${variant.className}`}>
+        {variant.label}
+      </span>
+    );
   };
 
   if (loading) {
@@ -328,140 +331,139 @@ export default function EditorPage({
       </Dialog>
 
       {/* Header */}
-      <header className="h-16 border-b bg-white flex items-center justify-between px-6 shadow-sm z-10">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
+      <header className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-4 z-10">
+        {/* Left Section */}
+        <div className="flex items-center gap-3">
+          <button
             onClick={() => router.push("/dashboard")}
-            className="text-slate-600"
+            className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Dashboard
-          </Button>
-          <span className="text-slate-300">|</span>
-          {editingTitle ? (
-            <Input
-              value={surveyTitle}
-              onChange={(e) => setSurveyTitle(e.target.value)}
-              onBlur={handleTitleSubmit}
-              onKeyDown={(e) => e.key === "Enter" && handleTitleSubmit()}
-              className="w-64 h-8"
-              autoFocus
-            />
-          ) : (
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+
+          <div className="h-5 w-px bg-gray-200" />
+
+          <div className="flex items-center gap-2">
+            {editingTitle ? (
+              <Input
+                value={surveyTitle}
+                onChange={(e) => setSurveyTitle(e.target.value)}
+                onBlur={handleTitleSubmit}
+                onKeyDown={(e) => e.key === "Enter" && handleTitleSubmit()}
+                className="w-56 h-8 text-sm"
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => setEditingTitle(true)}
+                className="text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors max-w-[200px] truncate"
+              >
+                {surveyTitle}
+              </button>
+            )}
             <button
-              onClick={() => setEditingTitle(true)}
-              className="text-lg font-semibold text-slate-900 hover:text-slate-600 transition-colors"
+              onClick={handleOpenConfig}
+              className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              title="Configurações"
             >
-              {surveyTitle}
+              <Settings className="w-3.5 h-3.5" />
             </button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleOpenConfig}
-            className="text-slate-500 hover:text-slate-700"
-            title="Configurações da pesquisa"
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="cursor-pointer">
                 {getStatusBadge(status)}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
+            <DropdownMenuContent align="start" className="min-w-[140px]">
               <DropdownMenuItem
                 onClick={() => handleUpdateStatus("draft")}
-                className={status === "draft" ? "bg-slate-100" : ""}
+                className={status === "draft" ? "bg-gray-100" : ""}
               >
-                <FileEdit className="w-4 h-4 mr-2 text-slate-600" />
-                Rascunho
+                <FileEdit className="w-3.5 h-3.5 mr-2 text-gray-500" />
+                <span className="text-sm">Rascunho</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => handleUpdateStatus("published")}
-                className={status === "published" ? "bg-slate-100" : ""}
+                className={status === "published" ? "bg-gray-100" : ""}
               >
-                <Globe className="w-4 h-4 mr-2 text-green-600" />
-                Publicar
+                <Globe className="w-3.5 h-3.5 mr-2 text-green-600" />
+                <span className="text-sm">Publicar</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => handleUpdateStatus("finished")}
-                className={status === "finished" ? "bg-slate-100" : ""}
+                className={status === "finished" ? "bg-gray-100" : ""}
               >
-                <Check className="w-4 h-4 mr-2 text-blue-600" />
-                Finalizar
+                <Check className="w-3.5 h-3.5 mr-2 text-blue-600" />
+                <span className="text-sm">Finalizar</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => handleUpdateStatus("archived")}
-                className={status === "archived" ? "bg-slate-100" : ""}
+                className={status === "archived" ? "bg-gray-100" : ""}
               >
-                <Archive className="w-4 h-4 mr-2 text-amber-600" />
-                Arquivar
+                <Archive className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                <span className="text-sm">Arquivar</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* Right Section */}
+        <div className="flex items-center gap-2">
           {/* Toggle de Pontuação */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <span className="text-sm text-slate-600">Pontuação:</span>
+          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gray-50 mr-1">
+            <span className="text-xs text-gray-500">Pontuação</span>
             <button
               onClick={() => setEnableScoring(!enableScoring)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                enableScoring ? "bg-green-600" : "bg-slate-300"
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                enableScoring ? "bg-green-500" : "bg-gray-300"
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  enableScoring ? "translate-x-6" : "translate-x-1"
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                  enableScoring ? "translate-x-5" : "translate-x-1"
                 }`}
               />
             </button>
-            <span className="text-xs text-slate-500">
-              {enableScoring ? "Ativa" : "Desativada"}
-            </span>
-          </label>
+          </div>
 
-          <div className="h-6 w-px bg-slate-300" />
+          <div className="h-5 w-px bg-gray-200" />
 
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={handleClearSurvey}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            title="Limpar pesquisa"
           >
             <Trash2 className="w-4 h-4" />
-            Limpar
-          </Button>
+          </button>
 
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={handleSave}
             disabled={saving}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              saved
+                ? "bg-green-50 text-green-600"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
           >
             {saving ? (
-              <Loader2 className="w-4 h-4  animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : saved ? (
-              <Check className="w-4 h-4 text-green-600" />
+              <Check className="w-3.5 h-3.5" />
             ) : (
-              <Save className="w-4 h-4 " />
+              <Save className="w-3.5 h-3.5" />
             )}
-            {saved ? "Salvo!" : "Salvar"}
-          </Button>
+            {saved ? "Salvo" : "Salvar"}
+          </button>
 
-          <Button
-            size="sm"
+          <button
             onClick={handleTestSurvey}
-            className="bg-green-600 hover:bg-green-700"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
           >
-            <Play className="w-4 h-4" />
+            <Play className="w-3.5 h-3.5" />
             Testar
-          </Button>
+          </button>
         </div>
       </header>
 
