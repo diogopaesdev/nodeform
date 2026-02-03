@@ -248,6 +248,19 @@ export default function SurveyDetailPage({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleCopyLink}>
+            {copied ? (
+              <>
+                <Check className="w-4 h-4 mr-2 text-green-600" />
+                Copiado!
+              </>
+            ) : (
+              <>
+                <LinkIcon className="w-4 h-4 mr-2" />
+                Copiar Link
+              </>
+            )}
+          </Button>
           <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">

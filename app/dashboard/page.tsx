@@ -15,6 +15,7 @@ import {
   Code,
   Copy,
   Check,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [embedSize, setEmbedSize] = useState<"small" | "medium" | "large">("medium");
 
   useEffect(() => {
@@ -148,6 +150,12 @@ export default function DashboardPage() {
     setTimeout(() => setCopiedEmbed(false), 2000);
   };
 
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(getSurveysListUrl());
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -159,11 +167,24 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleCopyLink}>
+            {copiedLink ? (
+              <>
+                <Check className="w-4 h-4 mr-2 text-green-600" />
+                Copiado!
+              </>
+            ) : (
+              <>
+                <LinkIcon className="w-4 h-4 mr-2" />
+                Copiar Link
+              </>
+            )}
+          </Button>
           <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Code className="w-4 h-4 mr-2" />
-                Incorporar Lista
+                Incorporar
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
