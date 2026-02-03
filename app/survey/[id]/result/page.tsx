@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Trophy, Star, RotateCcw, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
@@ -13,6 +13,8 @@ export default function ResultPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEmbedMode = searchParams.get("embed") === "true";
   const { survey, totalScore, answers, isCompleted, resetSurvey, getResult, visitedNodeIds } =
     useRuntimeStore();
 
@@ -64,13 +66,13 @@ export default function ResultPage({
 
   useEffect(() => {
     if (!isCompleted) {
-      router.push(`/survey/${id}`);
+      router.push(`/survey/${id}${isEmbedMode ? "?embed=true" : ""}`);
       return;
     }
 
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 3000);
-  }, [isCompleted, router, id]);
+  }, [isCompleted, router, id, isEmbedMode]);
 
   if (!survey || !isCompleted) {
     return (
@@ -127,7 +129,7 @@ export default function ResultPage({
 
   const handleRestart = () => {
     resetSurvey();
-    router.push(`/survey/${id}`);
+    router.push(`/survey/${id}${isEmbedMode ? "?embed=true" : ""}`);
   };
 
   const handleClose = () => {
@@ -136,7 +138,7 @@ export default function ResultPage({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-12 px-4 relative overflow-hidden">
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 ${isEmbedMode ? "py-6" : "py-12"} px-4 relative overflow-hidden`}>
       {/* Confetti Animation */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none">
@@ -155,77 +157,81 @@ export default function ResultPage({
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto space-y-8 relative z-10">
+      <div className={`mx-auto ${isEmbedMode ? "space-y-4" : "max-w-3xl space-y-8"} relative z-10`}>
         {/* Result Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 space-y-8">
+        <div className={`bg-white rounded-2xl shadow-2xl ${isEmbedMode ? "p-6 space-y-4" : "p-8 md:p-12 space-y-8"}`}>
           {/* Icon */}
           <div
-            className={`w-24 h-24 ${resultData.bgColor} rounded-full flex items-center justify-center mx-auto`}
+            className={`${isEmbedMode ? "w-16 h-16" : "w-24 h-24"} ${resultData.bgColor} rounded-full flex items-center justify-center mx-auto`}
           >
-            <ResultIcon className={`w-12 h-12 ${resultData.color}`} />
+            <ResultIcon className={`${isEmbedMode ? "w-8 h-8" : "w-12 h-12"} ${resultData.color}`} />
           </div>
 
           {/* Title */}
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold text-gray-900">
+          <div className="text-center space-y-2">
+            <h1 className={`${isEmbedMode ? "text-2xl" : "text-4xl"} font-bold text-gray-900`}>
               {resultData.title}
             </h1>
-            <p className="text-xl text-gray-600">{resultData.message}</p>
+            <p className={`${isEmbedMode ? "text-base" : "text-xl"} text-gray-600`}>{resultData.message}</p>
           </div>
 
           {/* Score */}
           {(survey?.enableScoring ?? true) && (
-            <div className="text-center py-8 border-y border-gray-200">
-              <div className="space-y-2">
+            <div className={`text-center ${isEmbedMode ? "py-4" : "py-8"} border-y border-gray-200`}>
+              <div className="space-y-1">
                 <p className="text-sm text-gray-500 uppercase tracking-wide">
                   Pontuação Final
                 </p>
-                <p className="text-6xl font-bold text-gray-900">{totalScore}</p>
+                <p className={`${isEmbedMode ? "text-4xl" : "text-6xl"} font-bold text-gray-900`}>{totalScore}</p>
                 <p className="text-sm text-gray-500">pontos</p>
               </div>
             </div>
           )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 py-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">
-                {result?.answers.length || 0}
-              </p>
-              <p className="text-sm text-gray-500">Perguntas</p>
+          {/* Stats - hide in embed mode to save space */}
+          {!isEmbedMode && (
+            <div className="grid grid-cols-3 gap-4 py-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">
+                  {result?.answers.length || 0}
+                </p>
+                <p className="text-sm text-gray-500">Perguntas</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">
+                  {result?.path.length || 0}
+                </p>
+                <p className="text-sm text-gray-500">Passos</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">100%</p>
+                <p className="text-sm text-gray-500">Completo</p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">
-                {result?.path.length || 0}
-              </p>
-              <p className="text-sm text-gray-500">Passos</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">100%</p>
-              <p className="text-sm text-gray-500">Completo</p>
-            </div>
-          </div>
+          )}
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-6">
+          <div className={`flex flex-col sm:flex-row gap-3 ${isEmbedMode ? "pt-2" : "pt-6"}`}>
             <Button
               onClick={handleRestart}
               variant="outline"
-              className="flex-1 h-12"
+              className={`flex-1 ${isEmbedMode ? "h-10" : "h-12"}`}
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Responder Novamente
             </Button>
-            <Button onClick={handleClose} className="flex-1 h-12">
-              <X className="w-4 h-4 mr-2" />
-              Fechar
-            </Button>
+            {!isEmbedMode && (
+              <Button onClick={handleClose} className="flex-1 h-12">
+                <X className="w-4 h-4 mr-2" />
+                Fechar
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Survey Info */}
         <div className="text-center space-y-2">
-          <p className="text-sm text-gray-600">Pesquisa: {survey.title}</p>
+          {!isEmbedMode && <p className="text-sm text-gray-600">Pesquisa: {survey.title}</p>}
           {isSaving && (
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -236,7 +242,7 @@ export default function ResultPage({
             <p className="text-sm text-red-500">{saveError}</p>
           )}
           <p className="text-xs text-gray-400">
-            Criado com NodeForm - Visual Survey Builder
+            Criado com NodeForm
           </p>
         </div>
       </div>

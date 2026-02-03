@@ -18,11 +18,19 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Code,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Survey, SurveyResponse } from "@/types/survey";
 
 export default function SurveyDetailPage({
@@ -37,6 +45,9 @@ export default function SurveyDetailPage({
   const [loading, setLoading] = useState(true);
   const [loadingResponses, setLoadingResponses] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [embedSize, setEmbedSize] = useState<"small" | "medium" | "large">("medium");
+  const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,6 +120,33 @@ export default function SurveyDetailPage({
     await navigator.clipboard.writeText(getSurveyUrl());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getEmbedDimensions = () => {
+    const sizes = {
+      small: { width: 400, height: 500 },
+      medium: { width: 600, height: 650 },
+      large: { width: 800, height: 700 },
+    };
+    return sizes[embedSize];
+  };
+
+  const getEmbedCode = () => {
+    const { width, height } = getEmbedDimensions();
+    return `<iframe
+  src="${getSurveyUrl()}?embed=true"
+  width="${width}"
+  height="${height}"
+  frameborder="0"
+  style="border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"
+  allow="clipboard-write"
+></iframe>`;
+  };
+
+  const handleCopyEmbed = async () => {
+    await navigator.clipboard.writeText(getEmbedCode());
+    setCopiedEmbed(true);
+    setTimeout(() => setCopiedEmbed(false), 2000);
   };
 
   const getStatusBadge = (status: Survey["status"]) => {
@@ -209,10 +247,101 @@ export default function SurveyDetailPage({
             <p className="text-slate-500">{survey.description}</p>
           )}
         </div>
-        <Button onClick={() => router.push(`/editor/${survey.id}`)}>
-          <Pencil className="w-4 h-4 mr-2" />
-          Editar Pesquisa
-        </Button>
+        <div className="flex items-center gap-2">
+          <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Code className="w-4 h-4 mr-2" />
+                Incorporar
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Code className="w-5 h-5" />
+                  Incorporar no seu Site
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <p className="text-sm text-slate-500">
+                  Copie o código abaixo e cole no HTML do seu site para incorporar esta pesquisa.
+                </p>
+
+                {/* Size Selection */}
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-2 block">
+                    Tamanho do Widget
+                  </label>
+                  <div className="flex gap-2">
+                    {(["small", "medium", "large"] as const).map((size) => (
+                      <Button
+                        key={size}
+                        variant={embedSize === size ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setEmbedSize(size)}
+                      >
+                        {size === "small" && "Pequeno (400x500)"}
+                        {size === "medium" && "Médio (600x650)"}
+                        {size === "large" && "Grande (800x700)"}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Embed Code */}
+                <div className="relative">
+                  <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 text-sm overflow-x-auto">
+                    <code>{getEmbedCode()}</code>
+                  </pre>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={handleCopyEmbed}
+                  >
+                    {copiedEmbed ? (
+                      <>
+                        <Check className="w-4 h-4 mr-1 text-green-600" />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copiar
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Preview */}
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-2 block">
+                    Prévia
+                  </label>
+                  <div className="border rounded-lg p-4 bg-slate-50">
+                    <div className="flex justify-center">
+                      <iframe
+                        src={`${getSurveyUrl()}?embed=true`}
+                        width={Math.min(getEmbedDimensions().width, 500)}
+                        height={Math.min(getEmbedDimensions().height, 350)}
+                        style={{
+                          border: "none",
+                          borderRadius: "12px",
+                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        }}
+                        allow="clipboard-write"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button onClick={() => router.push(`/editor/${survey.id}`)}>
+            <Pencil className="w-4 h-4 mr-2" />
+            Editar Pesquisa
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { X, ArrowLeft, Loader2 } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
@@ -15,6 +15,8 @@ export default function SurveyPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEmbedMode = searchParams.get("embed") === "true";
   const {
     survey,
     currentNodeId,
@@ -74,9 +76,9 @@ export default function SurveyPage({
   // Redirecionar para resultados quando completar
   useEffect(() => {
     if (isCompleted) {
-      router.push(`/survey/${id}/result`);
+      router.push(`/survey/${id}/result${isEmbedMode ? "?embed=true" : ""}`);
     }
-  }, [isCompleted, router, id]);
+  }, [isCompleted, router, id, isEmbedMode]);
 
   // Mostrar loading enquanto redireciona para resultado
   if (isCompleted) {
@@ -152,27 +154,29 @@ export default function SurveyPage({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* Exit Button */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          onClick={handleExitSurvey}
-          variant="outline"
-          size="sm"
-          className="bg-white shadow-md hover:bg-gray-50"
-        >
-          <X className="w-4 h-4 mr-2" />
-          Sair
-        </Button>
-      </div>
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 ${isEmbedMode ? "overflow-hidden" : ""}`}>
+      {/* Exit Button - hide in embed mode */}
+      {!isEmbedMode && (
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            onClick={handleExitSurvey}
+            variant="outline"
+            size="sm"
+            className="bg-white shadow-md hover:bg-gray-50"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Sair
+          </Button>
+        </div>
+      )}
 
-      <div className="py-12 px-4">
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* Header */}
+      <div className={`px-4 ${isEmbedMode ? "py-6" : "py-12"}`}>
+        <div className={`mx-auto space-y-6 ${isEmbedMode ? "max-w-full" : "max-w-4xl space-y-8"}`}>
+          {/* Header - compact in embed mode */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold text-gray-900">{survey.title}</h1>
+            <h1 className={`font-bold text-gray-900 ${isEmbedMode ? "text-xl" : "text-2xl"}`}>{survey.title}</h1>
             {survey.description && (
-              <p className="text-gray-600">{survey.description}</p>
+              <p className={`text-gray-600 ${isEmbedMode ? "text-sm" : ""}`}>{survey.description}</p>
             )}
           </div>
 
@@ -195,7 +199,7 @@ export default function SurveyPage({
           )}
 
           {/* Progress */}
-          {survey?.enableScoring && (
+          {survey?.enableScoring && !isEmbedMode && (
             <div className="text-center text-sm text-gray-500">
               <p>Pontuação atual: {totalScore} pontos</p>
             </div>
