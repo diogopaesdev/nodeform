@@ -19,17 +19,9 @@ import {
 } from "lucide-react";
 import { FlowCanvas } from "@/components/editor/flow-canvas";
 import { EditorSidebar } from "@/components/editor/editor-sidebar";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -236,96 +228,106 @@ export default function EditorPage({
       <Dialog open={showConfigModal || !isConfigured} onOpenChange={(open) => {
         if (isConfigured) setShowConfigModal(open);
       }}>
-        <DialogContent className="sm:max-w-lg" onPointerDownOutside={(e) => {
+        <DialogContent className="sm:max-w-md p-0 gap-0" onPointerDownOutside={(e) => {
           if (!isConfigured) e.preventDefault();
         }}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <FileText className="w-5 h-5 text-blue-600" />
-              Configurar Pesquisa
-            </DialogTitle>
-            <DialogDescription>
-              Defina as informações básicas da sua pesquisa antes de começar a editar.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="config-title">
+          <DialogTitle className="sr-only">Configurar Pesquisa</DialogTitle>
+          {/* Header */}
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <FileText className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-gray-900">Configurar Pesquisa</h2>
+              <p className="text-xs text-gray-500">Informações básicas</p>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-5 py-4 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-700">
                 Nome da Pesquisa <span className="text-red-500">*</span>
-              </Label>
+              </label>
               <Input
                 id="config-title"
                 placeholder="Ex: Pesquisa de Satisfação do Cliente"
                 value={configTitle}
                 onChange={(e) => setConfigTitle(e.target.value)}
+                className="h-9 text-sm"
                 autoFocus
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="config-description">Descrição (opcional)</Label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-700">Descrição (opcional)</label>
               <Textarea
                 id="config-description"
                 placeholder="Descreva brevemente o objetivo da pesquisa..."
                 value={configDescription}
                 onChange={(e) => setConfigDescription(e.target.value)}
+                className="text-sm min-h-[60px] resize-none"
                 rows={2}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="config-time" className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-slate-500" />
-                  Tempo Limite (opcional)
-                </Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-gray-400" />
+                  Tempo Limite
+                </label>
                 <div className="relative">
                   <Input
                     id="config-time"
                     type="number"
-                    placeholder="Ex: 10"
+                    placeholder="10"
                     min="1"
                     value={configTimeLimit}
                     onChange={(e) => setConfigTimeLimit(e.target.value)}
+                    className="h-9 text-sm pr-16"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                     minutos
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="config-prize" className="flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-slate-500" />
-                  Prêmio (opcional)
-                </Label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <Gift className="w-3.5 h-3.5 text-gray-400" />
+                  Prêmio
+                </label>
                 <Input
                   id="config-prize"
-                  placeholder="Ex: R$ 50 em vale-compras"
+                  placeholder="Ex: R$ 50"
                   value={configPrize}
                   onChange={(e) => setConfigPrize(e.target.value)}
+                  className="h-9 text-sm"
                 />
               </div>
             </div>
+          </div>
 
-            <Button
-              className="w-full mt-6"
-              size="lg"
+          {/* Footer */}
+          <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+            <button
               onClick={handleSaveConfig}
               disabled={!configTitle.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-md transition-colors"
             >
               {isConfigured ? (
                 <>
-                  <Check className="w-4 h-4 mr-2" />
+                  <Check className="w-4 h-4" />
                   Salvar
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4 mr-2" />
+                  <Play className="w-4 h-4" />
                   Iniciar Edição
                 </>
               )}
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>

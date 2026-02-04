@@ -4,28 +4,21 @@ import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, GripVertical, User, Mail, Trophy } from "lucide-react";
+import { Plus, Trash2, GripVertical, User, Mail, Trophy, Play, CircleDot, CheckSquare, Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { useEditorStore } from "@/lib/stores";
 import type { SurveyNode, NodeData } from "@/types";
@@ -78,28 +71,20 @@ const ratingSchema = baseSchema.extend({
 
 type FormData = z.infer<typeof presentationSchema> | z.infer<typeof choiceSchema> | z.infer<typeof ratingSchema>;
 
-const getTypeLabel = (type: string) => {
-  const labels: Record<string, string> = {
-    presentation: "Apresentação",
-    singleChoice: "Escolha Simples",
-    multipleChoice: "Múltipla Escolha",
-    rating: "Avaliação",
+const getTypeConfig = (type: string) => {
+  const configs: Record<string, { label: string; icon: typeof Play; color: string; bg: string }> = {
+    presentation: { label: "Apresentação", icon: Play, color: "text-orange-600", bg: "bg-orange-100" },
+    singleChoice: { label: "Escolha Simples", icon: CircleDot, color: "text-blue-600", bg: "bg-blue-100" },
+    multipleChoice: { label: "Múltipla Escolha", icon: CheckSquare, color: "text-green-600", bg: "bg-green-100" },
+    rating: { label: "Avaliação", icon: Star, color: "text-purple-600", bg: "bg-purple-100" },
   };
-  return labels[type] || type;
-};
-
-const getTypeColor = (type: string) => {
-  const colors: Record<string, string> = {
-    presentation: "bg-amber-500",
-    singleChoice: "bg-blue-500",
-    multipleChoice: "bg-green-500",
-    rating: "bg-purple-500",
-  };
-  return colors[type] || "bg-gray-500";
+  return configs[type] || configs.presentation;
 };
 
 export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
   const { updateNode, deleteNode, enableScoring } = useEditorStore();
+  const typeConfig = getTypeConfig(node.data.type);
+  const Icon = typeConfig.icon;
 
   const getDefaultValues = (): FormData => {
     const { type } = node.data;
@@ -202,34 +187,37 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${getTypeColor(node.data.type)}`} />
-            <DialogTitle className="text-xl">
-              Editar {getTypeLabel(node.data.type)}
-            </DialogTitle>
+      <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogTitle className="sr-only">Editar {typeConfig.label}</DialogTitle>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+          <div className={`w-8 h-8 ${typeConfig.bg} rounded-lg flex items-center justify-center`}>
+            <Icon className={`w-4 h-4 ${typeConfig.color}`} />
           </div>
-        </DialogHeader>
+          <div className="flex-1">
+            <h2 className="text-sm font-semibold text-gray-900">{typeConfig.label}</h2>
+            <p className="text-xs text-gray-500">Editar configurações</p>
+          </div>
+        </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-1 space-y-6 py-4">
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
               {/* Título */}
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título</FormLabel>
+                    <label className="text-xs font-medium text-gray-700">Título</label>
                     <FormControl>
                       <Input
                         placeholder="Digite o título..."
-                        className="text-base"
+                        className="h-9 text-sm"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -240,16 +228,16 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descrição</FormLabel>
+                    <label className="text-xs font-medium text-gray-700">Descrição (suporta HTML)</label>
                     <FormControl>
                       <Textarea
                         placeholder="Digite uma descrição opcional..."
-                        className="resize-none"
-                        rows={3}
+                        className="resize-none text-sm min-h-[70px]"
+                        rows={2}
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
@@ -262,35 +250,31 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                     name="buttonText"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Texto do Botão</FormLabel>
+                        <label className="text-xs font-medium text-gray-700">Texto do Botão</label>
                         <FormControl>
                           <Input
                             placeholder="Ex: Iniciar Pesquisa"
+                            className="h-9 text-sm"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
 
-                  <Separator />
-
-                  <div className="space-y-4">
-                    <FormLabel className="text-base">Captura de Dados</FormLabel>
-                    <p className="text-sm text-slate-500">
-                      Colete informações do respondente antes de iniciar a pesquisa.
+                  <div className="pt-2">
+                    <label className="text-xs font-medium text-gray-700">Captura de Dados</label>
+                    <p className="text-xs text-gray-400 mt-0.5 mb-3">
+                      Colete informações do respondente antes de iniciar.
                     </p>
 
                     {/* Coletar Nome */}
-                    <div className="p-4 bg-slate-50 rounded-lg border space-y-4">
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 mb-2">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <User className="w-5 h-5 text-slate-500" />
-                          <div>
-                            <p className="font-medium text-slate-900">Coletar Nome</p>
-                            <p className="text-sm text-slate-500">Solicitar o nome do respondente</p>
-                          </div>
+                        <div className="flex items-center gap-2.5">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-700">Coletar Nome</span>
                         </div>
                         <FormField
                           control={form.control}
@@ -301,6 +285,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                                 <Switch
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
+                                  className="scale-90"
                                 />
                               </FormControl>
                             </FormItem>
@@ -309,15 +294,14 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                       </div>
 
                       {form.watch("collectName") && (
-                        <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="flex items-center gap-3 pt-1">
                           <FormField
                             control={form.control}
                             name="nameLabel"
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm">Label do campo</FormLabel>
+                              <FormItem className="flex-1">
                                 <FormControl>
-                                  <Input placeholder="Nome" {...field} />
+                                  <Input placeholder="Label" className="h-8 text-sm" {...field} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -326,12 +310,13 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                             control={form.control}
                             name="nameRequired"
                             render={({ field }) => (
-                              <FormItem className="flex items-center justify-between pt-8">
-                                <FormLabel className="text-sm">Obrigatório</FormLabel>
+                              <FormItem className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">Obrigatório</span>
                                 <FormControl>
                                   <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
+                                    className="scale-75"
                                   />
                                 </FormControl>
                               </FormItem>
@@ -342,14 +327,11 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                     </div>
 
                     {/* Coletar Email */}
-                    <div className="p-4 bg-slate-50 rounded-lg border space-y-4">
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Mail className="w-5 h-5 text-slate-500" />
-                          <div>
-                            <p className="font-medium text-slate-900">Coletar E-mail</p>
-                            <p className="text-sm text-slate-500">Solicitar o e-mail do respondente</p>
-                          </div>
+                        <div className="flex items-center gap-2.5">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-700">Coletar E-mail</span>
                         </div>
                         <FormField
                           control={form.control}
@@ -360,6 +342,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                                 <Switch
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
+                                  className="scale-90"
                                 />
                               </FormControl>
                             </FormItem>
@@ -368,15 +351,14 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                       </div>
 
                       {form.watch("collectEmail") && (
-                        <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="flex items-center gap-3 pt-1">
                           <FormField
                             control={form.control}
                             name="emailLabel"
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm">Label do campo</FormLabel>
+                              <FormItem className="flex-1">
                                 <FormControl>
-                                  <Input placeholder="E-mail" {...field} />
+                                  <Input placeholder="Label" className="h-8 text-sm" {...field} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -385,12 +367,13 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                             control={form.control}
                             name="emailRequired"
                             render={({ field }) => (
-                              <FormItem className="flex items-center justify-between pt-8">
-                                <FormLabel className="text-sm">Obrigatório</FormLabel>
+                              <FormItem className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">Obrigatório</span>
                                 <FormControl>
                                   <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
+                                    className="scale-75"
                                   />
                                 </FormControl>
                               </FormItem>
@@ -404,44 +387,42 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
               )}
 
               {(node.data.type === "singleChoice" || node.data.type === "multipleChoice") && (
-                <div className="space-y-4">
-                  <Separator />
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <FormLabel className="text-base">Opções de Resposta</FormLabel>
-                      <p className="text-sm text-slate-500 mt-1">
+                      <label className="text-xs font-medium text-gray-700">Opções de Resposta</label>
+                      <p className="text-xs text-gray-400 mt-0.5">
                         {node.data.type === "singleChoice"
-                          ? "O usuário poderá escolher apenas uma opção"
-                          : "O usuário poderá escolher múltiplas opções"}
+                          ? "Uma única opção pode ser selecionada"
+                          : "Múltiplas opções podem ser selecionadas"}
                       </p>
                     </div>
-                    <Button
+                    <button
                       type="button"
-                      variant="outline"
-                      size="sm"
                       onClick={addOption}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
                     >
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="w-3.5 h-3.5" />
                       Adicionar
-                    </Button>
+                    </button>
                   </div>
 
                   {enableScoring && (
-                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <Trophy className="w-4 h-4 text-green-600" />
-                      <p className="text-sm text-green-700">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-md">
+                      <Trophy className="w-3.5 h-3.5 text-green-600" />
+                      <p className="text-xs text-green-700">
                         Pontuação ativa: defina pontos para cada opção
                       </p>
                     </div>
                   )}
 
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border"
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200"
                       >
-                        <GripVertical className="w-4 h-4 text-slate-400 cursor-grab" />
+                        <GripVertical className="w-3.5 h-3.5 text-gray-300 cursor-grab" />
 
                         <FormField
                           control={form.control}
@@ -451,6 +432,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                               <FormControl>
                                 <Input
                                   placeholder="Texto da opção"
+                                  className="h-8 text-sm border-0 bg-white"
                                   {...field}
                                 />
                               </FormControl>
@@ -463,12 +445,12 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                             control={form.control}
                             name={`options.${index}.score`}
                             render={({ field }) => (
-                              <FormItem className="w-24">
+                              <FormItem className="w-16">
                                 <FormControl>
                                   <Input
                                     type="number"
-                                    placeholder="Pontos"
-                                    className="text-center"
+                                    placeholder="Pts"
+                                    className="h-8 text-sm text-center border-0 bg-white"
                                     {...field}
                                     onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                                   />
@@ -478,16 +460,14 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                           />
                         )}
 
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
                           onClick={() => remove(index)}
-                          className="text-slate-400 hover:text-red-500"
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                           disabled={fields.length <= 1}
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -496,24 +476,24 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
 
               {node.data.type === "rating" && (
                 <div className="space-y-4">
-                  <Separator />
                   <div>
-                    <FormLabel className="text-base">Configuração da Escala</FormLabel>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <label className="text-xs font-medium text-gray-700">Configuração da Escala</label>
+                    <p className="text-xs text-gray-400 mt-0.5">
                       Defina o intervalo de valores para a avaliação
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="minValue"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm text-slate-500">Valor Mínimo</FormLabel>
+                          <label className="text-xs text-gray-500">Valor Mínimo</label>
                           <FormControl>
                             <Input
                               type="number"
+                              className="h-9 text-sm"
                               {...field}
                               onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                             />
@@ -526,10 +506,11 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                       name="maxValue"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm text-slate-500">Valor Máximo</FormLabel>
+                          <label className="text-xs text-gray-500">Valor Máximo</label>
                           <FormControl>
                             <Input
                               type="number"
+                              className="h-9 text-sm"
                               {...field}
                               onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                             />
@@ -539,16 +520,17 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="minLabel"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm text-slate-500">Label Mínimo</FormLabel>
+                          <label className="text-xs text-gray-500">Label Mínimo</label>
                           <FormControl>
                             <Input
                               placeholder="Ex: Muito Insatisfeito"
+                              className="h-9 text-sm"
                               {...field}
                             />
                           </FormControl>
@@ -560,10 +542,11 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                       name="maxLabel"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm text-slate-500">Label Máximo</FormLabel>
+                          <label className="text-xs text-gray-500">Label Máximo</label>
                           <FormControl>
                             <Input
                               placeholder="Ex: Muito Satisfeito"
+                              className="h-9 text-sm"
                               {...field}
                             />
                           </FormControl>
@@ -573,16 +556,10 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                   </div>
 
                   {enableScoring && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-4 h-4 text-green-600" />
-                        <p className="text-sm font-medium text-green-700">
-                          Pontuação Ativa
-                        </p>
-                      </div>
-                      <p className="text-sm text-green-600">
+                    <div className="flex items-start gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-md">
+                      <Trophy className="w-3.5 h-3.5 text-green-600 mt-0.5" />
+                      <p className="text-xs text-green-700">
                         O valor selecionado pelo usuário será usado como pontuação.
-                        Ex: Se escolher 4 em uma escala de 1-5, ganha 4 pontos.
                       </p>
                     </div>
                   )}
@@ -590,27 +567,32 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
               )}
             </div>
 
-            <Separator className="my-4" />
-
-            <DialogFooter className="flex-row justify-between sm:justify-between">
-              <Button
+            {/* Footer */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50">
+              <button
                 type="button"
-                variant="ghost"
                 onClick={handleDelete}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash2 className="w-3.5 h-3.5" />
                 Excluir
-              </Button>
+              </button>
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={onClose}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
+                >
                   Cancelar
-                </Button>
-                <Button type="submit">
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
+                >
                   Salvar
-                </Button>
+                </button>
               </div>
-            </DialogFooter>
+            </div>
           </form>
         </Form>
       </DialogContent>
