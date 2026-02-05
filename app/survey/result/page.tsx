@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, Star, RotateCcw, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
 
 export default function ResultPage() {
@@ -91,14 +90,14 @@ export default function ResultPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 relative overflow-hidden">
       {/* Confetti Animation */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none">
           {Array.from({ length: 50 }).map((_, i) => (
             <div
               key={i}
-              className="absolute w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-ping"
+              className="absolute w-2 h-2 bg-gray-400 rounded-full animate-ping"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
@@ -110,77 +109,79 @@ export default function ResultPage() {
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto space-y-8 relative z-10">
+      <div className="max-w-md mx-auto space-y-6 relative z-10">
         {/* Result Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 space-y-8">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 space-y-6">
           {/* Icon */}
-          <div className={`w-24 h-24 ${resultData.bgColor} rounded-full flex items-center justify-center mx-auto`}>
-            <ResultIcon className={`w-12 h-12 ${resultData.color}`} />
+          <div className={`w-16 h-16 ${resultData.bgColor} rounded-2xl flex items-center justify-center mx-auto`}>
+            <ResultIcon className={`w-8 h-8 ${resultData.color}`} />
           </div>
 
           {/* Title */}
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold text-gray-900">
+          <div className="text-center space-y-1.5">
+            <h1 className="text-2xl font-bold text-gray-900">
               {resultData.title}
             </h1>
-            <p className="text-xl text-gray-600">{resultData.message}</p>
+            <p className="text-sm text-gray-500">{resultData.message}</p>
           </div>
 
           {/* Score */}
           {(survey?.enableScoring ?? true) && (
-            <div className="text-center py-8 border-y border-gray-200">
-              <div className="space-y-2">
-                <p className="text-sm text-gray-500 uppercase tracking-wide">
+            <div className="text-center py-6 border-y border-gray-100">
+              <div className="space-y-1">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
                   Pontuação Final
                 </p>
-                <p className="text-6xl font-bold text-gray-900">{totalScore}</p>
-                <p className="text-sm text-gray-500">pontos</p>
+                <p className="text-4xl font-bold text-gray-900">{totalScore}</p>
+                <p className="text-xs text-gray-400">pontos</p>
               </div>
             </div>
           )}
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 py-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-3 bg-gray-50 rounded-xl">
+              <p className="text-lg font-bold text-gray-900">
                 {result?.answers.length || 0}
               </p>
-              <p className="text-sm text-gray-500">Perguntas</p>
+              <p className="text-[10px] text-gray-500">Perguntas</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">
+            <div className="text-center p-3 bg-gray-50 rounded-xl">
+              <p className="text-lg font-bold text-gray-900">
                 {result?.path.length || 0}
               </p>
-              <p className="text-sm text-gray-500">Passos</p>
+              <p className="text-[10px] text-gray-500">Passos</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">100%</p>
-              <p className="text-sm text-gray-500">Completo</p>
+            <div className="text-center p-3 bg-gray-50 rounded-xl">
+              <p className="text-lg font-bold text-gray-900">100%</p>
+              <p className="text-[10px] text-gray-500">Completo</p>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-6">
-            <Button
+          <div className="flex gap-2 pt-2">
+            <button
               onClick={handleRestart}
-              variant="outline"
-              className="flex-1 h-12"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Responder Novamente
-            </Button>
-            <Button onClick={handleGoHome} className="flex-1 h-12">
-              <Home className="w-4 h-4 mr-2" />
-              Voltar ao Início
-            </Button>
+              <RotateCcw className="w-3.5 h-3.5" />
+              Novamente
+            </button>
+            <button
+              onClick={handleGoHome}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <Home className="w-3.5 h-3.5" />
+              Início
+            </button>
           </div>
         </div>
 
         {/* Survey Info */}
-        <div className="text-center space-y-2">
-          <p className="text-sm text-gray-600">Pesquisa: {survey.title}</p>
-          <p className="text-xs text-gray-400">
-            Criado com NodeForm - Visual Survey Builder
+        <div className="text-center space-y-1">
+          <p className="text-xs text-gray-500">Pesquisa: {survey.title}</p>
+          <p className="text-[11px] text-gray-400">
+            Criado com NodeForm
           </p>
         </div>
       </div>

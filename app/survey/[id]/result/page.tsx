@@ -3,7 +3,6 @@
 import { useEffect, useState, use, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Trophy, Star, RotateCcw, X, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
 
 export default function ResultPage({
@@ -138,14 +137,14 @@ export default function ResultPage({
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 ${isEmbedMode ? "py-6" : "py-12"} px-4 relative overflow-hidden`}>
+    <div className={`min-h-screen bg-gray-50 ${isEmbedMode ? "py-6" : "py-12"} px-4 relative overflow-hidden`}>
       {/* Confetti Animation */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none">
           {Array.from({ length: 50 }).map((_, i) => (
             <div
               key={i}
-              className="absolute w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-ping"
+              className="absolute w-2 h-2 bg-gray-400 rounded-full animate-ping"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
@@ -157,91 +156,93 @@ export default function ResultPage({
         </div>
       )}
 
-      <div className={`mx-auto ${isEmbedMode ? "space-y-4" : "max-w-3xl space-y-8"} relative z-10`}>
+      <div className={`mx-auto ${isEmbedMode ? "space-y-4" : "max-w-md space-y-6"} relative z-10`}>
         {/* Result Card */}
-        <div className={`bg-white rounded-2xl shadow-2xl ${isEmbedMode ? "p-6 space-y-4" : "p-8 md:p-12 space-y-8"}`}>
+        <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm ${isEmbedMode ? "p-6 space-y-4" : "p-8 space-y-6"}`}>
           {/* Icon */}
           <div
-            className={`${isEmbedMode ? "w-16 h-16" : "w-24 h-24"} ${resultData.bgColor} rounded-full flex items-center justify-center mx-auto`}
+            className={`${isEmbedMode ? "w-12 h-12" : "w-16 h-16"} ${resultData.bgColor} rounded-2xl flex items-center justify-center mx-auto`}
           >
-            <ResultIcon className={`${isEmbedMode ? "w-8 h-8" : "w-12 h-12"} ${resultData.color}`} />
+            <ResultIcon className={`${isEmbedMode ? "w-6 h-6" : "w-8 h-8"} ${resultData.color}`} />
           </div>
 
           {/* Title */}
-          <div className="text-center space-y-2">
-            <h1 className={`${isEmbedMode ? "text-2xl" : "text-4xl"} font-bold text-gray-900`}>
+          <div className="text-center space-y-1.5">
+            <h1 className={`${isEmbedMode ? "text-xl" : "text-2xl"} font-bold text-gray-900`}>
               {resultData.title}
             </h1>
-            <p className={`${isEmbedMode ? "text-base" : "text-xl"} text-gray-600`}>{resultData.message}</p>
+            <p className={`${isEmbedMode ? "text-sm" : "text-sm"} text-gray-500`}>{resultData.message}</p>
           </div>
 
           {/* Score */}
           {(survey?.enableScoring ?? true) && (
-            <div className={`text-center ${isEmbedMode ? "py-4" : "py-8"} border-y border-gray-200`}>
+            <div className={`text-center ${isEmbedMode ? "py-3" : "py-6"} border-y border-gray-100`}>
               <div className="space-y-1">
-                <p className="text-sm text-gray-500 uppercase tracking-wide">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
                   Pontuação Final
                 </p>
-                <p className={`${isEmbedMode ? "text-4xl" : "text-6xl"} font-bold text-gray-900`}>{totalScore}</p>
-                <p className="text-sm text-gray-500">pontos</p>
+                <p className={`${isEmbedMode ? "text-3xl" : "text-4xl"} font-bold text-gray-900`}>{totalScore}</p>
+                <p className="text-xs text-gray-400">pontos</p>
               </div>
             </div>
           )}
 
           {/* Stats - hide in embed mode to save space */}
           {!isEmbedMode && (
-            <div className="grid grid-cols-3 gap-4 py-6">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-gray-50 rounded-xl">
+                <p className="text-lg font-bold text-gray-900">
                   {result?.answers.length || 0}
                 </p>
-                <p className="text-sm text-gray-500">Perguntas</p>
+                <p className="text-[10px] text-gray-500">Perguntas</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="text-center p-3 bg-gray-50 rounded-xl">
+                <p className="text-lg font-bold text-gray-900">
                   {result?.path.length || 0}
                 </p>
-                <p className="text-sm text-gray-500">Passos</p>
+                <p className="text-[10px] text-gray-500">Passos</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">100%</p>
-                <p className="text-sm text-gray-500">Completo</p>
+              <div className="text-center p-3 bg-gray-50 rounded-xl">
+                <p className="text-lg font-bold text-gray-900">100%</p>
+                <p className="text-[10px] text-gray-500">Completo</p>
               </div>
             </div>
           )}
 
           {/* Actions */}
-          <div className={`flex flex-col sm:flex-row gap-3 ${isEmbedMode ? "pt-2" : "pt-6"}`}>
-            <Button
+          <div className={`flex gap-2 ${isEmbedMode ? "pt-1" : "pt-2"}`}>
+            <button
               onClick={handleRestart}
-              variant="outline"
-              className={`flex-1 ${isEmbedMode ? "h-10" : "h-12"}`}
+              className={`flex-1 flex items-center justify-center gap-1.5 ${isEmbedMode ? "py-1.5 text-xs" : "py-2 text-sm"} font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors`}
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Responder Novamente
-            </Button>
+              <RotateCcw className="w-3.5 h-3.5" />
+              Novamente
+            </button>
             {!isEmbedMode && (
-              <Button onClick={handleClose} className="flex-1 h-12">
-                <X className="w-4 h-4 mr-2" />
+              <button
+                onClick={handleClose}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
                 Fechar
-              </Button>
+              </button>
             )}
           </div>
         </div>
 
         {/* Survey Info */}
-        <div className="text-center space-y-2">
-          {!isEmbedMode && <p className="text-sm text-gray-600">Pesquisa: {survey.title}</p>}
+        <div className="text-center space-y-1">
+          {!isEmbedMode && <p className="text-xs text-gray-500">Pesquisa: {survey.title}</p>}
           {isSaving && (
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-              <Loader2 className="w-4 h-4 animate-spin" />
+            <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+              <Loader2 className="w-3 h-3 animate-spin" />
               <span>Salvando resposta...</span>
             </div>
           )}
           {saveError && (
-            <p className="text-sm text-red-500">{saveError}</p>
+            <p className="text-xs text-red-500">{saveError}</p>
           )}
-          <p className="text-xs text-gray-400">
+          <p className="text-[11px] text-gray-400">
             Criado com NodeForm
           </p>
         </div>

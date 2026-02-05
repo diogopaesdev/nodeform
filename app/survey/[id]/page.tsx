@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { X, ArrowLeft, Loader2 } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
-import { Button } from "@/components/ui/button";
 import { Survey } from "@/types/survey";
 
 export default function SurveyPage({
@@ -83,10 +82,10 @@ export default function SurveyPage({
   // Mostrar loading enquanto redireciona para resultado
   if (isCompleted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto" />
-          <p className="text-gray-600">Finalizando pesquisa...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
+          <p className="text-sm text-gray-500">Finalizando pesquisa...</p>
         </div>
       </div>
     );
@@ -94,10 +93,10 @@ export default function SurveyPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto" />
-          <p className="text-gray-600">Carregando pesquisa...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
+          <p className="text-sm text-gray-500">Carregando pesquisa...</p>
         </div>
       </div>
     );
@@ -105,12 +104,15 @@ export default function SurveyPage({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="text-center space-y-4 p-8 bg-white rounded-xl shadow-lg max-w-md">
-          <p className="text-gray-600">{error}</p>
-          <Button onClick={() => window.close()} variant="outline">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-3 p-6 bg-white rounded-xl border border-gray-200 max-w-sm">
+          <p className="text-sm text-gray-500">{error}</p>
+          <button
+            onClick={() => window.close()}
+            className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
+          >
             Fechar
-          </Button>
+          </button>
         </div>
       </div>
     );
@@ -118,12 +120,15 @@ export default function SurveyPage({
 
   if (!survey || !currentNodeId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="text-center space-y-4">
-          <p className="text-gray-600">Erro ao carregar pesquisa</p>
-          <Button onClick={() => window.close()} variant="outline">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-gray-500">Erro ao carregar pesquisa</p>
+          <button
+            onClick={() => window.close()}
+            className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
+          >
             Fechar
-          </Button>
+          </button>
         </div>
       </div>
     );
@@ -154,29 +159,27 @@ export default function SurveyPage({
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 ${isEmbedMode ? "overflow-hidden" : ""}`}>
+    <div className={`min-h-screen bg-gray-50 ${isEmbedMode ? "overflow-hidden" : ""}`}>
       {/* Exit Button - hide in embed mode */}
       {!isEmbedMode && (
         <div className="absolute top-4 right-4 z-10">
-          <Button
+          <button
             onClick={handleExitSurvey}
-            variant="outline"
-            size="sm"
-            className="bg-white shadow-md hover:bg-gray-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md shadow-sm transition-colors"
           >
-            <X className="w-4 h-4 mr-2" />
+            <X className="w-3.5 h-3.5" />
             Sair
-          </Button>
+          </button>
         </div>
       )}
 
       <div className={`px-4 ${isEmbedMode ? "py-6" : "py-12"}`}>
         <div className={`mx-auto space-y-6 ${isEmbedMode ? "max-w-full" : "max-w-4xl space-y-8"}`}>
           {/* Header - compact in embed mode */}
-          <div className="text-center space-y-2">
-            <h1 className={`font-bold text-gray-900 ${isEmbedMode ? "text-xl" : "text-2xl"}`}>{survey.title}</h1>
+          <div className="text-center space-y-1.5">
+            <h1 className={`font-semibold text-gray-900 ${isEmbedMode ? "text-lg" : "text-xl"}`}>{survey.title}</h1>
             {survey.description && (
-              <p className={`text-gray-600 ${isEmbedMode ? "text-sm" : ""}`}>{survey.description}</p>
+              <p className={`text-gray-500 ${isEmbedMode ? "text-xs" : "text-sm"}`}>{survey.description}</p>
             )}
           </div>
 
@@ -186,21 +189,19 @@ export default function SurveyPage({
           {/* Back Button */}
           {canGoBack() && (
             <div className="flex justify-center">
-              <Button
+              <button
                 onClick={goBack}
-                variant="outline"
-                size="sm"
-                className="bg-white"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <ArrowLeft className="w-3.5 h-3.5" />
                 Voltar à Pergunta Anterior
-              </Button>
+              </button>
             </div>
           )}
 
           {/* Progress */}
           {survey?.enableScoring && !isEmbedMode && (
-            <div className="text-center text-sm text-gray-500">
+            <div className="text-center text-xs text-gray-400">
               <p>Pontuação atual: {totalScore} pontos</p>
             </div>
           )}

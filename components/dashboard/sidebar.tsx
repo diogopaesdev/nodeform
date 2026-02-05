@@ -5,12 +5,10 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard,
-  FileText,
   Settings,
   LogOut,
   ChevronDown,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,19 +16,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 
 const navItems = [
   {
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-  },
-  {
-    label: "Pesquisas",
-    href: "/dashboard/surveys",
-    icon: FileText,
   },
   {
     label: "Configurações",
@@ -53,13 +44,13 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 h-screen bg-slate-900 text-white flex flex-col">
+    <aside className="w-56 h-screen bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
-      <div className="p-6">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
+      <div className="px-4 py-5 border-b border-gray-100">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
             <svg
-              className="w-5 h-5 text-slate-900"
+              className="w-4 h-4 text-white"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -72,71 +63,73 @@ export function Sidebar() {
               />
             </svg>
           </div>
-          <span className="text-xl font-bold">NodeForm</span>
+          <span className="text-sm font-bold text-gray-900">NodeForm</span>
         </Link>
       </div>
 
-      <Separator className="bg-slate-700" />
-
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-              )}
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+              }`}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <Separator className="bg-slate-700" />
-
       {/* User Section */}
-      <div className="p-4">
+      <div className="p-3 border-t border-gray-100">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors">
-              <Avatar className="w-9 h-9">
-                <AvatarImage src={session?.user?.image || ""} />
-                <AvatarFallback className="bg-slate-700 text-white text-sm">
-                  {session?.user?.name ? getInitials(session.user.name) : "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-white truncate">
+            <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                {session?.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt=""
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <span className="text-xs font-medium text-gray-600">
+                    {session?.user?.name ? getInitials(session.user.name) : "U"}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
                   {session?.user?.name || "Usuário"}
                 </p>
-                <p className="text-xs text-slate-400 truncate">
+                <p className="text-xs text-gray-400 truncate">
                   {session?.user?.email}
                 </p>
               </div>
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem asChild>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem asChild className="text-xs">
               <Link href="/dashboard/settings" className="cursor-pointer">
-                <Settings className="w-4 h-4 mr-2" />
+                <Settings className="w-3.5 h-3.5 mr-2" />
                 Configurações
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="text-red-600 cursor-pointer"
+              className="text-red-600 cursor-pointer text-xs"
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="w-3.5 h-3.5 mr-2" />
               Sair
             </DropdownMenuItem>
           </DropdownMenuContent>

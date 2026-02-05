@@ -3,7 +3,7 @@
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -18,28 +18,46 @@ export default function LoginPage() {
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-pulse text-gray-500">Carregando...</div>
+        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">NodeForm</h1>
-          <p className="mt-2 text-gray-600">
-            Crie pesquisas interativas com um editor visual
-          </p>
+      <div className="max-w-sm w-full p-8">
+        <div className="text-center space-y-5">
+          <div className="flex justify-center">
+            <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">NodeForm</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Crie pesquisas interativas com um editor visual
+            </p>
+          </div>
         </div>
 
-        <div className="mt-8 space-y-4">
-          <Button
+        <div className="mt-8">
+          <button
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="w-full flex items-center justify-center gap-3 py-6"
-            variant="outline"
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -58,12 +76,11 @@ export default function LoginPage() {
               />
             </svg>
             Entrar com Google
-          </Button>
+          </button>
         </div>
 
-        <p className="mt-4 text-center text-sm text-gray-500">
-          Ao entrar, você concorda com nossos termos de uso e política de
-          privacidade.
+        <p className="text-center text-[11px] text-gray-400 mt-6">
+          Ao entrar, você concorda com nossos termos de uso e política de privacidade.
         </p>
       </div>
     </div>

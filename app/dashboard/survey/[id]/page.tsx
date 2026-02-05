@@ -23,16 +23,10 @@ import {
   FileEdit,
   Archive,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -178,19 +172,23 @@ export default function SurveyDetailPage({
 
   const getStatusBadge = (status: Survey["status"]) => {
     const variants = {
-      draft: { label: "Rascunho", className: "bg-slate-100 text-slate-700" },
-      published: { label: "Publicada", className: "bg-green-100 text-green-700" },
-      finished: { label: "Finalizada", className: "bg-blue-100 text-blue-700" },
-      archived: { label: "Arquivada", className: "bg-amber-100 text-amber-700" },
+      draft: { label: "Rascunho", className: "bg-gray-100 text-gray-600 hover:bg-gray-200" },
+      published: { label: "Publicada", className: "bg-green-100 text-green-700 hover:bg-green-200" },
+      finished: { label: "Finalizada", className: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+      archived: { label: "Arquivada", className: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
     };
     const variant = variants[status];
-    return <Badge className={variant.className}>{variant.label}</Badge>;
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${variant.className}`}>
+        {variant.label}
+      </span>
+    );
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR", {
       day: "2-digit",
-      month: "long",
+      month: "short",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
@@ -203,7 +201,6 @@ export default function SurveyDetailPage({
   ): string => {
     const data = node.data;
 
-    // Presentation - mostrar dados coletados
     if (data.type === "presentation") {
       const parts = [];
       if (answer.respondentName) parts.push(`Nome: ${answer.respondentName}`);
@@ -211,13 +208,11 @@ export default function SurveyDetailPage({
       return parts.length > 0 ? parts.join(" | ") : "Iniciou a pesquisa";
     }
 
-    // Single Choice
     if (data.type === "singleChoice" && answer.selectedOptionId) {
       const option = data.options.find((o) => o.id === answer.selectedOptionId);
       return option?.label || "Opção não encontrada";
     }
 
-    // Multiple Choice
     if (data.type === "multipleChoice" && answer.selectedOptionIds) {
       const labels = answer.selectedOptionIds
         .map((optId) => data.options.find((o) => o.id === optId)?.label)
@@ -225,7 +220,6 @@ export default function SurveyDetailPage({
       return labels.join(", ") || "Nenhuma opção selecionada";
     }
 
-    // Rating
     if (data.type === "rating" && answer.ratingValue !== undefined) {
       return `${answer.ratingValue} de ${data.maxValue}`;
     }
@@ -235,14 +229,14 @@ export default function SurveyDetailPage({
 
   if (loading) {
     return (
-      <div className="p-8">
-        <Skeleton className="h-8 w-32 mb-8" />
-        <div className="space-y-6">
-          <Skeleton className="h-32 w-full" />
-          <div className="grid grid-cols-3 gap-6">
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
+      <div className="p-6">
+        <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-6" />
+        <div className="space-y-4">
+          <div className="h-24 w-full bg-gray-200 rounded-xl animate-pulse" />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+            <div className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+            <div className="h-20 bg-gray-200 rounded-xl animate-pulse" />
           </div>
         </div>
       </div>
@@ -254,353 +248,328 @@ export default function SurveyDetailPage({
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6">
       {/* Back Button */}
       <Link
         href="/dashboard"
-        className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar ao Dashboard
+        <ArrowLeft className="w-4 h-4" />
+        Voltar
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold text-slate-900">{survey.title}</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-xl font-semibold text-gray-900">{survey.title}</h1>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="cursor-pointer">
-                  {getStatusBadge(survey.status)}
-                </button>
+                <button>{getStatusBadge(survey.status)}</button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
+              <DropdownMenuContent align="start" className="min-w-[140px]">
                 <DropdownMenuItem
                   onClick={() => handleUpdateStatus("draft")}
-                  className={survey.status === "draft" ? "bg-slate-100" : ""}
+                  className={`text-xs ${survey.status === "draft" ? "bg-gray-100" : ""}`}
                 >
-                  <FileEdit className="w-4 h-4 mr-2 text-slate-600" />
+                  <FileEdit className="w-3.5 h-3.5 mr-2 text-gray-500" />
                   Rascunho
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleUpdateStatus("published")}
-                  className={survey.status === "published" ? "bg-slate-100" : ""}
+                  className={`text-xs ${survey.status === "published" ? "bg-gray-100" : ""}`}
                 >
-                  <Globe className="w-4 h-4 mr-2 text-green-600" />
+                  <Globe className="w-3.5 h-3.5 mr-2 text-green-600" />
                   Publicar
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleUpdateStatus("finished")}
-                  className={survey.status === "finished" ? "bg-slate-100" : ""}
+                  className={`text-xs ${survey.status === "finished" ? "bg-gray-100" : ""}`}
                 >
-                  <Check className="w-4 h-4 mr-2 text-blue-600" />
+                  <Check className="w-3.5 h-3.5 mr-2 text-blue-600" />
                   Finalizar
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleUpdateStatus("archived")}
-                  className={survey.status === "archived" ? "bg-slate-100" : ""}
+                  className={`text-xs ${survey.status === "archived" ? "bg-gray-100" : ""}`}
                 >
-                  <Archive className="w-4 h-4 mr-2 text-amber-600" />
+                  <Archive className="w-3.5 h-3.5 mr-2 text-amber-600" />
                   Arquivar
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           {survey.description && (
-            <p className="text-slate-500">{survey.description}</p>
+            <p className="text-sm text-gray-500">{survey.description}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleCopyLink}>
+          <button
+            onClick={handleCopyLink}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
+          >
             {copied ? (
               <>
-                <Check className="w-4 h-4 mr-2 text-green-600" />
+                <Check className="w-3.5 h-3.5 text-green-600" />
                 Copiado!
               </>
             ) : (
               <>
-                <LinkIcon className="w-4 h-4 mr-1" />
+                <LinkIcon className="w-3.5 h-3.5" />
                 Compartilhar
               </>
             )}
-          </Button>
-          <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Code className="w-4 h-4 mr-1" />
-                Incorporar
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Code className="w-5 h-5" />
-                  Incorporar no seu Site
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <p className="text-sm text-slate-500">
-                  Copie o código abaixo e cole no HTML do seu site para incorporar esta pesquisa.
-                </p>
-
-                {/* Size Selection */}
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-2 block">
-                    Tamanho do Widget
-                  </label>
-                  <div className="flex gap-2">
-                    {(["small", "medium", "large"] as const).map((size) => (
-                      <Button
-                        key={size}
-                        variant={embedSize === size ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setEmbedSize(size)}
-                      >
-                        {size === "small" && "Pequeno (400x500)"}
-                        {size === "medium" && "Médio (600x650)"}
-                        {size === "large" && "Grande (800x700)"}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Embed Code */}
-                <div className="relative">
-                  <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 text-sm overflow-x-auto">
-                    <code>{getEmbedCode()}</code>
-                  </pre>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={handleCopyEmbed}
-                  >
-                    {copiedEmbed ? (
-                      <>
-                        <Check className="w-4 h-4 mr-1 text-green-600" />
-                        Copiado!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4 mr-1" />
-                        Copiar
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {/* Preview */}
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-2 block">
-                    Prévia
-                  </label>
-                  <div className="border rounded-lg p-4 bg-slate-50">
-                    <div className="flex justify-center">
-                      <iframe
-                        src={`${getSurveyUrl()}?embed=true`}
-                        width={Math.min(getEmbedDimensions().width, 500)}
-                        height={Math.min(getEmbedDimensions().height, 350)}
-                        style={{
-                          border: "none",
-                          borderRadius: "12px",
-                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                        }}
-                        allow="clipboard-write"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Button onClick={() => router.push(`/editor/${survey.id}`)}>
-            <Pencil className="w-4 h-4 mr-1" />
+          </button>
+          <button
+            onClick={() => setEmbedModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
+          >
+            <Code className="w-3.5 h-3.5" />
+            Incorporar
+          </button>
+          <button
+            onClick={() => router.push(`/editor/${survey.id}`)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
             Editar
-          </Button>
+          </button>
         </div>
       </div>
 
+      {/* Embed Modal */}
+      <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
+        <DialogContent className="max-w-3xl p-0 gap-0">
+          <DialogTitle className="sr-only">Incorporar Pesquisa</DialogTitle>
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Code className="w-4 h-4 text-gray-600" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-gray-900">Incorporar Pesquisa</h2>
+              <p className="text-xs text-gray-500">Cole o código no HTML do seu site</p>
+            </div>
+          </div>
+          <div className="px-5 py-4 space-y-4">
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-2 block">Tamanho</label>
+              <div className="flex gap-2">
+                {(["small", "medium", "large"] as const).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setEmbedSize(size)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      embedSize === size
+                        ? "bg-gray-900 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {size === "small" && "Pequeno"}
+                    {size === "medium" && "Médio"}
+                    {size === "large" && "Grande"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs overflow-x-auto">
+                <code>{getEmbedCode()}</code>
+              </pre>
+              <button
+                onClick={handleCopyEmbed}
+                className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded transition-colors"
+              >
+                {copiedEmbed ? (
+                  <>
+                    <Check className="w-3 h-3 text-green-400" />
+                    Copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    Copiar
+                  </>
+                )}
+              </button>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-2 block">Prévia</label>
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex justify-center">
+                <iframe
+                  src={`${getSurveyUrl()}?embed=true`}
+                  width={Math.min(getEmbedDimensions().width, 500)}
+                  height={Math.min(getEmbedDimensions().height, 300)}
+                  style={{ border: "none", borderRadius: "8px" }}
+                />
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">
-              Respostas
-            </CardTitle>
-            <Users className="w-5 h-5 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-slate-900">
-              {survey.responseCount}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500">Respostas</span>
+            <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+              <Users className="w-4 h-4 text-green-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{survey.responseCount}</p>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">
-              Perguntas
-            </CardTitle>
-            <BarChart3 className="w-5 h-5 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-slate-900">
-              {survey.nodes.length}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500">Perguntas</span>
+            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-4 h-4 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{survey.nodes.length}</p>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">
-              Criada em
-            </CardTitle>
-            <Calendar className="w-5 h-5 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg font-medium text-slate-900">
-              {formatDate(survey.createdAt)}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500">Criada em</span>
+            <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-purple-600" />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-gray-900">{formatDate(survey.createdAt)}</p>
+        </div>
       </div>
 
       {/* Survey Link */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <LinkIcon className="w-5 h-5" />
-            Link da Pesquisa
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 bg-slate-100 rounded-lg px-4 py-3 font-mono text-sm text-slate-600 truncate">
+      <div className="bg-white border border-gray-200 rounded-xl mb-6">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <LinkIcon className="w-4 h-4 text-gray-500" />
+          <h2 className="text-sm font-semibold text-gray-900">Link da Pesquisa</h2>
+        </div>
+        <div className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-mono text-xs text-gray-600 truncate">
               {getSurveyUrl()}
             </div>
-            <Button variant="outline" onClick={handleCopyLink}>
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
               {copied ? (
                 <>
-                  <Check className="w-4 h-4 mr-2 text-green-600" />
+                  <Check className="w-3.5 h-3.5 text-green-600" />
                   Copiado!
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4 mr-2" />
+                  <Copy className="w-3.5 h-3.5" />
                   Copiar
                 </>
               )}
-            </Button>
+            </button>
           </div>
-          <p className="text-sm text-slate-500 mt-3">
-            Compartilhe este link para que as pessoas possam responder sua pesquisa.
+          <p className="text-xs text-gray-400 mt-2">
+            Compartilhe este link para coletar respostas.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Responses List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Respostas ({survey.responseCount})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-white border border-gray-200 rounded-xl">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <Users className="w-4 h-4 text-gray-500" />
+          <h2 className="text-sm font-semibold text-gray-900">Respostas ({survey.responseCount})</h2>
+        </div>
+        <div className="p-4">
           {survey.responseCount === 0 ? (
-            <div className="text-center py-12">
-              <BarChart3 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-1">
+            <div className="text-center py-10">
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <BarChart3 className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900 mb-1">
                 Nenhuma resposta ainda
               </h3>
-              <p className="text-slate-500">
-                Compartilhe o link da sua pesquisa para começar a coletar respostas.
+              <p className="text-xs text-gray-500">
+                Compartilhe o link para começar a coletar respostas.
               </p>
             </div>
           ) : loadingResponses ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-20 w-full" />
+                <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {responses.map((response) => (
                 <div
                   key={response.id}
-                  className="border rounded-lg overflow-hidden"
+                  className="border border-gray-200 rounded-lg overflow-hidden"
                 >
-                  {/* Response Header */}
                   <div
-                    className="flex items-center justify-between p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() =>
                       setExpandedResponse(
                         expandedResponse === response.id ? null : response.id
                       )
                     }
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
                           {response.respondentName && (
-                            <span className="flex items-center gap-1 text-sm font-medium text-slate-700">
-                              <User className="w-4 h-4 text-slate-400" />
+                            <span className="flex items-center gap-1 text-xs font-medium text-gray-700">
+                              <User className="w-3 h-3 text-gray-400" />
                               {response.respondentName}
                             </span>
                           )}
                           {response.respondentEmail && (
-                            <span className="flex items-center gap-1 text-sm text-slate-500">
-                              <Mail className="w-4 h-4 text-slate-400" />
+                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                              <Mail className="w-3 h-3 text-gray-400" />
                               {response.respondentEmail}
                             </span>
                           )}
                           {!response.respondentName && !response.respondentEmail && (
-                            <span className="text-sm text-slate-500 italic">
-                              Respondente anônimo
+                            <span className="text-xs text-gray-400 italic">
+                              Anônimo
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-slate-400">
+                        <div className="flex items-center gap-2 text-[10px] text-gray-400">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatDate(response.completedAt)}
                           </span>
                           {survey.enableScoring && (
-                            <Badge variant="outline" className="text-xs">
-                              {response.totalScore} pontos
-                            </Badge>
+                            <span className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">
+                              {response.totalScore} pts
+                            </span>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteResponse(response.id);
                         }}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                       {expandedResponse === response.id ? (
-                        <ChevronUp className="w-5 h-5 text-slate-400" />
+                        <ChevronUp className="w-4 h-4 text-gray-400" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
                       )}
                     </div>
                   </div>
 
-                  {/* Response Details (Expanded) */}
                   {expandedResponse === response.id && (
-                    <div className="p-4 border-t bg-white">
-                      <h4 className="text-sm font-medium text-slate-700 mb-3">
-                        Respostas:
-                      </h4>
-                      <div className="space-y-3">
+                    <div className="p-3 border-t border-gray-200 bg-white">
+                      <p className="text-xs font-medium text-gray-700 mb-2">Respostas:</p>
+                      <div className="space-y-2">
                         {response.answers.map((answer, index) => {
                           const node = survey.nodes.find(
                             (n) => n.id === answer.nodeId
@@ -610,12 +579,12 @@ export default function SurveyDetailPage({
                           return (
                             <div
                               key={index}
-                              className="flex flex-col gap-1 p-3 bg-slate-50 rounded-lg"
+                              className="flex flex-col gap-0.5 p-2 bg-gray-50 rounded-md"
                             >
-                              <span className="text-sm font-medium text-slate-700">
+                              <span className="text-xs font-medium text-gray-700">
                                 {node.data.title || `Pergunta ${index + 1}`}
                               </span>
-                              <span className="text-sm text-slate-600">
+                              <span className="text-xs text-gray-500">
                                 {getAnswerLabel(node, answer)}
                               </span>
                             </div>
@@ -628,8 +597,8 @@ export default function SurveyDetailPage({
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, ArrowLeft } from "lucide-react";
+import { X, ArrowLeft, Loader2, ArrowLeft as Back } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { useEditorStore } from "@/lib/stores/editor-store";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
-import { Button } from "@/components/ui/button";
 
 export default function SurveyPage() {
   const router = useRouter();
@@ -61,10 +60,10 @@ export default function SurveyPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-gray-600">Carregando pesquisa...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
+          <p className="text-sm text-gray-500">Carregando pesquisa...</p>
         </div>
       </div>
     );
@@ -72,12 +71,12 @@ export default function SurveyPage() {
 
   if (!survey || !currentNodeId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="text-center space-y-4">
-          <p className="text-gray-600">Erro ao carregar pesquisa</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-gray-500">Erro ao carregar pesquisa</p>
           <button
             onClick={() => router.push("/editor")}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
           >
             Voltar ao Editor
           </button>
@@ -105,27 +104,25 @@ export default function SurveyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Exit Button */}
       <div className="absolute top-4 right-4 z-10">
-        <Button
+        <button
           onClick={handleExitSurvey}
-          variant="outline"
-          size="sm"
-          className="bg-white shadow-md hover:bg-gray-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md shadow-sm transition-colors"
         >
-          <X className="w-4 h-4 mr-2" />
+          <X className="w-3.5 h-3.5" />
           Sair do Teste
-        </Button>
+        </button>
       </div>
 
       <div className="py-12 px-4">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold text-gray-900">{survey.title}</h1>
+          <div className="text-center space-y-1.5">
+            <h1 className="text-xl font-semibold text-gray-900">{survey.title}</h1>
             {survey.description && (
-              <p className="text-gray-600">{survey.description}</p>
+              <p className="text-sm text-gray-500">{survey.description}</p>
             )}
           </div>
 
@@ -135,21 +132,19 @@ export default function SurveyPage() {
           {/* Back Button */}
           {canGoBack() && (
             <div className="flex justify-center">
-              <Button
+              <button
                 onClick={goBack}
-                variant="outline"
-                size="sm"
-                className="bg-white"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <ArrowLeft className="w-3.5 h-3.5" />
                 Voltar à Pergunta Anterior
-              </Button>
+              </button>
             </div>
           )}
 
           {/* Progress */}
           {survey?.enableScoring && (
-            <div className="text-center text-sm text-gray-500">
+            <div className="text-center text-xs text-gray-400">
               <p>Pontuação atual: {totalScore} pontos</p>
             </div>
           )}
