@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Switch } from "@/components/ui/switch";
 import {
   Form,
@@ -228,13 +228,12 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <label className="text-xs font-medium text-gray-700">Descrição (suporta HTML)</label>
+                    <label className="text-xs font-medium text-gray-700">Descrição</label>
                     <FormControl>
-                      <Textarea
+                      <RichTextEditor
+                        value={field.value}
+                        onChange={field.onChange}
                         placeholder="Digite uma descrição opcional..."
-                        className="resize-none text-sm min-h-[70px]"
-                        rows={2}
-                        {...field}
                       />
                     </FormControl>
                     <FormMessage className="text-xs" />
