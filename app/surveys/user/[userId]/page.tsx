@@ -90,7 +90,7 @@ export default function UserSurveysPage({
             <p className="text-sm text-gray-500">Nenhuma pesquisa disponível no momento</p>
           </div>
         ) : (
-          <div className={`grid gap-3 ${isEmbedMode ? "grid-cols-2 max-w-3xl mx-auto" : "md:grid-cols-2 lg:grid-cols-3"}`}>
+          <div className={`grid gap-3 ${isEmbedMode ? "grid-cols-1 md:grid-cols-4 max-w-3xl mx-auto" : "md:grid-cols-2 lg:grid-cols-3"}`}>
             {surveys.map((survey) => (
               <div key={survey.id} className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors">
                 <h3 className="font-semibold text-gray-900 text-sm mb-1.5 leading-tight">
