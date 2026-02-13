@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FileText, Loader2, Clock, Gift, ArrowRight } from "lucide-react";
+import { useEmbedResize } from "@/lib/hooks/use-embed-resize";
 
 interface PublicSurvey {
   id: string;
@@ -28,6 +29,8 @@ export default function UserSurveysPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEmbedResize(isEmbedMode);
+
   useEffect(() => {
     fetchSurveys();
   }, [userId]);
@@ -51,7 +54,7 @@ export default function UserSurveysPage({
 
   if (loading) {
     return (
-      <div className={`min-h-screen bg-gray-50 ${isEmbedMode ? "p-4" : "p-8"}`}>
+      <div className={isEmbedMode ? "p-4" : "min-h-screen bg-gray-50 p-8"}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
         </div>
@@ -61,7 +64,7 @@ export default function UserSurveysPage({
 
   if (error) {
     return (
-      <div className={`min-h-screen bg-gray-50 ${isEmbedMode ? "p-4" : "p-8"}`}>
+      <div className={isEmbedMode ? "p-4" : "min-h-screen bg-gray-50 p-8"}>
         <div className="text-center py-12">
           <p className="text-sm text-gray-500">{error}</p>
         </div>
@@ -70,7 +73,7 @@ export default function UserSurveysPage({
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${isEmbedMode ? "p-6" : "p-8"}`}>
+    <div className={isEmbedMode ? "p-4" : "min-h-screen bg-gray-50 p-8"}>
       <div className={`mx-auto ${isEmbedMode ? "max-w-full" : "max-w-4xl"}`}>
         {!isEmbedMode && (
           <div className="text-center mb-8">
@@ -117,7 +120,6 @@ export default function UserSurveysPage({
 
                 <Link
                   href={`/survey/${survey.id}${isEmbedMode ? "?embed=true" : ""}`}
-                  target={isEmbedMode ? "_blank" : undefined}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
                 >
                   Participar

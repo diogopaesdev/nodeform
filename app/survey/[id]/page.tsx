@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { X, ArrowLeft, Loader2 } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
+import { useEmbedResize } from "@/lib/hooks/use-embed-resize";
 import { Survey } from "@/types/survey";
 
 export default function SurveyPage({
@@ -31,6 +32,8 @@ export default function SurveyPage({
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEmbedResize(isEmbedMode);
 
   useEffect(() => {
     fetchAndStartSurvey();
@@ -82,7 +85,7 @@ export default function SurveyPage({
   // Mostrar loading enquanto redireciona para resultado
   if (isCompleted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3">
           <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
           <p className="text-sm text-gray-500">Finalizando pesquisa...</p>
@@ -93,7 +96,7 @@ export default function SurveyPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3">
           <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
           <p className="text-sm text-gray-500">Carregando pesquisa...</p>
@@ -104,7 +107,7 @@ export default function SurveyPage({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3 p-6 bg-white rounded-xl border border-gray-200 max-w-sm">
           <p className="text-sm text-gray-500">{error}</p>
           <button
@@ -120,7 +123,7 @@ export default function SurveyPage({
 
   if (!survey || !currentNodeId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3">
           <p className="text-sm text-gray-500">Erro ao carregar pesquisa</p>
           <button
@@ -159,7 +162,7 @@ export default function SurveyPage({
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${isEmbedMode ? "overflow-hidden" : ""}`}>
+    <div className={isEmbedMode ? "" : "min-h-screen bg-gray-50"}>
       {/* Exit Button - hide in embed mode */}
       {!isEmbedMode && (
         <div className="absolute top-4 right-4 z-10">

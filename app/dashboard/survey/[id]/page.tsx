@@ -49,7 +49,6 @@ export default function SurveyDetailPage({
   const [loadingResponses, setLoadingResponses] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
-  const [embedSize, setEmbedSize] = useState<"small" | "medium" | "large">("medium");
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
 
@@ -143,25 +142,22 @@ export default function SurveyDetailPage({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getEmbedDimensions = () => {
-    const sizes = {
-      small: { width: 400, height: 500 },
-      medium: { width: 600, height: 650 },
-      large: { width: 800, height: 700 },
-    };
-    return sizes[embedSize];
-  };
-
   const getEmbedCode = () => {
-    const { width, height } = getEmbedDimensions();
+    const url = getSurveyUrl();
     return `<iframe
-  src="${getSurveyUrl()}?embed=true"
-  width="${width}"
-  height="${height}"
+  id="nodeform-survey"
+  src="${url}?embed=true"
   frameborder="0"
-  style="border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"
-  allow="clipboard-write"
-></iframe>`;
+  style="width: 100%; border: none; overflow: hidden;"
+  scrolling="no"
+></iframe>
+<script>
+window.addEventListener("message", function(e) {
+  if (e.data && e.data.type === "nodeform-resize") {
+    document.getElementById("nodeform-survey").style.height = e.data.height + "px";
+  }
+});
+</script>`;
   };
 
   const handleCopyEmbed = async () => {
@@ -351,26 +347,6 @@ export default function SurveyDetailPage({
             </div>
           </div>
           <div className="px-5 py-4 space-y-4">
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-2 block">Tamanho</label>
-              <div className="flex gap-2">
-                {(["small", "medium", "large"] as const).map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setEmbedSize(size)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      embedSize === size
-                        ? "bg-gray-900 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    {size === "small" && "Pequeno"}
-                    {size === "medium" && "Médio"}
-                    {size === "large" && "Grande"}
-                  </button>
-                ))}
-              </div>
-            </div>
             <div className="relative">
               <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs overflow-x-auto">
                 <code>{getEmbedCode()}</code>
@@ -392,17 +368,9 @@ export default function SurveyDetailPage({
                 )}
               </button>
             </div>
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-2 block">Prévia</label>
-              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex justify-center">
-                <iframe
-                  src={`${getSurveyUrl()}?embed=true`}
-                  width={Math.min(getEmbedDimensions().width, 500)}
-                  height={Math.min(getEmbedDimensions().height, 300)}
-                  style={{ border: "none", borderRadius: "8px" }}
-                />
-              </div>
-            </div>
+            <p className="text-xs text-gray-400">
+              O iframe se adapta automaticamente ao tamanho do conteúdo.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

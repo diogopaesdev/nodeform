@@ -4,6 +4,7 @@ import { useEffect, useState, use, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Trophy, Star, RotateCcw, X, Loader2 } from "lucide-react";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
+import { useEmbedResize } from "@/lib/hooks/use-embed-resize";
 
 export default function ResultPage({
   params,
@@ -21,6 +22,8 @@ export default function ResultPage({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const hasSaved = useRef(false);
+
+  useEmbedResize(isEmbedMode);
 
   // Salvar resposta no Firebase
   useEffect(() => {
@@ -75,7 +78,7 @@ export default function ResultPage({
 
   if (!survey || !isCompleted) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen"}`}>
         <div className="text-center space-y-4">
           <p className="text-gray-600">Carregando resultado...</p>
         </div>
@@ -137,7 +140,7 @@ export default function ResultPage({
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${isEmbedMode ? "py-6" : "py-12"} px-4 relative overflow-hidden`}>
+    <div className={`${isEmbedMode ? "py-4" : "min-h-screen bg-gray-50 py-12"} px-4 relative overflow-hidden`}>
       {/* Confetti Animation */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none">

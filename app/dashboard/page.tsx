@@ -123,13 +123,21 @@ export default function DashboardPage() {
   };
 
   const getEmbedCode = () => {
+    const url = getSurveysListUrl();
     return `<iframe
-  src="${getSurveysListUrl()}?embed=true"
-  width="100%"
-  height="600"
+  id="nodeform-list"
+  src="${url}?embed=true"
   frameborder="0"
-  style="border: none;"
-></iframe>`;
+  style="width: 100%; border: none; overflow: hidden;"
+  scrolling="no"
+></iframe>
+<script>
+window.addEventListener("message", function(e) {
+  if (e.data && e.data.type === "nodeform-resize") {
+    document.getElementById("nodeform-list").style.height = e.data.height + "px";
+  }
+});
+</script>`;
   };
 
   const handleCopyEmbed = async () => {
@@ -228,19 +236,8 @@ export default function DashboardPage() {
                 )}
               </button>
             </div>
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-2 block">Prévia</label>
-              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                <iframe
-                  src={`${getSurveysListUrl()}?embed=true`}
-                  width="100%"
-                  height="300"
-                  style={{ border: "none" }}
-                />
-              </div>
-            </div>
             <p className="text-xs text-gray-400">
-              Apenas pesquisas com status &quot;Publicada&quot; aparecerão no widget.
+              O iframe se adapta automaticamente ao tamanho do conteúdo. Apenas pesquisas com status &quot;Publicada&quot; aparecerão.
             </p>
           </div>
         </DialogContent>
