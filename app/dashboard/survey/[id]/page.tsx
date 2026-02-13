@@ -22,6 +22,7 @@ import {
   Globe,
   FileEdit,
   Archive,
+  Download,
 } from "lucide-react";
 import {
   Dialog,
@@ -221,6 +222,59 @@ window.addEventListener("message", function(e) {
     }
 
     return "Sem resposta";
+  };
+
+  const handleExportCSV = () => {
+    if (!survey || responses.length === 0) return;
+
+    const escapeCSV = (value: string) => {
+      if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    };
+
+    // Build columns: Nome, Email, each question title, Pontuação, Data
+    const questionNodes = survey.nodes.filter(
+      (n) => n.data.type !== "presentation" && n.data.type !== "endScreen"
+    );
+
+    const headers = [
+      "Nome",
+      "Email",
+      ...questionNodes.map((n) => n.data.title || "Pergunta"),
+      ...(survey.enableScoring ? ["Pontuação"] : []),
+      "Data",
+    ];
+
+    const rows = responses.map((response) => {
+      const name = response.respondentName || "";
+      const email = response.respondentEmail || "";
+
+      const answerValues = questionNodes.map((node) => {
+        const answer = response.answers.find((a) => a.nodeId === node.id);
+        if (!answer) return "";
+        return getAnswerLabel(node, answer);
+      });
+
+      return [
+        escapeCSV(name),
+        escapeCSV(email),
+        ...answerValues.map(escapeCSV),
+        ...(survey.enableScoring ? [String(response.totalScore)] : []),
+        formatDate(response.completedAt),
+      ];
+    });
+
+    const csv = [headers.map(escapeCSV).join(","), ...rows.map((r) => r.join(","))].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${survey.title.replace(/[^a-zA-Z0-9]/g, "_")}_respostas.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -444,9 +498,20 @@ window.addEventListener("message", function(e) {
 
       {/* Responses List */}
       <div className="bg-white border border-gray-200 rounded-xl">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <Users className="w-4 h-4 text-gray-500" />
-          <h2 className="text-sm font-semibold text-gray-900">Respostas ({survey.responseCount})</h2>
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-gray-500" />
+            <h2 className="text-sm font-semibold text-gray-900">Respostas ({survey.responseCount})</h2>
+          </div>
+          {responses.length > 0 && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exportar CSV
+            </button>
+          )}
         </div>
         <div className="p-4">
           {survey.responseCount === 0 ? (
