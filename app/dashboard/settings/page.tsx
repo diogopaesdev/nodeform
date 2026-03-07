@@ -1,0 +1,247 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import { Building2, User, Loader2, Check, Pencil } from "lucide-react";
+
+function formatCNPJ(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+}
+
+interface UserData {
+  name: string;
+  email: string;
+  image?: string;
+  provider: string;
+  companyName?: string;
+  cnpj?: string;
+}
+
+export default function SettingsPage() {
+  const { data: session } = useSession();
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Company form
+  const [editing, setEditing] = useState(false);
+  const [companyName, setCompanyName] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch("/api/user");
+      const data = await res.json();
+      setUserData(data.user);
+      setCompanyName(data.user?.companyName || "");
+      setCnpj(data.user?.cnpj || "");
+    } catch (err) {
+      console.error("Error fetching user:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveCompany = async () => {
+    if (!companyName.trim()) return;
+    setSaving(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/user/company", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyName, cnpj }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Erro ao salvar");
+        return;
+      }
+
+      setUserData((prev) => prev ? { ...prev, companyName, cnpj } : prev);
+      setEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setError("Erro ao salvar. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setCompanyName(userData?.companyName || "");
+    setCnpj(userData?.cnpj || "");
+    setEditing(false);
+    setError("");
+  };
+
+  return (
+    <div className="p-6 max-w-2xl">
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-gray-900">Configurações</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Gerencie sua conta e dados da empresa</p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Conta conectada */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+            <User className="w-4 h-4 text-gray-400" />
+            <h2 className="text-sm font-semibold text-gray-900">Conta Conectada</h2>
+          </div>
+
+          <div className="px-5 py-4">
+            {loading ? (
+              <div className="flex items-center gap-3 animate-pulse">
+                <div className="w-10 h-10 bg-gray-100 rounded-full" />
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-gray-100 rounded" />
+                  <div className="h-3 w-48 bg-gray-100 rounded" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                  {session?.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt=""
+                      width={40}
+                      height={40}
+                      className="rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{userData?.name || session?.user?.name}</p>
+                  <p className="text-xs text-gray-400 truncate">{userData?.email || session?.user?.email}</p>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-100 rounded-lg">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                  <span className="text-xs text-gray-500 font-medium">Google</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Dados da empresa */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-gray-400" />
+              <h2 className="text-sm font-semibold text-gray-900">Dados da Empresa</h2>
+            </div>
+            {!editing && !loading && (
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+              >
+                <Pencil className="w-3 h-3" />
+                Editar
+              </button>
+            )}
+          </div>
+
+          <div className="px-5 py-4">
+            {loading ? (
+              <div className="space-y-3 animate-pulse">
+                <div className="h-4 w-48 bg-gray-100 rounded" />
+                <div className="h-4 w-36 bg-gray-100 rounded" />
+              </div>
+            ) : editing ? (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-700">
+                    Razão Social <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Ex: Empresa Ltda."
+                    autoFocus
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-700">
+                    CNPJ <span className="text-gray-400 font-normal">(opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={cnpj}
+                    onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
+                    placeholder="00.000.000/0001-00"
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400"
+                  />
+                </div>
+                {error && <p className="text-xs text-red-600">{error}</p>}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={handleSaveCompany}
+                    disabled={saving || !companyName.trim()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-md transition-colors"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    Salvar
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Razão Social</p>
+                  <p className="text-sm text-gray-900 font-medium">
+                    {userData?.companyName || <span className="text-gray-400 font-normal">Não informado</span>}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">CNPJ</p>
+                  <p className="text-sm text-gray-900 font-medium">
+                    {userData?.cnpj || <span className="text-gray-400 font-normal">Não informado</span>}
+                  </p>
+                </div>
+                {saved && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Dados salvos com sucesso
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

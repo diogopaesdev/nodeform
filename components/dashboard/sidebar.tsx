@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard,
+  FileText,
+  Palette,
   Settings,
   LogOut,
   ChevronDown,
@@ -13,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -24,9 +26,16 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    label: "Configurações",
-    href: "/dashboard/settings",
-    icon: Settings,
+    label: "Pesquisas",
+    href: "/dashboard/surveys",
+    icon: FileText,
+  },
+];
+
+const comingSoonItems = [
+  {
+    label: "Temas",
+    icon: Palette,
   },
 ];
 
@@ -73,7 +82,7 @@ export function Sidebar() {
           const isActive = pathname === item.href;
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -86,19 +95,47 @@ export function Sidebar() {
             </Link>
           );
         })}
+        {comingSoonItems.map((item) => (
+          <div
+            key={item.label}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 cursor-not-allowed"
+          >
+            <item.icon className="w-4 h-4" />
+            <span>{item.label}</span>
+            <span className="ml-auto text-[10px] font-medium bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">
+              Em breve
+            </span>
+          </div>
+        ))}
       </nav>
+
+      {/* Settings */}
+      <div className="px-3 pb-2">
+        <Link
+          href="/dashboard/settings"
+          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            pathname === "/dashboard/settings"
+              ? "bg-gray-100 text-gray-900"
+              : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          <span>Configurações</span>
+        </Link>
+      </div>
 
       {/* User Section */}
       <div className="p-3 border-t border-gray-100">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+          <DropdownMenuTrigger className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors outline-none">
+              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {session?.user?.image ? (
-                  <img
+                  <Image
                     src={session.user.image}
                     alt=""
-                    className="w-8 h-8 rounded-full"
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover"
                   />
                 ) : (
                   <span className="text-xs font-medium text-gray-600">
@@ -115,16 +152,8 @@ export function Sidebar() {
                 </p>
               </div>
               <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem asChild className="text-xs">
-              <Link href="/dashboard/settings" className="cursor-pointer">
-                <Settings className="w-3.5 h-3.5 mr-2" />
-                Configurações
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => signOut({ callbackUrl: "/" })}
               className="text-red-600 cursor-pointer text-xs"
