@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import { Building2, User, Loader2, Check, Pencil } from "lucide-react";
+import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles } from "lucide-react";
 
 function formatCNPJ(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -14,6 +14,8 @@ function formatCNPJ(value: string) {
     .replace(/(\d{4})(\d)/, "$1-$2");
 }
 
+type SubscriptionStatus = "trialing" | "active" | "past_due" | "inactive" | undefined;
+
 interface UserData {
   name: string;
   email: string;
@@ -21,6 +23,10 @@ interface UserData {
   provider: string;
   companyName?: string;
   cnpj?: string;
+  subscriptionStatus?: SubscriptionStatus;
+  trialEnd?: string;
+  subscriptionCurrentPeriodEnd?: string;
+  stripeCustomerId?: string;
 }
 
 export default function SettingsPage() {
@@ -35,6 +41,9 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  // Billing
+  const [billingLoading, setBillingLoading] = useState(false);
 
   useEffect(() => {
     fetchUser();
@@ -90,6 +99,61 @@ export default function SettingsPage() {
     setError("");
   };
 
+  const handleCheckout = async () => {
+    setBillingLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // silently fail
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handlePortal = async () => {
+    setBillingLoading(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // silently fail
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const getSubscriptionBadge = (status: SubscriptionStatus) => {
+    const map = {
+      trialing:  { label: "Trial", className: "bg-blue-50 text-blue-700 border-blue-100" },
+      active:    { label: "Ativo", className: "bg-green-50 text-green-700 border-green-100" },
+      past_due:  { label: "Pagamento pendente", className: "bg-amber-50 text-amber-700 border-amber-100" },
+      inactive:  { label: "Inativo", className: "bg-gray-50 text-gray-500 border-gray-100" },
+    };
+    const variant = map[status ?? "inactive"];
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${variant.className}`}>
+        {variant.label}
+      </span>
+    );
+  };
+
+  const formatDate = (iso?: string) =>
+    iso ? new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : null;
+
+  const isTrialing =
+    userData?.subscriptionStatus === "trialing" ||
+    (!userData?.subscriptionStatus && userData?.trialEnd && new Date(userData.trialEnd).getTime() > Date.now());
+
+  const hasActiveSubscription =
+    userData?.subscriptionStatus === "active" || isTrialing;
+
+  const trialDaysLeft = userData?.trialEnd
+    ? Math.max(0, Math.ceil((new Date(userData.trialEnd).getTime() - Date.now()) / 86400000))
+    : null;
+
   return (
     <div className="p-6 max-w-2xl">
       <div className="mb-6">
@@ -144,6 +208,89 @@ export default function SettingsPage() {
                   </svg>
                   <span className="text-xs text-gray-500 font-medium">Google</span>
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Assinatura */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-gray-400" />
+            <h2 className="text-sm font-semibold text-gray-900">Assinatura</h2>
+          </div>
+
+          <div className="px-5 py-4">
+            {loading ? (
+              <div className="space-y-3 animate-pulse">
+                <div className="h-4 w-40 bg-gray-100 rounded" />
+                <div className="h-8 w-36 bg-gray-100 rounded" />
+              </div>
+            ) : hasActiveSubscription ? (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900">
+                      {userData?.subscriptionStatus === "active" ? "Plano Pro" : "Trial gratuito"}
+                    </p>
+                    {getSubscriptionBadge(userData?.subscriptionStatus as SubscriptionStatus ?? (isTrialing ? "trialing" : "inactive"))}
+                  </div>
+                  {isTrialing && trialDaysLeft !== null && (
+                    <p className="text-xs text-gray-400">
+                      {trialDaysLeft > 0
+                        ? `${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""}`
+                        : `Expira hoje`}
+                      {" · "}
+                      <button onClick={handleCheckout} className="text-gray-600 underline underline-offset-2">
+                        Assinar agora
+                      </button>
+                    </p>
+                  )}
+                  {userData?.subscriptionStatus === "active" && userData.subscriptionCurrentPeriodEnd && (
+                    <p className="text-xs text-gray-400">
+                      Renova em {formatDate(userData.subscriptionCurrentPeriodEnd)}
+                    </p>
+                  )}
+                  {userData?.subscriptionStatus === "past_due" && (
+                    <p className="text-xs text-amber-600">
+                      Atualize seu pagamento para continuar usando
+                    </p>
+                  )}
+                </div>
+                {userData?.subscriptionStatus === "active" || userData?.subscriptionStatus === "past_due" ? (
+                  <button
+                    onClick={handlePortal}
+                    disabled={billingLoading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-md transition-colors"
+                  >
+                    {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                    Gerenciar Assinatura
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleCheckout}
+                    disabled={billingLoading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
+                  >
+                    {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    Assinar Plano Pro
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-900">Trial expirado</p>
+                  <p className="text-xs text-gray-400">Assine para recuperar o acesso</p>
+                </div>
+                <button
+                  onClick={handleCheckout}
+                  disabled={billingLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
+                >
+                  {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  Assinar Plano Pro
+                </button>
               </div>
             )}
           </div>

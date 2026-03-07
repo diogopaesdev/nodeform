@@ -56,6 +56,8 @@ export const authOptions: NextAuthOptions = {
           if (userDoc.exists) {
             const data = userDoc.data()!;
             token.onboardingCompleted = data.onboardingCompleted ?? false;
+            token.trialEnd = data.trialEnd ?? null;
+            token.subscriptionStatus = data.subscriptionStatus ?? null;
           }
         } catch {
           // mantém o valor anterior em caso de erro
@@ -67,6 +69,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.sub) {
         session.user.id = token.sub;
         session.user.onboardingCompleted = token.onboardingCompleted ?? false;
+        session.user.trialEnd = token.trialEnd ?? undefined;
+        session.user.subscriptionStatus = token.subscriptionStatus ?? undefined;
       }
       return session;
     },
