@@ -51,7 +51,7 @@ export default function UpgradePage() {
             <span className="text-lg font-bold text-gray-900">Plano Pro</span>
             <div className="text-right">
               <span className="text-2xl font-bold text-gray-900">
-                R$ 499
+                R$ 499,00
               </span>
               <span className="text-xs text-gray-400">/mês</span>
             </div>

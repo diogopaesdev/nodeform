@@ -443,7 +443,7 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0 ml-4">
-                  <span className="text-3xl font-bold text-gray-900">R$&nbsp;499</span>
+                  <span className="text-3xl font-bold text-gray-900">R$&nbsp;499,00</span>
                   <span className="text-xs text-gray-400 block">/mês</span>
                 </div>
               </div>
