@@ -52,11 +52,15 @@ export async function POST(req: NextRequest) {
       const userDoc = await getUserByCustomerId(customerId);
       if (!userDoc) break;
 
+      const periodEnd =
+        subscription.items.data[0]?.current_period_end ??
+        (subscription as unknown as Record<string, number>).current_period_end;
+
       await userDoc.ref.update({
         stripeSubscriptionId: subscriptionId,
         subscriptionStatus: getSubscriptionStatus(subscription),
         subscriptionCurrentPeriodEnd: new Date(
-          subscription.current_period_end * 1000
+          periodEnd * 1000
         ).toISOString(),
         trialEnd: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
@@ -72,11 +76,15 @@ export async function POST(req: NextRequest) {
       const userDoc = await getUserByCustomerId(customerId);
       if (!userDoc) break;
 
+      const periodEnd =
+        subscription.items.data[0]?.current_period_end ??
+        (subscription as unknown as Record<string, number>).current_period_end;
+
       await userDoc.ref.update({
         stripeSubscriptionId: subscription.id,
         subscriptionStatus: getSubscriptionStatus(subscription),
         subscriptionCurrentPeriodEnd: new Date(
-          subscription.current_period_end * 1000
+          periodEnd * 1000
         ).toISOString(),
         trialEnd: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
