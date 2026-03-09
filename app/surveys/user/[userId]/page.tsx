@@ -133,7 +133,7 @@ export default function UserSurveysPage({
         {!isEmbedMode && (
           <div className="text-center mt-8">
             <p className="text-[11px] text-gray-400">
-              Criado com NodeForm
+              Criado com SurveyFlow
             </p>
           </div>
         )}

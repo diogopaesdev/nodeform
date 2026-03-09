@@ -8,7 +8,7 @@ export function useEmbedResize(isEmbed: boolean) {
 
     const sendHeight = () => {
       const height = document.documentElement.scrollHeight;
-      window.parent.postMessage({ type: "nodeform-resize", height }, "*");
+      window.parent.postMessage({ type: "surveyflow-resize", height }, "*");
     };
 
     // Send initial height

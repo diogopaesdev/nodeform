@@ -246,7 +246,7 @@ export default function ResultPage({
             <p className="text-xs text-red-500">{saveError}</p>
           )}
           <p className="text-[11px] text-gray-400">
-            Criado com NodeForm
+            Criado com SurveyFlow
           </p>
         </div>
       </div>

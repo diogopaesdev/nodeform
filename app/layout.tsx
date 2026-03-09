@@ -3,8 +3,11 @@ import { SessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NodeForm - Visual Survey Builder",
-  description: "Create interactive surveys with a visual flow builder",
+  title: "SurveyFlow - Visual Survey Builder",
+  description: "Crie pesquisas interativas com um editor visual de fluxo",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

@@ -146,7 +146,7 @@ export default function SurveyDetailPage({
   const getEmbedCode = () => {
     const url = getSurveyUrl();
     return `<iframe
-  id="nodeform-survey"
+  id="surveyflow-survey"
   src="${url}?embed=true"
   frameborder="0"
   style="width: 100%; border: none; overflow: hidden;"
@@ -154,8 +154,8 @@ export default function SurveyDetailPage({
 ></iframe>
 <script>
 window.addEventListener("message", function(e) {
-  if (e.data && e.data.type === "nodeform-resize") {
-    document.getElementById("nodeform-survey").style.height = e.data.height + "px";
+  if (e.data && e.data.type === "surveyflow-resize") {
+    document.getElementById("surveyflow-survey").style.height = e.data.height + "px";
   }
 });
 </script>`;

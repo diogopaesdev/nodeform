@@ -201,7 +201,7 @@ export const useEditorStore = create<EditorState>()(
       },
     }),
     {
-      name: "nodeform-editor-storage",
+      name: "surveyflow-editor-storage",
       partialize: (state) => ({
         surveyId: state.surveyId,
         surveyTitle: state.surveyTitle,

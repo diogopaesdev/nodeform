@@ -29,23 +29,20 @@ export default function LoginPage() {
         <div className="text-center space-y-5">
           <div className="flex justify-center">
             <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
+              <svg className="w-7 h-7" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="19" width="18" height="10" rx="3" fill="white"/>
+                <rect x="28" y="8" width="17" height="10" rx="3" fill="white"/>
+                <rect x="28" y="30" width="17" height="10" rx="3" fill="white" fillOpacity="0.55"/>
+                <path d="M21 24 C24.5 24 24.5 13 28 13" stroke="white" strokeWidth="2" strokeOpacity="0.7"/>
+                <path d="M21 24 C24.5 24 24.5 35 28 35" stroke="white" strokeWidth="2" strokeOpacity="0.4"/>
+                <circle cx="21" cy="24" r="3" fill="white"/>
+                <circle cx="28" cy="13" r="2.5" fill="white"/>
+                <circle cx="28" cy="35" r="2.5" fill="white" fillOpacity="0.55"/>
               </svg>
             </div>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">NodeForm</h1>
+            <h1 className="text-2xl font-bold text-gray-900">SurveyFlow</h1>
             <p className="text-sm text-gray-500 mt-1">
               Crie pesquisas interativas com um editor visual
             </p>

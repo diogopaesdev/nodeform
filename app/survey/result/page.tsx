@@ -181,7 +181,7 @@ export default function ResultPage() {
         <div className="text-center space-y-1">
           <p className="text-xs text-gray-500">Pesquisa: {survey.title}</p>
           <p className="text-[11px] text-gray-400">
-            Criado com NodeForm
+            Criado com SurveyFlow
           </p>
         </div>
       </div>

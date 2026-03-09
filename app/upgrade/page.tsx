@@ -41,7 +41,7 @@ export default function UpgradePage() {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Seu trial expirou</h1>
           <p className="text-sm text-gray-500 mt-2">
-            Assine o Plano Pro para continuar usando o NodeForm
+            Assine o Plano Pro para continuar usando o SurveyFlow
           </p>
         </div>
 
