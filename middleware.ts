@@ -18,7 +18,7 @@ export default withAuth(
     const { pathname } = req.nextUrl;
     const token = req.nextauth.token;
 
-    const onboardingCompleted = token?.onboardingCompleted ?? false;
+    const onboardingCompleted = !!(token?.companyName || token?.onboardingCompleted);
 
     // 1. Sem onboarding → /onboarding
     if (!onboardingCompleted && pathname !== "/onboarding") {
