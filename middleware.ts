@@ -1,18 +1,6 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
-const ACTIVE_STATUSES = ["active", "trialing"];
-
-function hasValidAccess(token: { trialEnd?: string | null; subscriptionStatus?: string | null }): boolean {
-  if (token.subscriptionStatus && ACTIVE_STATUSES.includes(token.subscriptionStatus)) {
-    return true;
-  }
-  if (token.trialEnd && new Date(token.trialEnd).getTime() > Date.now()) {
-    return true;
-  }
-  return false;
-}
-
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
@@ -30,17 +18,12 @@ export default withAuth(
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    // 3. Sem acesso válido (trial expirado + sem assinatura) → /upgrade
-    //    Exceção: settings e upgrade em si
-    const isExempt =
-      pathname === "/upgrade" ||
-      pathname === "/dashboard/settings";
-
-    if (onboardingCompleted && !isExempt && !hasValidAccess(token ?? {})) {
-      return NextResponse.redirect(new URL("/upgrade", req.url));
-    }
-
-    return NextResponse.next();
+    // Verificação de assinatura é feita no dashboard/layout.tsx (Server Component)
+    // que lê o Firestore em tempo real — sem depender do JWT em cache.
+    // Passa o pathname como header para o layout conseguir isentar /settings.
+    const res = NextResponse.next();
+    res.headers.set("x-pathname", pathname);
+    return res;
   },
   {
     callbacks: {
