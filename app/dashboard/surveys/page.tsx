@@ -19,25 +19,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Survey } from "@/types/survey";
-
-const STATUS_OPTIONS = ["Todos", "draft", "published", "finished", "archived"] as const;
-type FilterStatus = (typeof STATUS_OPTIONS)[number];
-
-const STATUS_LABELS: Record<string, string> = {
-  Todos: "Todos",
-  draft: "Rascunho",
-  published: "Publicada",
-  finished: "Finalizada",
-  archived: "Arquivada",
-};
+import { useI18n } from "@/lib/i18n";
 
 export default function SurveysPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("Todos");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  const STATUS_OPTIONS = [
+    { key: "all",       label: t.surveys.filterAll },
+    { key: "draft",     label: t.dashboard.status.draft },
+    { key: "published", label: t.dashboard.status.published },
+    { key: "finished",  label: t.dashboard.status.finished },
+    { key: "archived",  label: t.dashboard.status.archived },
+  ];
+
+  const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+    draft:     { label: t.dashboard.status.draft,     className: "bg-gray-100 text-gray-600" },
+    published: { label: t.dashboard.status.published, className: "bg-green-100 text-green-700" },
+    finished:  { label: t.dashboard.status.finished,  className: "bg-blue-100 text-blue-700" },
+    archived:  { label: t.dashboard.status.archived,  className: "bg-amber-100 text-amber-700" },
+  };
 
   useEffect(() => {
     fetchSurveys();
@@ -74,7 +80,7 @@ export default function SurveysPage() {
   };
 
   const handleDeleteSurvey = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta pesquisa?")) return;
+    if (!confirm(t.surveys.deleteConfirm)) return;
     try {
       await fetch(`/api/surveys/${id}`, { method: "DELETE" });
       setSurveys((prev) => prev.filter((s) => s.id !== id));
@@ -84,13 +90,7 @@ export default function SurveysPage() {
   };
 
   const getStatusBadge = (status: Survey["status"]) => {
-    const variants = {
-      draft: { label: "Rascunho", className: "bg-gray-100 text-gray-600" },
-      published: { label: "Publicada", className: "bg-green-100 text-green-700" },
-      finished: { label: "Finalizada", className: "bg-blue-100 text-blue-700" },
-      archived: { label: "Arquivada", className: "bg-amber-100 text-amber-700" },
-    };
-    const variant = variants[status];
+    const variant = STATUS_BADGE[status] ?? STATUS_BADGE.draft;
     return (
       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${variant.className}`}>
         {variant.label}
@@ -99,7 +99,7 @@ export default function SurveysPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
+    return new Date(dateString).toLocaleDateString(undefined, {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -108,19 +108,23 @@ export default function SurveysPage() {
 
   const filtered = surveys.filter((s) => {
     const matchesSearch = s.title.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = filterStatus === "Todos" || s.status === filterStatus;
+    const matchesStatus = filterStatus === "all" || s.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
+
+  const hasFilter = search || filterStatus !== "all";
+
+  const footerText = filtered.length === 1
+    ? t.surveys.footer.replace("{n}", String(filtered.length))
+    : t.surveys.footerPlural.replace("{n}", String(filtered.length));
 
   return (
     <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Pesquisas</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Crie e gerencie todas as suas pesquisas
-          </p>
+          <h1 className="text-xl font-semibold text-gray-900">{t.surveys.title}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t.surveys.subtitle}</p>
         </div>
         <button
           onClick={handleCreateSurvey}
@@ -132,7 +136,7 @@ export default function SurveysPage() {
           ) : (
             <Plus className="w-3.5 h-3.5" />
           )}
-          Nova Pesquisa
+          {t.surveys.newSurvey}
         </button>
       </div>
 
@@ -142,24 +146,24 @@ export default function SurveysPage() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar pesquisa..."
+            placeholder={t.surveys.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 text-sm bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400"
           />
         </div>
         <div className="flex items-center gap-1">
-          {STATUS_OPTIONS.map((status) => (
+          {STATUS_OPTIONS.map((opt) => (
             <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
+              key={opt.key}
+              onClick={() => setFilterStatus(opt.key)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                filterStatus === status
+                filterStatus === opt.key
                   ? "bg-gray-900 text-white"
                   : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
               }`}
             >
-              {STATUS_LABELS[status]}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -187,21 +191,19 @@ export default function SurveysPage() {
               <FileText className="w-6 h-6 text-gray-400" />
             </div>
             <h3 className="text-sm font-medium text-gray-900 mb-1">
-              {search || filterStatus !== "Todos" ? "Nenhuma pesquisa encontrada" : "Nenhuma pesquisa criada"}
+              {hasFilter ? t.surveys.empty.noResults : t.surveys.empty.noSurveys}
             </h3>
             <p className="text-xs text-gray-500 mb-4">
-              {search || filterStatus !== "Todos"
-                ? "Tente ajustar os filtros"
-                : "Comece criando sua primeira pesquisa interativa"}
+              {hasFilter ? t.surveys.empty.noResultsDesc : t.surveys.empty.noSurveysDesc}
             </p>
-            {!search && filterStatus === "Todos" && (
+            {!hasFilter && (
               <button
                 onClick={handleCreateSurvey}
                 disabled={creating}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
               >
                 {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                Criar Pesquisa
+                {t.surveys.empty.create}
               </button>
             )}
           </div>
@@ -209,10 +211,10 @@ export default function SurveysPage() {
           <>
             {/* Table Header */}
             <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-2.5 border-b border-gray-100 bg-gray-50">
-              <span className="text-xs font-medium text-gray-500">Nome</span>
-              <span className="text-xs font-medium text-gray-500 w-24 text-center">Status</span>
-              <span className="text-xs font-medium text-gray-500 w-20 text-center">Respostas</span>
-              <span className="text-xs font-medium text-gray-500 w-28 text-center">Atualizado em</span>
+              <span className="text-xs font-medium text-gray-500">{t.surveys.table.name}</span>
+              <span className="text-xs font-medium text-gray-500 w-24 text-center">{t.surveys.table.status}</span>
+              <span className="text-xs font-medium text-gray-500 w-20 text-center">{t.surveys.table.responses}</span>
+              <span className="text-xs font-medium text-gray-500 w-28 text-center">{t.surveys.table.updatedAt}</span>
               <span className="w-16" />
             </div>
 
@@ -256,14 +258,12 @@ export default function SurveysPage() {
                     <button
                       onClick={() => router.push(`/dashboard/survey/${survey.id}`)}
                       className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                      title="Ver respostas"
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => router.push(`/editor/${survey.id}`)}
                       className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                      title="Editar"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -279,7 +279,7 @@ export default function SurveysPage() {
                           className="text-red-600 text-xs"
                         >
                           <Trash2 className="w-3.5 h-3.5 mr-2" />
-                          Excluir
+                          {t.common.delete}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -294,8 +294,7 @@ export default function SurveysPage() {
       {/* Footer count */}
       {!loading && filtered.length > 0 && (
         <p className="text-xs text-gray-400 mt-3 text-right">
-          {filtered.length} {filtered.length === 1 ? "pesquisa" : "pesquisas"}
-          {filterStatus !== "Todos" || search ? " encontradas" : " no total"}
+          {footerText}{hasFilter ? t.surveys.footerFound : t.surveys.footerTotal}
         </p>
       )}
     </div>

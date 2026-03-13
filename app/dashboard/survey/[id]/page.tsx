@@ -48,14 +48,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Survey, SurveyResponse } from "@/types/survey";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const STATUS_META: Record<Survey["status"], { label: string; badge: string }> = {
-  draft:     { label: "Rascunho",  badge: "bg-gray-100 text-gray-600" },
-  published: { label: "Publicada", badge: "bg-green-100 text-green-700" },
-  finished:  { label: "Finalizada",badge: "bg-blue-100 text-blue-700" },
-  archived:  { label: "Arquivada", badge: "bg-amber-100 text-amber-700" },
+const STATUS_BADGE: Record<Survey["status"], string> = {
+  draft:     "bg-gray-100 text-gray-600",
+  published: "bg-green-100 text-green-700",
+  finished:  "bg-blue-100 text-blue-700",
+  archived:  "bg-amber-100 text-amber-700",
 };
 
 function formatDate(dateString: string, short = false) {
@@ -151,10 +152,11 @@ function useQuestionAnalytics(survey: Survey | null, responses: SurveyResponse[]
 // ─── Custom Tooltip ────────────────────────────────────────────────────────────
 
 function ChartTooltip({ active, payload }: { active?: boolean; payload?: { value: number; payload: { pct: number } }[] }) {
+  const { t } = useI18n();
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl">
-      {payload[0].value} resp. ({payload[0].payload.pct}%)
+      {payload[0].value} {t.surveyDetail.analytics.resp} ({payload[0].payload.pct}%)
     </div>
   );
 }
@@ -172,6 +174,7 @@ function QuestionAnalyticsCard({ item }: {
     total: number;
   };
 }) {
+  const { t } = useI18n();
   const maxVal = Math.max(...item.chartData.map((d) => d.value), 1);
 
   return (
@@ -180,12 +183,16 @@ function QuestionAnalyticsCard({ item }: {
       <div className="px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
-            {item.type === "singleChoice" ? "Escolha Única" : item.type === "multipleChoice" ? "Múltipla Escolha" : "Avaliação"}
+            {item.type === "singleChoice"
+              ? t.surveyDetail.analytics.singleChoice
+              : item.type === "multipleChoice"
+              ? t.surveyDetail.analytics.multipleChoice
+              : t.surveyDetail.analytics.rating}
           </p>
-          <p className="text-sm font-semibold text-gray-900 leading-snug">{item.node.data.title || "Sem título"}</p>
+          <p className="text-sm font-semibold text-gray-900 leading-snug">{item.node.data.title || t.surveyDetail.analytics.noTitle}</p>
         </div>
         <span className="flex-shrink-0 text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
-          {item.total} resp.
+          {item.total} {t.surveyDetail.analytics.resp}
         </span>
       </div>
 
@@ -206,7 +213,9 @@ function QuestionAnalyticsCard({ item }: {
                     style={{ width: `${((item.avg - (item.min ?? 1)) / ((item.max ?? 5) - (item.min ?? 1))) * 100}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-gray-400 mt-1">média de {item.total} avaliações</p>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {t.surveyDetail.analytics.avg.replace("{n}", String(item.total))}
+                </p>
               </div>
             </div>
             {/* Distribution */}
@@ -243,7 +252,7 @@ function QuestionAnalyticsCard({ item }: {
                 tickLine={false}
               />
               <Tooltip content={<ChartTooltip />} cursor={{ fill: "#f9fafb" }} />
-              <Bar dataKey="value" radius={[0, 6, 6, 0]} label={{ position: "right", fontSize: 11, fill: "#9ca3af", formatter: (v: number) => `${Math.round((v / (item.total || 1)) * 100)}%` }}>
+              <Bar dataKey="value" radius={[0, 6, 6, 0]} label={{ position: "right", fontSize: 11, fill: "#9ca3af", formatter: (v: unknown) => `${Math.round(((v as number) / (item.total || 1)) * 100)}%` }}>
                 {item.chartData.map((_, i) => (
                   <Cell key={i} fill={i === 0 ? "#111827" : i === 1 ? "#374151" : i === 2 ? "#6b7280" : "#d1d5db"} />
                 ))}
@@ -265,6 +274,7 @@ export default function SurveyDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { t } = useI18n();
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -274,6 +284,14 @@ export default function SurveyDetailPage({
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"analytics" | "responses">("analytics");
+
+  // STATUS_META built inside component so labels are translated
+  const STATUS_META: Record<Survey["status"], { label: string; badge: string }> = {
+    draft:     { label: t.surveyDetail.status.draft,     badge: "bg-gray-100 text-gray-600" },
+    published: { label: t.surveyDetail.status.published, badge: "bg-green-100 text-green-700" },
+    finished:  { label: t.surveyDetail.status.finished,  badge: "bg-blue-100 text-blue-700" },
+    archived:  { label: t.surveyDetail.status.archived,  badge: "bg-amber-100 text-amber-700" },
+  };
 
   const analytics = useQuestionAnalytics(survey, responses);
 
@@ -314,7 +332,7 @@ export default function SurveyDetailPage({
   };
 
   const handleDeleteResponse = async (responseId: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta resposta?")) return;
+    if (!confirm(t.surveyDetail.deleteConfirm)) return;
     try {
       const res = await fetch(`/api/surveys/${id}/responses?responseId=${responseId}`, { method: "DELETE" });
       if (res.ok) {
@@ -366,29 +384,29 @@ export default function SurveyDetailPage({
     const data = node.data;
     if (data.type === "presentation") {
       const parts = [];
-      if (answer.respondentName) parts.push(`Nome: ${answer.respondentName}`);
-      if (answer.respondentEmail) parts.push(`Email: ${answer.respondentEmail}`);
-      return parts.length > 0 ? parts.join(" | ") : "Iniciou a pesquisa";
+      if (answer.respondentName) parts.push(`${t.surveyDetail.getAnswerLabel.namePrefix}${answer.respondentName}`);
+      if (answer.respondentEmail) parts.push(`${t.surveyDetail.getAnswerLabel.emailPrefix}${answer.respondentEmail}`);
+      return parts.length > 0 ? parts.join(" | ") : t.surveyDetail.getAnswerLabel.startedSurvey;
     }
     if (data.type === "singleChoice" && answer.selectedOptionId) {
       const option = data.options.find((o) => o.id === answer.selectedOptionId);
-      return option?.label || "Opção não encontrada";
+      return option?.label || t.surveyDetail.getAnswerLabel.optionNotFound;
     }
     if (data.type === "multipleChoice" && answer.selectedOptionIds) {
       const labels = answer.selectedOptionIds.map((optId) => data.options.find((o) => o.id === optId)?.label).filter(Boolean);
-      return labels.join(", ") || "Nenhuma opção selecionada";
+      return labels.join(", ") || t.surveyDetail.getAnswerLabel.noOptionSelected;
     }
     if (data.type === "rating" && answer.ratingValue !== undefined) {
-      return `${answer.ratingValue} de ${data.maxValue}`;
+      return `${answer.ratingValue} ${t.surveyDetail.getAnswerLabel.ratingOf} ${data.maxValue}`;
     }
-    return "Sem resposta";
+    return t.surveyDetail.getAnswerLabel.noAnswer;
   };
 
   const handleExportCSV = () => {
     if (!survey || responses.length === 0) return;
     const esc = (v: string) => (v.includes(",") || v.includes('"') || v.includes("\n") ? `"${v.replace(/"/g, '""')}"` : v);
     const questionNodes = survey.nodes.filter((n) => n.data.type !== "presentation" && n.data.type !== "endScreen");
-    const headers = ["Nome", "Email", ...questionNodes.map((n) => n.data.title || "Pergunta"), ...(survey.enableScoring ? ["Pontuação"] : []), "Data"];
+    const headers = [t.surveyDetail.csv.name, t.surveyDetail.csv.email, ...questionNodes.map((n) => n.data.title || t.surveyDetail.csv.question), ...(survey.enableScoring ? [t.surveyDetail.csv.score] : []), t.surveyDetail.csv.date];
     const rows = responses.map((response) => [
       esc(response.respondentName || ""),
       esc(response.respondentEmail || ""),
@@ -442,7 +460,7 @@ export default function SurveyDetailPage({
         className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        Dashboard
+        {t.surveyDetail.back}
       </Link>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
@@ -458,16 +476,16 @@ export default function SurveyDetailPage({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="min-w-[140px]">
                 <DropdownMenuItem onClick={() => handleUpdateStatus("draft")} className={`text-xs ${survey.status === "draft" ? "bg-gray-50" : ""}`}>
-                  <FileEdit className="w-3.5 h-3.5 mr-2 text-gray-500" />Rascunho
+                  <FileEdit className="w-3.5 h-3.5 mr-2 text-gray-500" />{t.surveyDetail.status.setDraft}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus("published")} className={`text-xs ${survey.status === "published" ? "bg-gray-50" : ""}`}>
-                  <Globe className="w-3.5 h-3.5 mr-2 text-green-600" />Publicar
+                  <Globe className="w-3.5 h-3.5 mr-2 text-green-600" />{t.surveyDetail.status.setPublished}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus("finished")} className={`text-xs ${survey.status === "finished" ? "bg-gray-50" : ""}`}>
-                  <Check className="w-3.5 h-3.5 mr-2 text-blue-600" />Finalizar
+                  <Check className="w-3.5 h-3.5 mr-2 text-blue-600" />{t.surveyDetail.status.setFinished}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleUpdateStatus("archived")} className={`text-xs ${survey.status === "archived" ? "bg-gray-50" : ""}`}>
-                  <Archive className="w-3.5 h-3.5 mr-2 text-amber-600" />Arquivar
+                  <Archive className="w-3.5 h-3.5 mr-2 text-amber-600" />{t.surveyDetail.status.setArchived}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -481,19 +499,21 @@ export default function SurveyDetailPage({
             onClick={handleCopyLink}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
           >
-            {copied ? <><Check className="w-3.5 h-3.5 text-green-600" />Copiado!</> : <><LinkIcon className="w-3.5 h-3.5" />Compartilhar</>}
+            {copied
+              ? <><Check className="w-3.5 h-3.5 text-green-600" />{t.common.copied}</>
+              : <><LinkIcon className="w-3.5 h-3.5" />{t.common.share}</>}
           </button>
           <button
             onClick={() => setEmbedModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
           >
-            <Code className="w-3.5 h-3.5" />Incorporar
+            <Code className="w-3.5 h-3.5" />{t.common.embed}
           </button>
           <button
             onClick={() => router.push(`/editor/${survey.id}`)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
           >
-            <Pencil className="w-3.5 h-3.5" />Editar
+            <Pencil className="w-3.5 h-3.5" />{t.surveyDetail.edit}
           </button>
         </div>
       </div>
@@ -501,14 +521,14 @@ export default function SurveyDetailPage({
       {/* ── Embed Modal ─────────────────────────────────────────────────────── */}
       <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
         <DialogContent className="max-w-3xl p-0 gap-0">
-          <DialogTitle className="sr-only">Incorporar Pesquisa</DialogTitle>
+          <DialogTitle className="sr-only">{t.surveyDetail.embedModal.title}</DialogTitle>
           <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
               <Code className="w-4 h-4 text-gray-600" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-gray-900">Incorporar Pesquisa</h2>
-              <p className="text-xs text-gray-500">Cole o código no HTML do seu site</p>
+              <h2 className="text-sm font-semibold text-gray-900">{t.surveyDetail.embedModal.title}</h2>
+              <p className="text-xs text-gray-500">{t.surveyDetail.embedModal.subtitle}</p>
             </div>
           </div>
           <div className="px-5 py-4 space-y-4">
@@ -520,10 +540,12 @@ export default function SurveyDetailPage({
                 onClick={handleCopyEmbed}
                 className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded transition-colors"
               >
-                {copiedEmbed ? <><Check className="w-3 h-3 text-green-400" />Copiado!</> : <><Copy className="w-3 h-3" />Copiar</>}
+                {copiedEmbed
+                  ? <><Check className="w-3 h-3 text-green-400" />{t.common.copied}</>
+                  : <><Copy className="w-3 h-3" />{t.common.copy}</>}
               </button>
             </div>
-            <p className="text-xs text-gray-400">O iframe se adapta automaticamente ao tamanho do conteúdo.</p>
+            <p className="text-xs text-gray-400">{t.surveyDetail.embedModal.disclaimer}</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -532,7 +554,7 @@ export default function SurveyDetailPage({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-gray-500">Respostas</span>
+            <span className="text-xs font-medium text-gray-500">{t.surveyDetail.stats.responses}</span>
             <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
               <Users className="w-4 h-4 text-green-600" />
             </div>
@@ -542,7 +564,7 @@ export default function SurveyDetailPage({
 
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-gray-500">Perguntas</span>
+            <span className="text-xs font-medium text-gray-500">{t.surveyDetail.stats.questions}</span>
             <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
               <Hash className="w-4 h-4 text-blue-600" />
             </div>
@@ -553,7 +575,7 @@ export default function SurveyDetailPage({
         {avgScore !== null ? (
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-gray-500">Score Médio</span>
+              <span className="text-xs font-medium text-gray-500">{t.surveyDetail.stats.avgScore}</span>
               <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
                 <Star className="w-4 h-4 text-amber-600" />
               </div>
@@ -563,7 +585,7 @@ export default function SurveyDetailPage({
         ) : (
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-gray-500">Atualizada em</span>
+              <span className="text-xs font-medium text-gray-500">{t.surveyDetail.stats.updatedAt}</span>
               <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-purple-600" />
               </div>
@@ -574,7 +596,7 @@ export default function SurveyDetailPage({
 
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-gray-500">Criada em</span>
+            <span className="text-xs font-medium text-gray-500">{t.surveyDetail.stats.createdAt}</span>
             <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
               <Calendar className="w-4 h-4 text-gray-500" />
             </div>
@@ -591,7 +613,9 @@ export default function SurveyDetailPage({
           onClick={handleCopyLink}
           className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-shrink-0"
         >
-          {copied ? <><Check className="w-3 h-3 text-green-600" />Copiado!</> : <><Copy className="w-3 h-3" />Copiar</>}
+          {copied
+            ? <><Check className="w-3 h-3 text-green-600" />{t.common.copied}</>
+            : <><Copy className="w-3 h-3" />{t.common.copy}</>}
         </button>
       </div>
 
@@ -604,7 +628,7 @@ export default function SurveyDetailPage({
           >
             <span className="flex items-center gap-1.5">
               <BarChart3 className="w-3.5 h-3.5" />
-              Análise
+              {t.surveyDetail.tabs.analytics}
             </span>
           </button>
           <button
@@ -613,7 +637,7 @@ export default function SurveyDetailPage({
           >
             <span className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
-              Respostas ({survey.responseCount})
+              {t.surveyDetail.tabs.responses.replace("{n}", String(survey.responseCount))}
             </span>
           </button>
         </div>
@@ -628,8 +652,8 @@ export default function SurveyDetailPage({
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <BarChart3 className="w-6 h-6 text-gray-400" />
                 </div>
-                <h3 className="text-sm font-medium text-gray-900 mb-1">Nenhuma resposta ainda</h3>
-                <p className="text-xs text-gray-500">Compartilhe o link para começar a coletar respostas.</p>
+                <h3 className="text-sm font-medium text-gray-900 mb-1">{t.surveyDetail.analytics.noResponses}</h3>
+                <p className="text-xs text-gray-500">{t.surveyDetail.analytics.noResponsesDesc}</p>
               </div>
             </div>
           ) : loadingResponses ? (
@@ -647,7 +671,7 @@ export default function SurveyDetailPage({
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl">
               <div className="text-center py-16">
-                <p className="text-sm text-gray-500">Nenhuma pergunta com análise disponível.</p>
+                <p className="text-sm text-gray-500">{t.surveyDetail.analytics.noQuestions}</p>
               </div>
             </div>
           )}
@@ -658,14 +682,14 @@ export default function SurveyDetailPage({
       {activeTab === "responses" && survey.responseCount > 0 && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900">Respostas individuais</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t.surveyDetail.responses.title}</h2>
             {responses.length > 0 && (
               <button
                 onClick={handleExportCSV}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
-                Exportar CSV
+                {t.surveyDetail.responses.exportCsv}
               </button>
             )}
           </div>
@@ -694,7 +718,7 @@ export default function SurveyDetailPage({
                         {response.respondentName ? (
                           <span className="text-sm font-medium text-gray-900">{response.respondentName}</span>
                         ) : (
-                          <span className="text-sm text-gray-400 italic">Anônimo</span>
+                          <span className="text-sm text-gray-400 italic">{t.surveyDetail.responses.anonymous}</span>
                         )}
                         {response.respondentEmail && (
                           <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -741,7 +765,9 @@ export default function SurveyDetailPage({
                           return (
                             <div key={i} className="bg-white border border-gray-200 rounded-lg p-3">
                               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
-                                {node.data.type === "presentation" ? "Identificação" : node.data.title || `Pergunta ${i + 1}`}
+                                {node.data.type === "presentation"
+                                  ? t.surveyDetail.responses.identification
+                                  : node.data.title || t.surveyDetail.responses.questionLabel.replace("{n}", String(i + 1))}
                               </p>
                               <p className="text-xs text-gray-800">{getAnswerLabel(node, answer)}</p>
                             </div>

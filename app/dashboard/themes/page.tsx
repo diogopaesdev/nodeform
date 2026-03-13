@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Lock } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Mock survey cards shared between previews ────────────────────────────────
 
@@ -169,53 +170,53 @@ function MinimalPreview() {
   );
 }
 
-// ─── Theme data ───────────────────────────────────────────────────────────────
-
-const THEMES = [
-  {
-    id: "basic",
-    name: "Básico",
-    description: "Limpo, minimalista e focado no conteúdo. Ideal para qualquer tipo de pesquisa.",
-    active: true,
-    soon: false,
-    Preview: BasicPreview,
-  },
-  {
-    id: "dark",
-    name: "Dark",
-    description: "Fundo escuro com elementos suaves. Perfeito para ambientes noturnos.",
-    active: false,
-    soon: true,
-    Preview: DarkPreview,
-  },
-  {
-    id: "bold",
-    name: "Bold",
-    description: "Cores vibrantes e energia visual alta. Ideal para quizzes e campanhas.",
-    active: false,
-    soon: true,
-    Preview: BoldPreview,
-  },
-  {
-    id: "minimal",
-    name: "Minimal",
-    description: "Sem bordas, sem sombras — puro conteúdo. Máxima clareza e foco.",
-    active: false,
-    soon: true,
-    Preview: MinimalPreview,
-  },
-];
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ThemesPage() {
+  const { t } = useI18n();
+
+  const THEMES = [
+    {
+      id: "basic",
+      name: t.themes.basic.name,
+      description: t.themes.basic.desc,
+      active: true,
+      soon: false,
+      Preview: BasicPreview,
+    },
+    {
+      id: "dark",
+      name: t.themes.dark.name,
+      description: t.themes.dark.desc,
+      active: false,
+      soon: true,
+      Preview: DarkPreview,
+    },
+    {
+      id: "bold",
+      name: t.themes.bold.name,
+      description: t.themes.bold.desc,
+      active: false,
+      soon: true,
+      Preview: BoldPreview,
+    },
+    {
+      id: "minimal",
+      name: t.themes.minimal.name,
+      description: t.themes.minimal.desc,
+      active: false,
+      soon: true,
+      Preview: MinimalPreview,
+    },
+  ];
+
   return (
     <div className="p-6 max-w-6xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-gray-900">Temas</h1>
+        <h1 className="text-xl font-semibold text-gray-900">{t.themes.title}</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Escolha o layout e estilo das páginas públicas de pesquisas.
+          {t.themes.subtitle}
         </p>
       </div>
 
@@ -256,11 +257,11 @@ export default function ThemesPage() {
                   {theme.active ? (
                     <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold bg-gray-900 text-white px-2 py-0.5 rounded-full">
                       <Check className="w-2.5 h-2.5" />
-                      Ativo
+                      {t.common.active}
                     </span>
                   ) : (
                     <span className="flex-shrink-0 text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                      Em breve
+                      {t.common.comingSoon}
                     </span>
                   )}
                 </div>
@@ -271,14 +272,14 @@ export default function ThemesPage() {
                     disabled
                     className="w-full text-xs font-medium py-2 rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed"
                   >
-                    Tema atual
+                    {t.themes.current}
                   </button>
                 ) : (
                   <button
                     disabled
                     className="w-full text-xs font-medium py-2 rounded-lg bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100"
                   >
-                    Em breve
+                    {t.common.soon}
                   </button>
                 )}
               </div>

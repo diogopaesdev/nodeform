@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 function formatCNPJ(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -31,6 +32,7 @@ interface UserData {
 
 export default function SettingsPage() {
   const { data: session } = useSession();
+  const { t } = useI18n();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -77,7 +79,7 @@ export default function SettingsPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Erro ao salvar");
+        setError(data.error || t.settings.company.errorGeneric);
         return;
       }
 
@@ -86,7 +88,7 @@ export default function SettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      setError("Erro ao salvar. Tente novamente.");
+      setError(t.settings.company.errorGeneric);
     } finally {
       setSaving(false);
     }
@@ -126,11 +128,11 @@ export default function SettingsPage() {
   };
 
   const getSubscriptionBadge = (status: SubscriptionStatus) => {
-    const map = {
-      trialing:  { label: "Trial", className: "bg-blue-50 text-blue-700 border-blue-100" },
-      active:    { label: "Ativo", className: "bg-green-50 text-green-700 border-green-100" },
-      past_due:  { label: "Pagamento pendente", className: "bg-amber-50 text-amber-700 border-amber-100" },
-      inactive:  { label: "Inativo", className: "bg-gray-50 text-gray-500 border-gray-100" },
+    const map: Record<string, { label: string; className: string }> = {
+      trialing:  { label: t.settings.subscription.badges.trialing,  className: "bg-blue-50 text-blue-700 border-blue-100" },
+      active:    { label: t.settings.subscription.badges.active,    className: "bg-green-50 text-green-700 border-green-100" },
+      past_due:  { label: t.settings.subscription.badges.past_due,  className: "bg-amber-50 text-amber-700 border-amber-100" },
+      inactive:  { label: t.settings.subscription.badges.inactive,  className: "bg-gray-50 text-gray-500 border-gray-100" },
     };
     const variant = map[status ?? "inactive"];
     return (
@@ -141,7 +143,7 @@ export default function SettingsPage() {
   };
 
   const formatDate = (iso?: string) =>
-    iso ? new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : null;
+    iso ? new Date(iso).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }) : null;
 
   const isTrialing =
     userData?.subscriptionStatus === "trialing" ||
@@ -154,19 +156,27 @@ export default function SettingsPage() {
     ? Math.max(0, Math.ceil((new Date(userData.trialEnd).getTime() - Date.now()) / 86400000))
     : null;
 
+  const trialDaysText = trialDaysLeft !== null
+    ? trialDaysLeft > 0
+      ? (trialDaysLeft === 1
+          ? t.settings.subscription.daysLeft.replace("{n}", String(trialDaysLeft))
+          : t.settings.subscription.daysLeftPlural.replace("{n}", String(trialDaysLeft)))
+      : t.settings.subscription.expiresTODAY
+    : null;
+
   return (
     <div className="p-6 max-w-2xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Configurações</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Gerencie sua conta e dados da empresa</p>
+        <h1 className="text-xl font-semibold text-gray-900">{t.settings.title}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t.settings.subtitle}</p>
       </div>
 
       <div className="space-y-4">
-        {/* Conta conectada */}
+        {/* Connected account */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
             <User className="w-4 h-4 text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900">Conta Conectada</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t.settings.account.title}</h2>
           </div>
 
           <div className="px-5 py-4">
@@ -213,11 +223,11 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Assinatura */}
+        {/* Subscription */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900">Assinatura</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t.settings.subscription.title}</h2>
           </div>
 
           <div className="px-5 py-4">
@@ -231,29 +241,27 @@ export default function SettingsPage() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-gray-900">
-                      {userData?.subscriptionStatus === "active" ? "Plano Pro" : "Trial gratuito"}
+                      {userData?.subscriptionStatus === "active" ? t.settings.subscription.proPlan : t.settings.subscription.freeTrial}
                     </p>
                     {getSubscriptionBadge(userData?.subscriptionStatus as SubscriptionStatus ?? (isTrialing ? "trialing" : "inactive"))}
                   </div>
                   {isTrialing && trialDaysLeft !== null && (
                     <p className="text-xs text-gray-400">
-                      {trialDaysLeft > 0
-                        ? `${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""}`
-                        : `Expira hoje`}
+                      {trialDaysText}
                       {" · "}
                       <button onClick={handleCheckout} className="text-gray-600 underline underline-offset-2">
-                        Assinar agora
+                        {t.settings.subscription.subscribeNow}
                       </button>
                     </p>
                   )}
                   {userData?.subscriptionStatus === "active" && userData.subscriptionCurrentPeriodEnd && (
                     <p className="text-xs text-gray-400">
-                      Renova em {formatDate(userData.subscriptionCurrentPeriodEnd)}
+                      {t.settings.subscription.renewsAt.replace("{date}", formatDate(userData.subscriptionCurrentPeriodEnd) ?? "")}
                     </p>
                   )}
                   {userData?.subscriptionStatus === "past_due" && (
                     <p className="text-xs text-amber-600">
-                      Atualize seu pagamento para continuar usando
+                      {t.settings.subscription.pastDueWarning}
                     </p>
                   )}
                 </div>
@@ -264,7 +272,7 @@ export default function SettingsPage() {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-md transition-colors"
                   >
                     {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
-                    Gerenciar Assinatura
+                    {t.settings.subscription.manage}
                   </button>
                 ) : (
                   <button
@@ -273,15 +281,15 @@ export default function SettingsPage() {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
                   >
                     {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                    Assinar Plano Pro
+                    {t.settings.subscription.subscribe}
                   </button>
                 )}
               </div>
             ) : (
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-900">Trial expirado</p>
-                  <p className="text-xs text-gray-400">Assine para recuperar o acesso</p>
+                  <p className="text-sm font-medium text-gray-900">{t.settings.subscription.trialExpired}</p>
+                  <p className="text-xs text-gray-400">{t.settings.subscription.trialExpiredDesc}</p>
                 </div>
                 <button
                   onClick={handleCheckout}
@@ -289,19 +297,19 @@ export default function SettingsPage() {
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
                 >
                   {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  Assinar Plano Pro
+                  {t.settings.subscription.subscribe}
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Dados da empresa */}
+        {/* Company details */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-900">Dados da Empresa</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t.settings.company.title}</h2>
             </div>
             {!editing && !loading && (
               <button
@@ -309,7 +317,7 @@ export default function SettingsPage() {
                 className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
               >
                 <Pencil className="w-3 h-3" />
-                Editar
+                {t.common.edit}
               </button>
             )}
           </div>
@@ -324,26 +332,26 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-700">
-                    Razão Social <span className="text-red-500">*</span>
+                    {t.settings.company.nameLabel} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="Ex: Empresa Ltda."
+                    placeholder={t.settings.company.namePlaceholder}
                     autoFocus
                     className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-700">
-                    CNPJ <span className="text-gray-400 font-normal">(opcional)</span>
+                    {t.settings.company.cnpjLabel} <span className="text-gray-400 font-normal">{t.settings.company.cnpjOptional}</span>
                   </label>
                   <input
                     type="text"
                     value={cnpj}
                     onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
-                    placeholder="00.000.000/0001-00"
+                    placeholder={t.settings.company.cnpjPlaceholder}
                     className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400"
                   />
                 </div>
@@ -355,33 +363,33 @@ export default function SettingsPage() {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-md transition-colors"
                   >
                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    Salvar
+                    {t.common.save}
                   </button>
                   <button
                     onClick={handleCancelEdit}
                     className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
                   >
-                    Cancelar
+                    {t.common.cancel}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Razão Social</p>
+                  <p className="text-xs text-gray-400 mb-0.5">{t.settings.company.nameLabel}</p>
                   <p className="text-sm text-gray-900 font-medium">
-                    {userData?.companyName || <span className="text-gray-400 font-normal">Não informado</span>}
+                    {userData?.companyName || <span className="text-gray-400 font-normal">{t.settings.company.notProvided}</span>}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">CNPJ</p>
+                  <p className="text-xs text-gray-400 mb-0.5">{t.settings.company.cnpjLabel}</p>
                   <p className="text-sm text-gray-900 font-medium">
-                    {userData?.cnpj || <span className="text-gray-400 font-normal">Não informado</span>}
+                    {userData?.cnpj || <span className="text-gray-400 font-normal">{t.settings.company.notProvided}</span>}
                   </p>
                 </div>
                 {saved && (
                   <p className="text-xs text-green-600 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Dados salvos com sucesso
+                    <Check className="w-3 h-3" /> {t.settings.company.savedMsg}
                   </p>
                 )}
               </div>

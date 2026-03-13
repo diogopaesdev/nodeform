@@ -50,21 +50,22 @@ import {
 } from "@/components/ui/dialog";
 import { Survey, DashboardStats } from "@/types/survey";
 import { useSession } from "next-auth/react";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const STATUS_META: Record<Survey["status"], { label: string; color: string; dot: string }> = {
-  draft:     { label: "Rascunho",  color: "#e5e7eb", dot: "bg-gray-400" },
-  published: { label: "Publicada", color: "#86efac", dot: "bg-green-400" },
-  finished:  { label: "Finalizada",color: "#93c5fd", dot: "bg-blue-400" },
-  archived:  { label: "Arquivada", color: "#fcd34d", dot: "bg-amber-400" },
-};
 
 const STATUS_BADGE: Record<Survey["status"], string> = {
   draft:     "bg-gray-100 text-gray-600",
   published: "bg-green-100 text-green-700",
   finished:  "bg-blue-100 text-blue-700",
   archived:  "bg-amber-100 text-amber-700",
+};
+
+const STATUS_COLOR: Record<Survey["status"], { color: string; dot: string }> = {
+  draft:     { color: "#e5e7eb", dot: "bg-gray-400" },
+  published: { color: "#86efac", dot: "bg-green-400" },
+  finished:  { color: "#93c5fd", dot: "bg-blue-400" },
+  archived:  { color: "#fcd34d", dot: "bg-amber-400" },
 };
 
 function formatDate(dateString: string) {
@@ -78,10 +79,11 @@ function formatDate(dateString: string) {
 // ─── Custom Tooltip for BarChart ──────────────────────────────────────────────
 
 function BarTooltip({ active, payload }: { active?: boolean; payload?: { value: number }[] }) {
+  const { t } = useI18n();
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl">
-      {payload[0].value} {payload[0].value === 1 ? "resposta" : "respostas"}
+      {payload[0].value} {payload[0].value === 1 ? t.surveyDetail.analytics.resp : t.common.responses}
     </div>
   );
 }
@@ -102,6 +104,7 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: { name: s
 export default function DashboardPage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useI18n();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,6 +119,14 @@ export default function DashboardPage() {
   const [buyingCredits, setBuyingCredits] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // STATUS_META built inside component so labels are translated
+  const STATUS_META: Record<Survey["status"], { label: string; color: string; dot: string }> = {
+    draft:     { label: t.dashboard.status.draft,     color: "#e5e7eb", dot: "bg-gray-400" },
+    published: { label: t.dashboard.status.published, color: "#86efac", dot: "bg-green-400" },
+    finished:  { label: t.dashboard.status.finished,  color: "#93c5fd", dot: "bg-blue-400" },
+    archived:  { label: t.dashboard.status.archived,  color: "#fcd34d", dot: "bg-amber-400" },
+  };
 
   useEffect(() => {
     fetchData();
@@ -198,7 +209,7 @@ export default function DashboardPage() {
           setCreateModalOpen(false);
           setBuyModalOpen(true);
         } else {
-          setAiError(data.error || "Erro ao gerar pesquisa");
+          setAiError(data.error || t.dashboard.errors.generate);
         }
         return;
       }
@@ -207,14 +218,14 @@ export default function DashboardPage() {
       setAiPrompt("");
       router.push(`/editor/${data.surveyId}`);
     } catch {
-      setAiError("Erro de conexão. Tente novamente.");
+      setAiError(t.dashboard.errors.connection);
     } finally {
       setGeneratingAi(false);
     }
   };
 
   const handleDeleteSurvey = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta pesquisa?")) return;
+    if (!confirm(t.surveys.deleteConfirm)) return;
     try {
       await fetch(`/api/surveys/${id}`, { method: "DELETE" });
       setSurveys(surveys.filter((s) => s.id !== id));
@@ -285,10 +296,11 @@ window.addEventListener("message", function(e) {
       .map(([status, count]) => ({
         name: STATUS_META[status as Survey["status"]]?.label ?? status,
         value: count,
-        color: STATUS_META[status as Survey["status"]]?.color ?? "#e5e7eb",
+        color: STATUS_COLOR[status as Survey["status"]]?.color ?? "#e5e7eb",
       }))
       .sort((a, b) => b.value - a.value);
-  }, [surveys]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surveys, t]);
 
   const avgResponses =
     surveys.length > 0
@@ -304,28 +316,28 @@ window.addEventListener("message", function(e) {
 
   const statCards = [
     {
-      label: "Pesquisas",
+      label: t.dashboard.stats.surveys,
       value: stats?.totalSurveys ?? 0,
       icon: FileText,
       iconBg: "bg-blue-50",
       iconColor: "text-blue-600",
     },
     {
-      label: "Respostas",
+      label: t.dashboard.stats.responses,
       value: stats?.totalResponses ?? 0,
       icon: Users,
       iconBg: "bg-green-50",
       iconColor: "text-green-600",
     },
     {
-      label: "Ativas",
+      label: t.dashboard.stats.active,
       value: stats?.activeSurveys ?? 0,
       icon: TrendingUp,
       iconBg: "bg-purple-50",
       iconColor: "text-purple-600",
     },
     {
-      label: "Média / Pesquisa",
+      label: t.dashboard.stats.avg,
       value: avgResponses,
       icon: BarChart2,
       iconBg: "bg-amber-50",
@@ -339,9 +351,9 @@ window.addEventListener("message", function(e) {
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{t.dashboard.title}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Acompanhe o desempenho das suas pesquisas
+            {t.dashboard.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -362,7 +374,9 @@ window.addEventListener("message", function(e) {
               ) : (
                 <Zap className="w-3.5 h-3.5" />
               )}
-              {credits} crédito{credits !== 1 ? "s" : ""}
+              {credits !== 1
+                ? t.dashboard.credits.badgePlural.replace("{n}", String(credits))
+                : t.dashboard.credits.badge.replace("{n}", String(credits))}
             </button>
           )}
 
@@ -371,9 +385,9 @@ window.addEventListener("message", function(e) {
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
           >
             {copiedLink ? (
-              <><Check className="w-3.5 h-3.5 text-green-600" />Copiado!</>
+              <><Check className="w-3.5 h-3.5 text-green-600" />{t.common.copied}</>
             ) : (
-              <><LinkIcon className="w-3.5 h-3.5" />Compartilhar</>
+              <><LinkIcon className="w-3.5 h-3.5" />{t.common.share}</>
             )}
           </button>
           <button
@@ -381,14 +395,14 @@ window.addEventListener("message", function(e) {
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
           >
             <Code className="w-3.5 h-3.5" />
-            Incorporar
+            {t.common.embed}
           </button>
           <button
             onClick={() => setCreateModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Nova Pesquisa
+            {t.dashboard.newSurvey}
           </button>
         </div>
       </div>
@@ -396,8 +410,8 @@ window.addEventListener("message", function(e) {
       {/* ── Buy Credits Modal ───────────────────────────────────────────────── */}
       <Dialog open={buyModalOpen} onOpenChange={setBuyModalOpen}>
         <DialogContent className="max-w-md p-0 gap-0">
-          <DialogTitle className="sr-only">Comprar Créditos</DialogTitle>
-          <DialogDescription className="sr-only">Adquira créditos para usar as funcionalidades de IA</DialogDescription>
+          <DialogTitle className="sr-only">{t.dashboard.credits.modalTitle}</DialogTitle>
+          <DialogDescription className="sr-only">{t.dashboard.credits.packageDesc}</DialogDescription>
 
           <div className="px-6 py-5 border-b border-gray-100">
             <div className="flex items-center gap-3">
@@ -405,13 +419,15 @@ window.addEventListener("message", function(e) {
                 <Zap className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Créditos IA</h2>
+                <h2 className="text-base font-semibold text-gray-900">{t.dashboard.credits.modalTitle}</h2>
                 <p className="text-xs text-gray-500">
                   {credits !== null ? (
                     credits === 0
-                      ? "Seus créditos acabaram"
-                      : `Você tem ${credits} crédito${credits !== 1 ? "s" : ""} disponível${credits !== 1 ? "is" : ""}`
-                  ) : "Gerencie seus créditos"}
+                      ? t.dashboard.credits.noCredits
+                      : credits !== 1
+                        ? t.dashboard.credits.availablePlural.replace("{n}", String(credits))
+                        : t.dashboard.credits.available.replace("{n}", String(credits))
+                  ) : t.dashboard.credits.modalTitle}
                 </p>
               </div>
             </div>
@@ -420,15 +436,13 @@ window.addEventListener("message", function(e) {
           <div className="p-6 space-y-4">
             {/* Free credits info */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-700 mb-1">Créditos gratuitos</p>
-              <p className="text-xs text-gray-500">
-                Todo mês você recebe <strong>10 créditos</strong> automaticamente para usar nas funcionalidades de IA da plataforma.
-              </p>
+              <p className="text-xs font-semibold text-gray-700 mb-1">{t.dashboard.credits.freeTitle}</p>
+              <p className="text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: t.dashboard.credits.freeInfo }} />
             </div>
 
             {/* Package */}
             <div>
-              <p className="text-xs font-semibold text-gray-700 mb-2">Comprar mais créditos</p>
+              <p className="text-xs font-semibold text-gray-700 mb-2">{t.dashboard.credits.buyTitle}</p>
               <button
                 onClick={() => handleBuyCredits(10)}
                 disabled={buyingCredits}
@@ -439,8 +453,8 @@ window.addEventListener("message", function(e) {
                     <Sparkles className="w-4 h-4 text-gray-700" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-gray-900">Pacote de 10 créditos</p>
-                    <p className="text-xs text-gray-500">Use em qualquer funcionalidade de IA</p>
+                    <p className="text-sm font-semibold text-gray-900">{t.dashboard.credits.packageName}</p>
+                    <p className="text-xs text-gray-500">{t.dashboard.credits.packageDesc}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -448,8 +462,8 @@ window.addEventListener("message", function(e) {
                     <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
                   ) : (
                     <>
-                      <p className="text-base font-bold text-gray-900">R$ 50</p>
-                      <p className="text-[10px] text-gray-400">R$ 5 / crédito</p>
+                      <p className="text-base font-bold text-gray-900">{t.dashboard.credits.packagePrice}</p>
+                      <p className="text-[10px] text-gray-400">{t.dashboard.credits.packagePriceUnit}</p>
                     </>
                   )}
                 </div>
@@ -458,7 +472,7 @@ window.addEventListener("message", function(e) {
 
             <p className="text-[11px] text-gray-400 text-center flex items-center justify-center gap-1">
               <ShoppingCart className="w-3 h-3" />
-              Pagamento seguro via Stripe · Créditos não expiram
+              {t.dashboard.credits.securePayment}
             </p>
           </div>
         </DialogContent>
@@ -467,11 +481,11 @@ window.addEventListener("message", function(e) {
       {/* ── Create Modal ────────────────────────────────────────────────────── */}
       <Dialog open={createModalOpen} onOpenChange={(open) => { setCreateModalOpen(open); if (!open) { setAiPrompt(""); setAiError(""); } }}>
         <DialogContent className="max-w-lg p-0 gap-0">
-          <DialogTitle className="sr-only">Nova Pesquisa</DialogTitle>
-          <DialogDescription className="sr-only">Escolha como criar sua pesquisa</DialogDescription>
+          <DialogTitle className="sr-only">{t.dashboard.createModal.title}</DialogTitle>
+          <DialogDescription className="sr-only">{t.dashboard.createModal.subtitle}</DialogDescription>
           <div className="px-6 py-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Nova Pesquisa</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Como você quer criar sua pesquisa?</p>
+            <h2 className="text-base font-semibold text-gray-900">{t.dashboard.createModal.title}</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{t.dashboard.createModal.subtitle}</p>
           </div>
 
           <div className="p-6 space-y-4">
@@ -483,8 +497,8 @@ window.addEventListener("message", function(e) {
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">Criar com IA</p>
-                    <p className="text-xs text-gray-500">Descreva sua pesquisa e a IA monta o fluxo completo</p>
+                    <p className="text-sm font-semibold text-gray-900">{t.dashboard.createModal.aiTitle}</p>
+                    <p className="text-xs text-gray-500">{t.dashboard.createModal.aiSubtitle}</p>
                   </div>
                 </div>
                 {credits !== null && (
@@ -499,7 +513,9 @@ window.addEventListener("message", function(e) {
                     }`}
                   >
                     <Zap className="w-3 h-3" />
-                    {credits} crédito{credits !== 1 ? "s" : ""}
+                    {credits !== 1
+                      ? t.dashboard.credits.badgePlural.replace("{n}", String(credits))
+                      : t.dashboard.credits.badge.replace("{n}", String(credits))}
                   </button>
                 )}
               </div>
@@ -508,7 +524,7 @@ window.addEventListener("message", function(e) {
                 value={aiPrompt}
                 onChange={(e) => { setAiPrompt(e.target.value); setAiError(""); }}
                 onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerateWithAi(); }}
-                placeholder="Ex: Crie uma pesquisa de satisfação do cliente com perguntas sobre atendimento, qualidade do produto e probabilidade de indicação (NPS). Público: clientes B2C."
+                placeholder={t.dashboard.createModal.aiPlaceholder}
                 rows={4}
                 className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400 resize-none"
               />
@@ -520,9 +536,9 @@ window.addEventListener("message", function(e) {
               {credits === 0 && (
                 <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                   <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                  Você não tem créditos disponíveis.{" "}
+                  {t.dashboard.createModal.aiNoCredits}{" "}
                   <button onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }} className="underline font-medium">
-                    Comprar créditos
+                    {t.dashboard.createModal.aiBuyCredits}
                   </button>
                 </div>
               )}
@@ -533,20 +549,20 @@ window.addEventListener("message", function(e) {
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
                 {generatingAi ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" />Gerando pesquisa...</>
+                  <><Loader2 className="w-4 h-4 animate-spin" />{t.dashboard.createModal.aiGenerating}</>
                 ) : (
-                  <><Sparkles className="w-4 h-4" />Gerar com IA</>
+                  <><Sparkles className="w-4 h-4" />{t.dashboard.createModal.aiGenerate}</>
                 )}
               </button>
               {!generatingAi && aiPrompt.trim() && (
-                <p className="text-[11px] text-gray-400 text-center">⌘ + Enter para gerar</p>
+                <p className="text-[11px] text-gray-400 text-center">{t.dashboard.createModal.aiHint}</p>
               )}
             </div>
 
             {/* Divider */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs text-gray-400">ou</span>
+              <span className="text-xs text-gray-400">{t.dashboard.createModal.or}</span>
               <div className="flex-1 h-px bg-gray-100" />
             </div>
 
@@ -561,8 +577,8 @@ window.addEventListener("message", function(e) {
                   <PenSquare className="w-4 h-4 text-gray-500" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">Criar manualmente</p>
-                  <p className="text-xs text-gray-500">Comece com uma pesquisa em branco</p>
+                  <p className="text-sm font-medium text-gray-900">{t.dashboard.createModal.manualTitle}</p>
+                  <p className="text-xs text-gray-500">{t.dashboard.createModal.manualSubtitle}</p>
                 </div>
               </div>
               {creating
@@ -577,14 +593,14 @@ window.addEventListener("message", function(e) {
       {/* ── Embed Modal ─────────────────────────────────────────────────────── */}
       <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
         <DialogContent className="max-w-3xl p-0 gap-0">
-          <DialogTitle className="sr-only">Incorporar Lista de Pesquisas</DialogTitle>
+          <DialogTitle className="sr-only">{t.dashboard.embedModal.title}</DialogTitle>
           <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
               <Code className="w-4 h-4 text-gray-600" />
             </div>
             <div className="flex-1">
-              <h2 className="text-sm font-semibold text-gray-900">Incorporar Lista de Pesquisas</h2>
-              <p className="text-xs text-gray-500">Cole o código no HTML do seu site</p>
+              <h2 className="text-sm font-semibold text-gray-900">{t.dashboard.embedModal.title}</h2>
+              <p className="text-xs text-gray-500">{t.dashboard.embedModal.subtitle}</p>
             </div>
           </div>
           <div className="px-5 py-4 space-y-4">
@@ -597,14 +613,14 @@ window.addEventListener("message", function(e) {
                 className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded transition-colors"
               >
                 {copiedEmbed ? (
-                  <><Check className="w-3 h-3 text-green-400" />Copiado!</>
+                  <><Check className="w-3 h-3 text-green-400" />{t.common.copied}</>
                 ) : (
-                  <><Copy className="w-3 h-3" />Copiar</>
+                  <><Copy className="w-3 h-3" />{t.common.copy}</>
                 )}
               </button>
             </div>
             <p className="text-xs text-gray-400">
-              O iframe se adapta automaticamente ao tamanho do conteúdo. Apenas pesquisas com status &quot;Publicada&quot; aparecerão.
+              {t.dashboard.embedModal.disclaimer}
             </p>
           </div>
         </DialogContent>
@@ -636,8 +652,10 @@ window.addEventListener("message", function(e) {
           {/* Bar chart – respostas por pesquisa */}
           <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
             <div className="mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">Respostas por Pesquisa</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Top {topSurveys.length} pesquisas com mais respostas</p>
+              <h2 className="text-sm font-semibold text-gray-900">{t.dashboard.charts.responsesBySurvey}</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {t.dashboard.charts.responsesBySurveyDesc.replace("{n}", String(topSurveys.length))}
+              </p>
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
@@ -675,11 +693,11 @@ window.addEventListener("message", function(e) {
             <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <span className="w-3 h-3 rounded-sm bg-gray-900 inline-block" />
-                Publicada
+                {t.dashboard.charts.published}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <span className="w-3 h-3 rounded-sm bg-gray-300 inline-block" />
-                Outros
+                {t.dashboard.charts.others}
               </div>
             </div>
           </div>
@@ -687,8 +705,8 @@ window.addEventListener("message", function(e) {
           {/* Donut chart – distribuição de status */}
           <div className="bg-white border border-gray-200 rounded-xl p-5">
             <div className="mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">Por Status</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Distribuição das pesquisas</p>
+              <h2 className="text-sm font-semibold text-gray-900">{t.dashboard.charts.byStatus}</h2>
+              <p className="text-xs text-gray-400 mt-0.5">{t.dashboard.charts.byStatusDesc}</p>
             </div>
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
@@ -731,9 +749,13 @@ window.addEventListener("message", function(e) {
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Suas Pesquisas</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t.dashboard.table.title}</h2>
             {!loading && surveys.length > 0 && (
-              <p className="text-xs text-gray-400 mt-0.5">{surveys.length} pesquisa{surveys.length !== 1 ? "s" : ""} no total</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {surveys.length !== 1
+                  ? t.dashboard.table.subtitlePlural.replace("{n}", String(surveys.length))
+                  : t.dashboard.table.subtitle.replace("{n}", String(surveys.length))}
+              </p>
             )}
           </div>
         </div>
@@ -755,24 +777,24 @@ window.addEventListener("message", function(e) {
             <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
               <PenSquare className="w-6 h-6 text-gray-400" />
             </div>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">Nenhuma pesquisa criada</h3>
-            <p className="text-xs text-gray-500 mb-4">Comece criando sua primeira pesquisa interativa</p>
+            <h3 className="text-sm font-medium text-gray-900 mb-1">{t.dashboard.table.empty.title}</h3>
+            <p className="text-xs text-gray-500 mb-4">{t.dashboard.table.empty.desc}</p>
             <button
               onClick={() => setCreateModalOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              Criar Pesquisa
+              {t.dashboard.table.empty.cta}
             </button>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {/* Table header */}
             <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-2.5 bg-gray-50 text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-              <span>Pesquisa</span>
-              <span className="text-right w-20">Respostas</span>
-              <span className="w-28 text-center">Desempenho</span>
-              <span className="w-24 text-right">Atualização</span>
+              <span>{t.dashboard.table.survey}</span>
+              <span className="text-right w-20">{t.dashboard.table.responses}</span>
+              <span className="w-28 text-center">{t.dashboard.table.performance}</span>
+              <span className="w-24 text-right">{t.dashboard.table.updated}</span>
               <span className="w-20" />
             </div>
 
@@ -796,7 +818,7 @@ window.addEventListener("message", function(e) {
                     {/* Response count */}
                     <div className="w-20 text-right">
                       <span className="text-sm font-semibold text-gray-900">{survey.responseCount}</span>
-                      <span className="text-xs text-gray-400 ml-1">resp.</span>
+                      <span className="text-xs text-gray-400 ml-1">{t.dashboard.table.resp}</span>
                     </div>
 
                     {/* Mini progress bar */}
@@ -819,14 +841,14 @@ window.addEventListener("message", function(e) {
                       <button
                         onClick={() => router.push(`/dashboard/survey/${survey.id}`)}
                         className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                        title="Ver resultados"
+                        title={t.surveyDetail.viewResults}
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => router.push(`/editor/${survey.id}`)}
                         className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                        title="Editar"
+                        title={t.common.edit}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -842,7 +864,7 @@ window.addEventListener("message", function(e) {
                             className="text-red-600 text-xs"
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-2" />
-                            Excluir
+                            {t.common.delete}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

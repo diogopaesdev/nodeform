@@ -12,6 +12,8 @@ import {
   GripVertical, Settings, Save, ArrowLeft, Trash2,
   Sparkles, Brain, FileSearch, Languages, FileBarChart2, MessageSquare,
 } from "lucide-react";
+import { LanguageToggle } from "@/components/language-toggle";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
@@ -129,6 +131,7 @@ function ni(delay: number) {
 
 // Apresentação — replica PresentationNode
 function NodePresentation({ x, y }: { x: number; y: number }) {
+  const { t } = useI18n();
   return (
     <motion.div {...ni(0)}
       className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[240px]"
@@ -139,15 +142,15 @@ function NodePresentation({ x, y }: { x: number; y: number }) {
           <Play className="w-3.5 h-3.5 text-orange-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-medium text-orange-600 uppercase tracking-wide">Apresentação</div>
-          <div className="font-semibold text-gray-900 text-sm truncate">Bem-vindo à Pesquisa</div>
+          <div className="text-[10px] font-medium text-orange-600 uppercase tracking-wide">{t.landing.mockNodes.presentationType}</div>
+          <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.presentationTitle}</div>
         </div>
       </div>
       <div className="p-3 space-y-2.5">
-        <p className="text-xs text-gray-500 line-clamp-2">Esta é uma pesquisa rápida que levará apenas alguns minutos.</p>
+        <p className="text-xs text-gray-500 line-clamp-2">{t.landing.mockNodes.presentationDesc}</p>
         <div className="flex justify-center pt-1">
           <div className="px-4 py-1.5 bg-orange-500 text-white text-xs font-medium rounded-md">
-            Iniciar Pesquisa
+            {t.landing.mockNodes.presentationCta}
           </div>
         </div>
       </div>
@@ -157,7 +160,8 @@ function NodePresentation({ x, y }: { x: number; y: number }) {
 
 // Escolha Simples — replica SingleChoiceNode (selecionado)
 function NodeSingleChoice({ x, y }: { x: number; y: number }) {
-  const opts = ["Indicação de amigo", "Redes sociais", "Google"];
+  const { t } = useI18n();
+  const opts = [t.landing.mockNodes.singleChoiceOpt1, t.landing.mockNodes.singleChoiceOpt2, t.landing.mockNodes.singleChoiceOpt3];
   return (
     <motion.div {...ni(0.14)}
       className="absolute bg-white rounded-xl shadow-md shadow-blue-100 border border-blue-400 w-[240px]"
@@ -173,8 +177,8 @@ function NodeSingleChoice({ x, y }: { x: number; y: number }) {
           <CircleDot className="w-3.5 h-3.5 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-medium text-blue-600 uppercase tracking-wide">Escolha Simples</div>
-          <div className="font-semibold text-gray-900 text-sm truncate">Como nos conheceu?</div>
+          <div className="text-[10px] font-medium text-blue-600 uppercase tracking-wide">{t.landing.mockNodes.singleChoiceType}</div>
+          <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.singleChoiceTitle}</div>
         </div>
       </div>
       <div className="p-3 space-y-2">
@@ -191,6 +195,7 @@ function NodeSingleChoice({ x, y }: { x: number; y: number }) {
 
 // Avaliação — replica RatingNode (usa ícones Star como o real)
 function NodeRating({ x, y }: { x: number; y: number }) {
+  const { t } = useI18n();
   return (
     <motion.div {...ni(0.28)}
       className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[240px]"
@@ -201,8 +206,8 @@ function NodeRating({ x, y }: { x: number; y: number }) {
           <Star className="w-3.5 h-3.5 text-purple-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-medium text-purple-600 uppercase tracking-wide">Avaliação</div>
-          <div className="font-semibold text-gray-900 text-sm truncate">Como foi sua experiência?</div>
+          <div className="text-[10px] font-medium text-purple-600 uppercase tracking-wide">{t.landing.mockNodes.ratingType}</div>
+          <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.ratingTitle}</div>
         </div>
       </div>
       <div className="p-3 space-y-2">
@@ -224,6 +229,7 @@ function NodeRating({ x, y }: { x: number; y: number }) {
 
 // Tela Final — replica EndScreenNode (usa FlagTriangleRight como o real)
 function NodeEndScreen({ x, y }: { x: number; y: number }) {
+  const { t } = useI18n();
   return (
     <motion.div {...ni(0.42)}
       className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[240px]"
@@ -234,12 +240,12 @@ function NodeEndScreen({ x, y }: { x: number; y: number }) {
           <FlagTriangleRight className="w-3.5 h-3.5 text-rose-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-medium text-rose-600 uppercase tracking-wide">Tela Final</div>
-          <div className="font-semibold text-gray-900 text-sm truncate">Obrigado!</div>
+          <div className="text-[10px] font-medium text-rose-600 uppercase tracking-wide">{t.landing.mockNodes.endScreenType}</div>
+          <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.endScreenTitle}</div>
         </div>
       </div>
       <div className="p-3 space-y-2">
-        <p className="text-xs text-gray-500 line-clamp-2">Sua resposta foi registrada com sucesso.</p>
+        <p className="text-xs text-gray-500 line-clamp-2">{t.landing.mockNodes.endScreenDesc}</p>
       </div>
     </motion.div>
   );
@@ -311,87 +317,95 @@ function FlowCanvas() {
   );
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const FEATURES = [
-  { icon: GitBranch,  color: "text-blue-500",   bg: "bg-blue-50",   title: "Fluxo condicional",        desc: "Cada resposta guia o usuário por um caminho diferente. Crie jornadas com lógica de branching visual." },
-  { icon: TrendingUp, color: "text-green-500",   bg: "bg-green-50",  title: "Pontuação automática",     desc: "Atribua pontos a cada opção e calcule o score final do respondente. Ideal para quizzes e diagnósticos." },
-  { icon: BarChart2,  color: "text-purple-500",  bg: "bg-purple-50", title: "Dashboard completo",       desc: "Visualize respostas com métricas detalhadas. Acompanhe o desempenho e exporte os dados facilmente." },
-  { icon: Share2,     color: "text-orange-500",  bg: "bg-orange-50", title: "Link e embed",             desc: "Publique via link ou incorpore como iframe em qualquer site com redimensionamento automático." },
-  { icon: Clock,      color: "text-amber-500",   bg: "bg-amber-50",  title: "Tempo limite e prêmios",   desc: "Defina tempo máximo e prêmio para incentivar respostas rápidas e aumentar a taxa de conclusão." },
-  { icon: Shield,     color: "text-red-500",     bg: "bg-red-50",    title: "Coleta de dados",          desc: "Capture nome, e-mail e aceite de termos no nó de apresentação, sem formulários externos." },
-];
-
-const STEPS = [
-  { n: "01", title: "Arraste os nós",         desc: "Escolha entre os tipos de pergunta e posicione no canvas visual." },
-  { n: "02", title: "Conecte as respostas",   desc: "Ligue cada resposta à próxima pergunta criando fluxos condicionais." },
-  { n: "03", title: "Publique em segundos",   desc: "Copie o link ou embed e comece a receber respostas imediatamente." },
-];
-
-const PLAN_FEATURES: { label: string; soon?: boolean }[] = [
-  { label: "Pesquisas ilimitadas" },
-  { label: "Respostas ilimitadas" },
-  { label: "Editor visual node-based" },
-  { label: "Fluxo condicional por resposta" },
-  { label: "Sistema de pontuação" },
-  { label: "Dashboard e analytics" },
-  { label: "Exportação de dados" },
-  { label: "Embed em qualquer site" },
-  { label: "Coleta de nome e e-mail" },
-  { label: "Identidade visual personalizada" },
-  { label: "10 créditos IA por mês" },
-  { label: "Suporte prioritário" },
-  { label: "Temas visuais (Dark, Bold, Minimal)", soon: true },
-  { label: "Análise de respostas com IA", soon: true },
-  { label: "Sugestão de perguntas com IA", soon: true },
-  { label: "Relatório automático com IA", soon: true },
-  { label: "Tradução automática de pesquisas", soon: true },
-];
-
-const AI_FEATURES: { icon: React.ElementType; title: string; desc: string; available: boolean }[] = [
-  {
-    icon: Sparkles,
-    title: "Criação de pesquisas",
-    desc: "Descreva sua pesquisa em linguagem natural e a IA monta o fluxo completo com perguntas, opções e conexões.",
-    available: true,
-  },
-  {
-    icon: FileSearch,
-    title: "Análise de respostas",
-    desc: "A IA lê todas as respostas e gera um resumo com insights, padrões e pontos de atenção.",
-    available: false,
-  },
-  {
-    icon: Brain,
-    title: "Sugestão de perguntas",
-    desc: "Com base no contexto da pesquisa, a IA sugere perguntas relevantes para complementar seu fluxo.",
-    available: false,
-  },
-  {
-    icon: FileBarChart2,
-    title: "Relatório automático",
-    desc: "Geração de relatórios executivos prontos para apresentação, com gráficos e conclusões.",
-    available: false,
-  },
-  {
-    icon: MessageSquare,
-    title: "Reescrita inteligente",
-    desc: "Aprimore o tom, a clareza ou adapte perguntas para diferentes públicos com um clique.",
-    available: false,
-  },
-  {
-    icon: Languages,
-    title: "Tradução automática",
-    desc: "Traduza toda a pesquisa para outros idiomas mantendo o contexto e o fluxo intactos.",
-    available: false,
-  },
-];
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useI18n();
+
+  // ─── Data (inside component to use translations) ───────────────────────────
+
+  const FEATURES = [
+    { icon: GitBranch,  color: "text-blue-500",   bg: "bg-blue-50",   title: t.landing.featuresItems[0].title, desc: t.landing.featuresItems[0].desc },
+    { icon: TrendingUp, color: "text-green-500",   bg: "bg-green-50",  title: t.landing.featuresItems[1].title, desc: t.landing.featuresItems[1].desc },
+    { icon: BarChart2,  color: "text-purple-500",  bg: "bg-purple-50", title: t.landing.featuresItems[2].title, desc: t.landing.featuresItems[2].desc },
+    { icon: Share2,     color: "text-orange-500",  bg: "bg-orange-50", title: t.landing.featuresItems[3].title, desc: t.landing.featuresItems[3].desc },
+    { icon: Clock,      color: "text-amber-500",   bg: "bg-amber-50",  title: t.landing.featuresItems[4].title, desc: t.landing.featuresItems[4].desc },
+    { icon: Shield,     color: "text-red-500",     bg: "bg-red-50",    title: t.landing.featuresItems[5].title, desc: t.landing.featuresItems[5].desc },
+  ];
+
+  const STEPS = [
+    { n: t.landing.stepsItems[0].n, title: t.landing.stepsItems[0].title, desc: t.landing.stepsItems[0].desc },
+    { n: t.landing.stepsItems[1].n, title: t.landing.stepsItems[1].title, desc: t.landing.stepsItems[1].desc },
+    { n: t.landing.stepsItems[2].n, title: t.landing.stepsItems[2].title, desc: t.landing.stepsItems[2].desc },
+  ];
+
+  const PLAN_FEATURES: { label: string; soon?: boolean }[] = [
+    { label: t.landing.planFeatures[0].label },
+    { label: t.landing.planFeatures[1].label },
+    { label: t.landing.planFeatures[2].label },
+    { label: t.landing.planFeatures[3].label },
+    { label: t.landing.planFeatures[4].label },
+    { label: t.landing.planFeatures[5].label },
+    { label: t.landing.planFeatures[6].label },
+    { label: t.landing.planFeatures[7].label },
+    { label: t.landing.planFeatures[8].label },
+    { label: t.landing.planFeatures[9].label },
+    { label: t.landing.planFeatures[10].label },
+    { label: t.landing.planFeatures[11].label },
+    { label: t.landing.planFeatures[12].label, soon: true },
+    { label: t.landing.planFeatures[13].label, soon: true },
+    { label: t.landing.planFeatures[14].label, soon: true },
+    { label: t.landing.planFeatures[15].label, soon: true },
+    { label: t.landing.planFeatures[16].label, soon: true },
+  ];
+
+  const AI_FEATURES: { icon: React.ElementType; title: string; desc: string; available: boolean }[] = [
+    { icon: Sparkles,      title: t.landing.aiFeatures[0].title, desc: t.landing.aiFeatures[0].desc, available: true },
+    { icon: FileSearch,    title: t.landing.aiFeatures[1].title, desc: t.landing.aiFeatures[1].desc, available: false },
+    { icon: Brain,         title: t.landing.aiFeatures[2].title, desc: t.landing.aiFeatures[2].desc, available: false },
+    { icon: FileBarChart2, title: t.landing.aiFeatures[3].title, desc: t.landing.aiFeatures[3].desc, available: false },
+    { icon: MessageSquare, title: t.landing.aiFeatures[4].title, desc: t.landing.aiFeatures[4].desc, available: false },
+    { icon: Languages,     title: t.landing.aiFeatures[5].title, desc: t.landing.aiFeatures[5].desc, available: false },
+  ];
+
+  const USE_CASES = [
+    { icon: Users,      title: t.landing.useCases.items[0].title, desc: t.landing.useCases.items[0].desc },
+    { icon: Zap,        title: t.landing.useCases.items[1].title, desc: t.landing.useCases.items[1].desc },
+    { icon: TrendingUp, title: t.landing.useCases.items[2].title, desc: t.landing.useCases.items[2].desc },
+    { icon: GitBranch,  title: t.landing.useCases.items[3].title, desc: t.landing.useCases.items[3].desc },
+  ];
+
+  const PRICING_HIGHLIGHTS = [
+    { icon: Zap,        color: "bg-orange-50 text-orange-500", title: t.landing.pricing.highlights[0].title, desc: t.landing.pricing.highlights[0].desc },
+    { icon: Shield,     color: "bg-green-50 text-green-600",   title: t.landing.pricing.highlights[1].title, desc: t.landing.pricing.highlights[1].desc },
+    { icon: TrendingUp, color: "bg-blue-50 text-blue-500",     title: t.landing.pricing.highlights[2].title, desc: t.landing.pricing.highlights[2].desc },
+  ];
+
+  const FAQ = [
+    { q: t.landing.pricing.faq[0].q, a: t.landing.pricing.faq[0].a },
+    { q: t.landing.pricing.faq[1].q, a: t.landing.pricing.faq[1].a },
+    { q: t.landing.pricing.faq[2].q, a: t.landing.pricing.faq[2].a },
+    { q: t.landing.pricing.faq[3].q, a: t.landing.pricing.faq[3].a },
+    { q: t.landing.pricing.faq[4].q, a: t.landing.pricing.faq[4].a },
+  ];
+
+  const AI_MOCK_NODES = [
+    t.landing.aiMock.node1,
+    t.landing.aiMock.node2,
+    t.landing.aiMock.node3,
+    t.landing.aiMock.node4,
+    t.landing.aiMock.node5,
+  ];
+
+  const SIDEBAR_NODES = [
+    { id: "presentation",   title: t.landing.editorMock.nodePresentation,   Icon: Play,              color: "text-orange-600", bg: "bg-orange-100" },
+    { id: "singleChoice",   title: t.landing.editorMock.nodeSingleChoice,   Icon: CircleDot,         color: "text-blue-600",   bg: "bg-blue-100"   },
+    { id: "multipleChoice", title: t.landing.editorMock.nodeMultipleChoice,  Icon: CheckSquare,       color: "text-green-600",  bg: "bg-green-100"  },
+    { id: "rating",         title: t.landing.editorMock.nodeRating,          Icon: Star,              color: "text-purple-600", bg: "bg-purple-100" },
+    { id: "endScreen",      title: t.landing.editorMock.nodeEndScreen,       Icon: FlagTriangleRight, color: "text-rose-600",   bg: "bg-rose-100"   },
+  ];
 
   useEffect(() => {
     if (session) router.push("/dashboard");
@@ -423,10 +437,10 @@ export default function LandingPage() {
           {/* Nav links */}
           <nav className="hidden md:flex items-center gap-0.5 px-1">
             {[
-              { href: "#features", label: "Recursos" },
-              { href: "#ai",       label: "IA" },
-              { href: "#how",      label: "Como funciona" },
-              { href: "#pricing",  label: "Preços" },
+              { href: "#features", label: t.landing.nav.features },
+              { href: "#ai",       label: t.landing.nav.ai },
+              { href: "#how",      label: t.landing.nav.how },
+              { href: "#pricing",  label: t.landing.nav.pricing },
             ].map(({ href, label }) => (
               <Link
                 key={href}
@@ -441,19 +455,24 @@ export default function LandingPage() {
           {/* Divider */}
           <div className="w-px h-5 bg-gray-200 mx-1 hidden md:block" />
 
+          {/* Language toggle */}
+          <div className="hidden md:block">
+            <LanguageToggle variant="navbar" />
+          </div>
+
           {/* Actions */}
           <div className="flex items-center gap-1 pl-1 pr-1">
             <button
               onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
               className="hidden sm:block px-3 py-1.5 text-[13px] text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
             >
-              Entrar
+              {t.landing.nav.signIn}
             </button>
             <button
               onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
               className="h-8 px-3.5 bg-gray-900 hover:bg-gray-700 text-white text-[13px] font-medium rounded-full transition-colors flex items-center gap-1.5"
             >
-              Começar grátis <ArrowRight className="w-3 h-3" />
+              {t.landing.nav.getStarted} <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         </motion.div>
@@ -470,7 +489,7 @@ export default function LandingPage() {
             className="inline-flex items-center gap-2 h-7 px-3 rounded-full border border-gray-200 bg-gray-50 text-[12px] text-gray-500 font-medium mb-8"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            7 dias grátis · Sem cartão de crédito
+            {t.landing.hero.badge}
           </motion.div>
 
           <motion.h1
@@ -479,9 +498,9 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
             className="text-[44px] sm:text-[64px] font-extrabold tracking-[-0.03em] leading-[1.06] text-gray-950 mb-6"
           >
-            Pesquisas que se adaptam{" "}
+            {t.landing.hero.title1}{" "}
             <span className="relative inline-block">
-              <span className="relative z-10">a cada resposta</span>
+              <span className="relative z-10">{t.landing.hero.title2}</span>
               <motion.span
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -497,8 +516,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.32, ease: "easeOut" }}
             className="text-[17px] text-gray-500 leading-relaxed max-w-xl mx-auto mb-10"
           >
-            Editor visual node-based onde você conecta perguntas como blocos de fluxo.
-            Sem código. Publique em segundos.
+            {t.landing.hero.subtitle}
           </motion.p>
 
           <motion.div
@@ -512,13 +530,13 @@ export default function LandingPage() {
               className="w-full sm:w-auto h-11 px-6 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-medium rounded-[12px] transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
               <GoogleIcon />
-              Começar grátis com Google
+              {t.landing.hero.cta}
             </button>
             <Link
               href="#how"
               className="w-full sm:w-auto h-11 px-6 text-[15px] font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-[12px] transition-colors flex items-center justify-center gap-1.5"
             >
-              Ver como funciona <ArrowRight className="w-4 h-4" />
+              {t.landing.hero.ctaHow} <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
         </div>
@@ -544,20 +562,20 @@ export default function LandingPage() {
                 </div>
                 <div className="h-5 w-px bg-gray-200" />
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-900">Pesquisa de Satisfação</span>
+                  <span className="text-sm font-semibold text-gray-900">{t.landing.editorMock.surveyTitle}</span>
                   <div className="p-1 rounded text-gray-400">
                     <Settings className="w-3.5 h-3.5" />
                   </div>
                 </div>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                  Publicada
+                  {t.landing.editorMock.status}
                 </span>
               </div>
 
               {/* Direita */}
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gray-50 mr-1">
-                  <span className="text-xs text-gray-500">Pontuação</span>
+                  <span className="text-xs text-gray-500">{t.landing.editorMock.score}</span>
                   <div className="relative inline-flex h-5 w-9 items-center rounded-full bg-gray-300">
                     <span className="inline-block h-3.5 w-3.5 translate-x-1 transform rounded-full bg-white shadow-sm" />
                   </div>
@@ -568,11 +586,11 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium bg-gray-100 text-gray-700">
                   <Save className="w-3.5 h-3.5" />
-                  Salvar
+                  {t.landing.editorMock.save}
                 </div>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium bg-green-600 text-white">
                   <Play className="w-3.5 h-3.5" />
-                  Testar
+                  {t.landing.editorMock.test}
                 </div>
               </div>
             </header>
@@ -583,17 +601,11 @@ export default function LandingPage() {
               {/* Sidebar — replica do EditorSidebar (w-56 bg-white border-r border-gray-200) */}
               <div className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden sm:flex">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-900 text-sm">Perguntas</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Arraste para o canvas</p>
+                  <h3 className="font-semibold text-gray-900 text-sm">{t.landing.editorMock.sidebarTitle}</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">{t.landing.editorMock.sidebarDrag}</p>
                 </div>
                 <div className="flex-1 p-2 space-y-1.5">
-                  {[
-                    { id: "presentation",   title: "Apresentação",   Icon: Play,             color: "text-orange-600", bg: "bg-orange-100" },
-                    { id: "singleChoice",   title: "Escolha Simples", Icon: CircleDot,        color: "text-blue-600",   bg: "bg-blue-100"   },
-                    { id: "multipleChoice", title: "Múltipla Escolha", Icon: CheckSquare,     color: "text-green-600",  bg: "bg-green-100"  },
-                    { id: "rating",         title: "Avaliação",       Icon: Star,             color: "text-purple-600", bg: "bg-purple-100" },
-                    { id: "endScreen",      title: "Tela Final",      Icon: FlagTriangleRight, color: "text-rose-600",  bg: "bg-rose-100"   },
-                  ].map((node, i) => (
+                  {SIDEBAR_NODES.map((node, i) => (
                     <motion.div
                       key={node.id}
                       initial={{ opacity: 0, x: -6 }}
@@ -627,11 +639,11 @@ export default function LandingPage() {
       <section id="how" className="py-24 px-6 bg-gray-50">
         <div className="max-w-4xl mx-auto">
           <FadeUp className="text-center mb-16">
-            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">Como funciona</p>
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.how.sectionLabel}</p>
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
-              Da ideia à pesquisa publicada
+              {t.landing.howTitle}
             </h2>
-            <p className="text-[16px] text-gray-500 mt-3">Em menos de 5 minutos.</p>
+            <p className="text-[16px] text-gray-500 mt-3">{t.landing.howSubtitle}</p>
           </FadeUp>
 
           <div className="grid sm:grid-cols-3 gap-8">
@@ -661,9 +673,9 @@ export default function LandingPage() {
       <section id="features" className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <FadeUp className="text-center mb-16">
-            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">Recursos</p>
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.features.sectionLabel}</p>
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
-              Tudo que você precisa
+              {t.landing.features.title}
             </h2>
           </FadeUp>
 
@@ -696,13 +708,13 @@ export default function LandingPage() {
               <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
-              <p className="text-[12px] font-semibold text-white/50 uppercase tracking-widest">Inteligência Artificial</p>
+              <p className="text-[12px] font-semibold text-white/50 uppercase tracking-widest">{t.landing.ai.badge}</p>
             </div>
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-white mb-4">
-              IA que trabalha por você
+              {t.landing.ai.title}
             </h2>
             <p className="text-[16px] text-gray-400 max-w-xl leading-relaxed">
-              Funcionalidades inteligentes que eliminam o trabalho manual. Cada ação consome créditos — você recebe <strong className="text-white">10 por mês</strong> gratuitamente e pode comprar mais conforme precisar.
+              {t.landing.ai.credits} <strong className="text-white">{t.landing.ai.creditsHighlight}</strong> {t.landing.ai.creditsEnd}
             </p>
           </FadeUp>
 
@@ -714,7 +726,7 @@ export default function LandingPage() {
                   <Users className="w-3.5 h-3.5 text-white/60" />
                 </div>
                 <div className="flex-1 bg-white/8 rounded-xl px-4 py-3 text-[14px] text-white/80 leading-relaxed border border-white/10">
-                  Crie uma pesquisa NPS com perguntas sobre atendimento, qualidade do produto e probabilidade de indicação. Público B2C, tom amigável.
+                  {t.landing.aiMock.prompt}
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -723,11 +735,11 @@ export default function LandingPage() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2.5">
-                    <span className="text-[12px] font-medium text-white/40">Pesquisa gerada</span>
-                    <span className="text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">1 crédito usado</span>
+                    <span className="text-[12px] font-medium text-white/40">{t.landing.aiMock.generated}</span>
+                    <span className="text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">{t.landing.aiMock.creditUsed}</span>
                   </div>
                   <div className="space-y-2">
-                    {["Apresentação — Bem-vindo à nossa pesquisa!", "Como você avalia nosso atendimento? (1–5)", "O produto atendeu suas expectativas?", "Com que probabilidade nos indicaria? (NPS)", "Tela Final — Obrigado pelo feedback!"].map((node, i) => (
+                    {AI_MOCK_NODES.map((node, i) => (
                       <motion.div
                         key={i}
                         initial={{ opacity: 0, x: -8 }}
@@ -757,11 +769,11 @@ export default function LandingPage() {
                 }`}>
                   {feat.available ? (
                     <span className="absolute top-4 right-4 text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
-                      Disponível
+                      {t.landing.featureBadgeAvailable}
                     </span>
                   ) : (
                     <span className="absolute top-4 right-4 text-[10px] font-semibold bg-white/10 text-white/40 px-2 py-0.5 rounded-full">
-                      Em breve
+                      {t.landing.featureBadgeSoon}
                     </span>
                   )}
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${feat.available ? "bg-white/15" : "bg-white/6"}`}>
@@ -785,19 +797,14 @@ export default function LandingPage() {
       <section className="py-24 px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <FadeUp className="text-center mb-16">
-            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">Casos de uso</p>
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.useCases.sectionLabel}</p>
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
-              Para qualquer time
+              {t.landing.useCases.title}
             </h2>
           </FadeUp>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              { icon: Users,      title: "Pesquisa de satisfação",  desc: "Fluxos personalizados por segmento, produto ou momento da jornada do cliente." },
-              { icon: Zap,        title: "Quiz e diagnóstico",      desc: "Pontuação automática, classificação de perfis e resultados personalizados ao final." },
-              { icon: TrendingUp, title: "Qualificação de leads",   desc: "Direcione cada lead pelo caminho certo com base nas respostas e capture contatos." },
-              { icon: GitBranch,  title: "Formulários inteligentes", desc: "Substitua formulários lineares por fluxos que mostram só o que é relevante." },
-            ].map((item, i) => (
+            {USE_CASES.map((item, i) => (
               <FadeUp key={item.title} delay={i * 0.08}>
                 <div className="flex gap-4 p-6 bg-white rounded-2xl border border-gray-200">
                   <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -819,9 +826,9 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
 
           <FadeUp className="mb-14">
-            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">Preços</p>
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.pricing.badge}</p>
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
-              Simples e transparente
+              {t.landing.pricing.title}
             </h2>
           </FadeUp>
 
@@ -830,32 +837,12 @@ export default function LandingPage() {
             {/* ── Coluna esquerda ── */}
             <FadeUp className="space-y-8">
               <p className="text-[17px] text-gray-500 leading-relaxed">
-                Um único plano com acesso completo a tudo. Sem tier de features escondidas,
-                sem surpresas na fatura.
+                {t.landing.pricing.planDesc}
               </p>
 
               {/* Destaques */}
               <div className="space-y-4">
-                {[
-                  {
-                    icon: Zap,
-                    color: "bg-orange-50 text-orange-500",
-                    title: "Comece em segundos",
-                    desc: "Login com Google, crie sua primeira pesquisa e publique — tudo em menos de 5 minutos.",
-                  },
-                  {
-                    icon: Shield,
-                    color: "bg-green-50 text-green-600",
-                    title: "7 dias grátis, sem cartão",
-                    desc: "Teste todas as funcionalidades sem precisar cadastrar forma de pagamento.",
-                  },
-                  {
-                    icon: TrendingUp,
-                    color: "bg-blue-50 text-blue-500",
-                    title: "Cancele quando quiser",
-                    desc: "Sem fidelidade, sem taxa de cancelamento. Você controla.",
-                  },
-                ].map((item) => (
+                {PRICING_HIGHLIGHTS.map((item) => (
                   <div key={item.title} className="flex gap-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200">
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${item.color}`}>
                       <item.icon className="w-4 h-4" />
@@ -870,14 +857,8 @@ export default function LandingPage() {
 
               {/* FAQ */}
               <div className="space-y-3">
-                <p className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider">Perguntas frequentes</p>
-                {[
-                  { q: "Preciso de cartão para o teste?", a: "Não. Os 7 dias de teste são completamente grátis, sem cadastrar nenhuma forma de pagamento." },
-                  { q: "O que acontece com meus dados se cancelar?", a: "Você tem 30 dias após o cancelamento para exportar tudo. Depois, os dados são removidos permanentemente." },
-                  { q: "Posso usar em iframe em outros sites?", a: "Sim. Todas as pesquisas podem ser embutidas como iframe com redimensionamento automático." },
-                  { q: "Quantas pesquisas posso criar?", a: "Ilimitadas. Não existe limite de pesquisas nem de respostas coletadas." },
-                  { q: "Posso exportar as respostas coletadas?", a: "Sim. Você pode exportar todas as respostas diretamente pelo dashboard em formato estruturado, a qualquer momento." },
-                ].map((faq) => (
+                <p className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider">{t.landing.pricing.faqTitle}</p>
+                {FAQ.map((faq) => (
                   <details key={faq.q} className="group bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200 overflow-hidden">
                     <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none text-[14px] font-medium text-gray-800 hover:text-gray-900 transition-colors">
                       {faq.q}
@@ -898,22 +879,22 @@ export default function LandingPage() {
                 {/* Header dark */}
                 <div className="px-7 pt-7 pb-6 bg-gray-950">
                   <div className="flex items-center justify-between mb-5">
-                    <span className="text-[16px] font-bold text-white">Plano Pro</span>
+                    <span className="text-[16px] font-bold text-white">{t.landing.pricing.planName}</span>
                     <span className="h-6 px-2.5 bg-green-500/20 border border-green-500/30 text-green-400 text-[11px] font-semibold rounded-full flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      7 dias grátis
+                      {t.landing.pricing.planTrial}
                     </span>
                   </div>
                   <div className="flex items-end gap-2">
-                    <span className="text-[52px] font-extrabold text-white leading-none tracking-tight">R$&nbsp;499</span>
-                    <span className="text-[14px] text-gray-500 mb-2">/mês</span>
+                    <span className="text-[52px] font-extrabold text-white leading-none tracking-tight">{t.landing.pricing.planPrice}</span>
+                    <span className="text-[14px] text-gray-500 mb-2">{t.landing.pricing.planPriceUnit}</span>
                   </div>
-                  <p className="text-[13px] text-gray-500 mt-2">Sem cartão para começar o teste.</p>
+                  <p className="text-[13px] text-gray-500 mt-2">{t.landing.pricing.planNoCard}</p>
                 </div>
 
                 {/* Features */}
                 <div className="px-7 pt-6 pb-2 bg-white">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-4">O que está incluso</p>
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-4">{t.landing.pricing.planIncluded}</p>
                   <ul className="space-y-2.5">
                     {PLAN_FEATURES.filter(f => !f.soon).map((feat) => (
                       <li key={feat.label} className="flex items-center gap-3 text-[14px]">
@@ -925,7 +906,7 @@ export default function LandingPage() {
 
                   {PLAN_FEATURES.some(f => f.soon) && (
                     <>
-                      <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider mt-5 mb-3">Em breve</p>
+                      <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider mt-5 mb-3">{t.landing.pricing.planSoon}</p>
                       <ul className="space-y-2.5">
                         {PLAN_FEATURES.filter(f => f.soon).map((feat) => (
                           <li key={feat.label} className="flex items-center gap-3 text-[14px]">
@@ -944,10 +925,10 @@ export default function LandingPage() {
                     onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
                     className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                   >
-                    Começar 7 dias grátis <ArrowRight className="w-4 h-4" />
+                    {t.landing.pricing.trialCta} <ArrowRight className="w-4 h-4" />
                   </button>
                   <p className="text-center text-[12px] text-gray-400 mt-3">
-                    Cancele a qualquer momento. Sem fidelidade.
+                    {t.landing.pricing.cancelNote}
                   </p>
                 </div>
               </div>
@@ -962,17 +943,17 @@ export default function LandingPage() {
         <FadeUp>
           <div className="max-w-5xl mx-auto bg-gray-950 rounded-3xl px-8 py-16 text-center">
             <h2 className="text-[32px] sm:text-[44px] font-extrabold tracking-[-0.02em] leading-tight text-white mb-4">
-              Pronto para começar?
+              {t.landing.ctaSection.title}
             </h2>
             <p className="text-[16px] text-gray-400 mb-10 max-w-sm mx-auto">
-              Crie sua primeira pesquisa em minutos. 7 dias grátis, sem precisar de cartão.
+              {t.landing.ctaSection.subtitle}
             </p>
             <button
               onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
               className="inline-flex items-center gap-2 h-12 px-8 bg-white hover:bg-gray-100 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors"
             >
               <GoogleIcon />
-              Entrar com Google
+              {t.landing.ctaSection.button}
             </button>
           </div>
         </FadeUp>
@@ -989,8 +970,8 @@ export default function LandingPage() {
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5 text-[13px] text-gray-400">
             <span>© {new Date().getFullYear()} SurveyFlow</span>
-            <Link href="/terms" className="hover:text-gray-700 transition-colors">Termos de Uso</Link>
-            <Link href="/privacy" className="hover:text-gray-700 transition-colors">Política de Privacidade</Link>
+            <Link href="/terms" className="hover:text-gray-700 transition-colors">{t.landing.footer.terms}</Link>
+            <Link href="/privacy" className="hover:text-gray-700 transition-colors">{t.landing.footer.privacy}</Link>
           </div>
         </div>
       </footer>
