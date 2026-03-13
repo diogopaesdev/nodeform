@@ -18,6 +18,11 @@ import {
   Link as LinkIcon,
   BarChart2,
   PenSquare,
+  Sparkles,
+  ArrowRight,
+  Zap,
+  ShoppingCart,
+  AlertTriangle,
 } from "lucide-react";
 import {
   BarChart,
@@ -41,6 +46,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Survey, DashboardStats } from "@/types/survey";
 import { useSession } from "next-auth/react";
@@ -100,13 +106,50 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [generatingAi, setGeneratingAi] = useState(false);
+  const [aiError, setAiError] = useState("");
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [buyModalOpen, setBuyModalOpen] = useState(false);
+  const [buyingCredits, setBuyingCredits] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     fetchData();
+    fetchCredits();
   }, []);
+
+  const fetchCredits = async () => {
+    try {
+      const res = await fetch("/api/user/credits");
+      if (res.ok) {
+        const data = await res.json();
+        setCredits(data.credits);
+      }
+    } catch {
+      // silently fail
+    }
+  };
+
+  const handleBuyCredits = async (quantity: number) => {
+    setBuyingCredits(true);
+    try {
+      const res = await fetch("/api/credits/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // silently fail
+    } finally {
+      setBuyingCredits(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -136,6 +179,37 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error creating survey:", error);
       setCreating(false);
+    }
+  };
+
+  const handleGenerateWithAi = async () => {
+    if (!aiPrompt.trim()) return;
+    setGeneratingAi(true);
+    setAiError("");
+    try {
+      const res = await fetch("/api/surveys/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.code === "NO_CREDITS") {
+          setCreateModalOpen(false);
+          setBuyModalOpen(true);
+        } else {
+          setAiError(data.error || "Erro ao gerar pesquisa");
+        }
+        return;
+      }
+      setCredits((c) => (c !== null ? c - 1 : null));
+      setCreateModalOpen(false);
+      setAiPrompt("");
+      router.push(`/editor/${data.surveyId}`);
+    } catch {
+      setAiError("Erro de conexão. Tente novamente.");
+    } finally {
+      setGeneratingAi(false);
     }
   };
 
@@ -271,6 +345,27 @@ window.addEventListener("message", function(e) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Credits badge */}
+          {credits !== null && (
+            <button
+              onClick={() => setBuyModalOpen(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
+                credits === 0
+                  ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                  : credits <= 3
+                  ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+              }`}
+            >
+              {credits === 0 ? (
+                <AlertTriangle className="w-3.5 h-3.5" />
+              ) : (
+                <Zap className="w-3.5 h-3.5" />
+              )}
+              {credits} crédito{credits !== 1 ? "s" : ""}
+            </button>
+          )}
+
           <button
             onClick={handleCopyLink}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
@@ -289,15 +384,195 @@ window.addEventListener("message", function(e) {
             Incorporar
           </button>
           <button
-            onClick={handleCreateSurvey}
-            disabled={creating}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 rounded-md transition-colors"
+            onClick={() => setCreateModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
           >
-            {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            <Plus className="w-3.5 h-3.5" />
             Nova Pesquisa
           </button>
         </div>
       </div>
+
+      {/* ── Buy Credits Modal ───────────────────────────────────────────────── */}
+      <Dialog open={buyModalOpen} onOpenChange={setBuyModalOpen}>
+        <DialogContent className="max-w-md p-0 gap-0">
+          <DialogTitle className="sr-only">Comprar Créditos</DialogTitle>
+          <DialogDescription className="sr-only">Adquira créditos para usar as funcionalidades de IA</DialogDescription>
+
+          <div className="px-6 py-5 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center">
+                <Zap className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Créditos IA</h2>
+                <p className="text-xs text-gray-500">
+                  {credits !== null ? (
+                    credits === 0
+                      ? "Seus créditos acabaram"
+                      : `Você tem ${credits} crédito${credits !== 1 ? "s" : ""} disponível${credits !== 1 ? "is" : ""}`
+                  ) : "Gerencie seus créditos"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-4">
+            {/* Free credits info */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <p className="text-xs font-semibold text-gray-700 mb-1">Créditos gratuitos</p>
+              <p className="text-xs text-gray-500">
+                Todo mês você recebe <strong>10 créditos</strong> automaticamente para usar nas funcionalidades de IA da plataforma.
+              </p>
+            </div>
+
+            {/* Package */}
+            <div>
+              <p className="text-xs font-semibold text-gray-700 mb-2">Comprar mais créditos</p>
+              <button
+                onClick={() => handleBuyCredits(10)}
+                disabled={buyingCredits}
+                className="w-full flex items-center justify-between px-4 py-4 bg-white border-2 border-gray-900 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-gray-700" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-gray-900">Pacote de 10 créditos</p>
+                    <p className="text-xs text-gray-500">Use em qualquer funcionalidade de IA</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {buyingCredits ? (
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  ) : (
+                    <>
+                      <p className="text-base font-bold text-gray-900">R$ 50</p>
+                      <p className="text-[10px] text-gray-400">R$ 5 / crédito</p>
+                    </>
+                  )}
+                </div>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-gray-400 text-center flex items-center justify-center gap-1">
+              <ShoppingCart className="w-3 h-3" />
+              Pagamento seguro via Stripe · Créditos não expiram
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Create Modal ────────────────────────────────────────────────────── */}
+      <Dialog open={createModalOpen} onOpenChange={(open) => { setCreateModalOpen(open); if (!open) { setAiPrompt(""); setAiError(""); } }}>
+        <DialogContent className="max-w-lg p-0 gap-0">
+          <DialogTitle className="sr-only">Nova Pesquisa</DialogTitle>
+          <DialogDescription className="sr-only">Escolha como criar sua pesquisa</DialogDescription>
+          <div className="px-6 py-5 border-b border-gray-100">
+            <h2 className="text-base font-semibold text-gray-900">Nova Pesquisa</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Como você quer criar sua pesquisa?</p>
+          </div>
+
+          <div className="p-6 space-y-4">
+            {/* AI option */}
+            <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Criar com IA</p>
+                    <p className="text-xs text-gray-500">Descreva sua pesquisa e a IA monta o fluxo completo</p>
+                  </div>
+                </div>
+                {credits !== null && (
+                  <button
+                    onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 ${
+                      credits === 0
+                        ? "bg-red-100 text-red-700"
+                        : credits <= 3
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    <Zap className="w-3 h-3" />
+                    {credits} crédito{credits !== 1 ? "s" : ""}
+                  </button>
+                )}
+              </div>
+
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => { setAiPrompt(e.target.value); setAiError(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerateWithAi(); }}
+                placeholder="Ex: Crie uma pesquisa de satisfação do cliente com perguntas sobre atendimento, qualidade do produto e probabilidade de indicação (NPS). Público: clientes B2C."
+                rows={4}
+                className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400 resize-none"
+              />
+
+              {aiError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{aiError}</p>
+              )}
+
+              {credits === 0 && (
+                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Você não tem créditos disponíveis.{" "}
+                  <button onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }} className="underline font-medium">
+                    Comprar créditos
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={handleGenerateWithAi}
+                disabled={!aiPrompt.trim() || generatingAi || credits === 0}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+              >
+                {generatingAi ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" />Gerando pesquisa...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" />Gerar com IA</>
+                )}
+              </button>
+              {!generatingAi && aiPrompt.trim() && (
+                <p className="text-[11px] text-gray-400 text-center">⌘ + Enter para gerar</p>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-100" />
+              <span className="text-xs text-gray-400">ou</span>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+
+            {/* Manual option */}
+            <button
+              onClick={() => { setCreateModalOpen(false); handleCreateSurvey(); }}
+              disabled={creating || generatingAi}
+              className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <PenSquare className="w-4 h-4 text-gray-500" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">Criar manualmente</p>
+                  <p className="text-xs text-gray-500">Comece com uma pesquisa em branco</p>
+                </div>
+              </div>
+              {creating
+                ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                : <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+              }
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Embed Modal ─────────────────────────────────────────────────────── */}
       <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
@@ -483,11 +758,10 @@ window.addEventListener("message", function(e) {
             <h3 className="text-sm font-medium text-gray-900 mb-1">Nenhuma pesquisa criada</h3>
             <p className="text-xs text-gray-500 mb-4">Comece criando sua primeira pesquisa interativa</p>
             <button
-              onClick={handleCreateSurvey}
-              disabled={creating}
+              onClick={() => setCreateModalOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
             >
-              {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              <Plus className="w-3.5 h-3.5" />
               Criar Pesquisa
             </button>
           </div>
