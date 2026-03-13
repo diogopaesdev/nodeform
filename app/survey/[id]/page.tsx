@@ -2,11 +2,19 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { X, ArrowLeft, Loader2 } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
 import { useEmbedResize } from "@/lib/hooks/use-embed-resize";
 import { Survey } from "@/types/survey";
+
+interface Brand {
+  brandColor: string | null;
+  logoUrl: string | null;
+  displayName: string | null;
+  brandDescription: string | null;
+}
 
 export default function SurveyPage({
   params,
@@ -32,6 +40,7 @@ export default function SurveyPage({
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [brand, setBrand] = useState<Brand>({ brandColor: null, logoUrl: null, displayName: null, brandDescription: null });
 
   useEmbedResize(isEmbedMode);
 
@@ -51,6 +60,7 @@ export default function SurveyPage({
 
       const data = await res.json();
       const surveyData = data.survey as Survey;
+      if (data.brand) setBrand(data.brand);
 
       if (!surveyData || surveyData.nodes.length === 0) {
         setError("Esta pesquisa ainda não tem perguntas");
@@ -178,7 +188,25 @@ export default function SurveyPage({
 
       <div className={`px-4 ${isEmbedMode ? "py-6" : "py-12"}`}>
         <div className={`mx-auto space-y-6 ${isEmbedMode ? "max-w-full" : "max-w-4xl space-y-8"}`}>
-          {/* Header - compact in embed mode */}
+          {/* Brand header */}
+          {(brand.logoUrl || brand.displayName) && (
+            <div className="flex items-center justify-center gap-2.5">
+              {brand.logoUrl && (
+                <Image
+                  src={brand.logoUrl}
+                  alt={brand.displayName || "Logo"}
+                  width={28}
+                  height={28}
+                  className="rounded-lg object-contain"
+                />
+              )}
+              {brand.displayName && (
+                <span className="text-sm font-semibold text-gray-700">{brand.displayName}</span>
+              )}
+            </div>
+          )}
+
+          {/* Survey title */}
           <div className="text-center space-y-1.5">
             <h1 className={`font-semibold text-gray-900 ${isEmbedMode ? "text-lg" : "text-xl"}`}>{survey.title}</h1>
             {survey.description && (
@@ -187,7 +215,7 @@ export default function SurveyPage({
           </div>
 
           {/* Question */}
-          <QuestionRenderer node={currentNode} onAnswer={handleAnswer} totalScore={totalScore} />
+          <QuestionRenderer node={currentNode} onAnswer={handleAnswer} totalScore={totalScore} brandColor={brand.brandColor || undefined} />
 
           {/* Back Button */}
           {canGoBack() && (

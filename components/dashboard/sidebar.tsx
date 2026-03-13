@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -8,6 +9,7 @@ import {
   LayoutDashboard,
   FileText,
   Palette,
+  Paintbrush,
   Settings,
   LogOut,
   ChevronDown,
@@ -18,39 +20,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const navItems = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Pesquisas",
-    href: "/dashboard/surveys",
-    icon: FileText,
-  },
-];
-
-const comingSoonItems = [
-  {
-    label: "Temas",
-    icon: Palette,
-  },
-];
+import { useI18n } from "@/lib/i18n";
+import { LanguageToggle } from "@/components/language-toggle";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { t } = useI18n();
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const navItems = [
+    { label: t.sidebar.dashboard, href: "/dashboard",            icon: LayoutDashboard },
+    { label: t.sidebar.surveys,   href: "/dashboard/surveys",    icon: FileText },
+    { label: t.sidebar.appearance,href: "/dashboard/appearance", icon: Paintbrush },
+    { label: t.sidebar.themes,    href: "/dashboard/themes",     icon: Palette },
+  ];
+
+  const getInitials = (name: string) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <aside className="w-56 h-screen bg-white border-r border-gray-200 flex flex-col">
@@ -79,7 +65,7 @@ export function Sidebar() {
           const isActive = pathname === item.href;
           return (
             <Link
-              key={item.label}
+              key={item.href}
               href={item.href}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -92,19 +78,12 @@ export function Sidebar() {
             </Link>
           );
         })}
-        {comingSoonItems.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 cursor-not-allowed"
-          >
-            <item.icon className="w-4 h-4" />
-            <span>{item.label}</span>
-            <span className="ml-auto text-[10px] font-medium bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">
-              Em breve
-            </span>
-          </div>
-        ))}
       </nav>
+
+      {/* Language Toggle */}
+      <div className="px-3 pb-2">
+        <LanguageToggle variant="sidebar" />
+      </div>
 
       {/* Settings */}
       <div className="px-3 pb-2">
@@ -117,7 +96,7 @@ export function Sidebar() {
           }`}
         >
           <Settings className="w-4 h-4" />
-          <span>Configurações</span>
+          <span>{t.sidebar.settings}</span>
         </Link>
       </div>
 
@@ -125,30 +104,20 @@ export function Sidebar() {
       <div className="p-3 border-t border-gray-100">
         <DropdownMenu>
           <DropdownMenuTrigger className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors outline-none">
-              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {session?.user?.image ? (
-                  <Image
-                    src={session.user.image}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs font-medium text-gray-600">
-                    {session?.user?.name ? getInitials(session.user.name) : "U"}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {session?.user?.name || "Usuário"}
-                </p>
-                <p className="text-xs text-gray-400 truncate">
-                  {session?.user?.email}
-                </p>
-              </div>
-              <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {session?.user?.image ? (
+                <Image src={session.user.image} alt="" width={32} height={32} className="rounded-full object-cover" />
+              ) : (
+                <span className="text-xs font-medium text-gray-600">
+                  {session?.user?.name ? getInitials(session.user.name) : "U"}
+                </span>
+              )}
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name || "Usuário"}</p>
+              <p className="text-xs text-gray-400 truncate">{session?.user?.email}</p>
+            </div>
+            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem
@@ -156,7 +125,7 @@ export function Sidebar() {
               className="text-red-600 cursor-pointer text-xs"
             >
               <LogOut className="w-3.5 h-3.5 mr-2" />
-              Sair
+              {t.sidebar.signOut}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
