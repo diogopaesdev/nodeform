@@ -32,9 +32,17 @@ interface QuestionRendererProps {
     respondentEmail?: string;
   }) => void;
   totalScore?: number;
+  brandColor?: string;
 }
 
-export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRendererProps) {
+function hexToRgba(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }: QuestionRendererProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
@@ -202,7 +210,8 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+            style={canSubmit && brandColor ? { backgroundColor: brandColor } : undefined}
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-opacity"
           >
             {presentationData.buttonText || "Iniciar"}
             <ArrowRight className="w-4 h-4" />
@@ -215,6 +224,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
   // Single Choice
   if (node.data.type === "singleChoice") {
     const singleChoiceData = node.data as import("@/types").SingleChoiceData;
+    const accent = brandColor || "#3b82f6";
 
     return (
       <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 p-8 space-y-5">
@@ -233,39 +243,39 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
         <NodeImage src={(singleChoiceData as { image?: string }).image} />
 
         <div className="space-y-2 pt-2">
-          {(singleChoiceData.options || []).map((option) => (
-            <button
-              key={option.id}
-              onClick={() => setSelectedOption(option.id)}
-              className={`w-full p-3.5 text-left rounded-xl border transition-all ${
-                selectedOption === option.id
-                  ? "border-blue-500 bg-blue-50/50 shadow-sm"
-                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                    selectedOption === option.id
-                      ? "border-blue-500 bg-blue-500"
-                      : "border-gray-300"
-                  }`}
-                >
-                  {selectedOption === option.id && (
-                    <div className="w-2 h-2 bg-white rounded-full" />
-                  )}
+          {(singleChoiceData.options || []).map((option) => {
+            const isSelected = selectedOption === option.id;
+            return (
+              <button
+                key={option.id}
+                onClick={() => setSelectedOption(option.id)}
+                style={isSelected ? { borderColor: accent, backgroundColor: hexToRgba(accent, 0.05) } : undefined}
+                className={`w-full p-3.5 text-left rounded-xl border transition-all shadow-sm ${
+                  isSelected ? "" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    style={isSelected ? { borderColor: accent, backgroundColor: accent } : undefined}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      isSelected ? "" : "border-gray-300"
+                    }`}
+                  >
+                    {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                  <span className="text-sm text-gray-900">{option.label}</span>
                 </div>
-                <span className="text-sm text-gray-900">{option.label}</span>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
 
         <div className="pt-4">
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="w-full py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+            style={canSubmit && brandColor ? { backgroundColor: brandColor } : undefined}
+            className="w-full py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-opacity"
           >
             Continuar
           </button>
@@ -277,6 +287,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
   // Multiple Choice
   if (node.data.type === "multipleChoice") {
     const multipleChoiceData = node.data as import("@/types").MultipleChoiceData;
+    const accent = brandColor || "#22c55e";
 
     return (
       <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 p-8 space-y-5">
@@ -302,23 +313,19 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
               <button
                 key={option.id}
                 onClick={() => toggleMultipleOption(option.id)}
+                style={isSelected ? { borderColor: accent, backgroundColor: hexToRgba(accent, 0.05) } : undefined}
                 className={`w-full p-3.5 text-left rounded-xl border transition-all ${
-                  isSelected
-                    ? "border-green-500 bg-green-50/50 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                  isSelected ? "shadow-sm" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div
+                    style={isSelected ? { borderColor: accent, backgroundColor: accent } : undefined}
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                      isSelected
-                        ? "border-green-500 bg-green-500"
-                        : "border-gray-300"
+                      isSelected ? "" : "border-gray-300"
                     }`}
                   >
-                    {isSelected && (
-                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                    )}
+                    {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                   </div>
                   <span className="text-sm text-gray-900">{option.label}</span>
                 </div>
@@ -331,7 +338,8 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="w-full py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+            style={canSubmit && brandColor ? { backgroundColor: brandColor } : undefined}
+            className="w-full py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-opacity"
           >
             Continuar ({selectedOptions.length} selecionada{selectedOptions.length !== 1 ? 's' : ''})
           </button>
@@ -380,9 +388,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
                   }`}
                   strokeWidth={1.5}
                 />
-                <span className="text-xs font-medium text-gray-500">
-                  {value}
-                </span>
+                <span className="text-xs font-medium text-gray-500">{value}</span>
               </button>
             ))}
           </div>
@@ -397,7 +403,8 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="w-full py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+            style={canSubmit && brandColor ? { backgroundColor: brandColor } : undefined}
+            className="w-full py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-opacity"
           >
             Continuar
           </button>
@@ -436,7 +443,8 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0 }: QuestionRen
         <div className="pt-4">
           <button
             onClick={() => onAnswer({})}
-            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
+            style={brandColor ? { backgroundColor: brandColor } : undefined}
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 rounded-lg transition-opacity"
           >
             Finalizar
           </button>

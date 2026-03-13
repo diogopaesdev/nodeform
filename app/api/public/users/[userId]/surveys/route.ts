@@ -9,11 +9,10 @@ export async function GET(
     const { userId } = await params;
     const { db } = getFirebaseAdmin();
 
-    // Buscar pesquisas do usuário (filtro e ordenação no código para evitar índice composto)
-    const surveysSnapshot = await db
-      .collection("surveys")
-      .where("userId", "==", userId)
-      .get();
+    const [surveysSnapshot, userDoc] = await Promise.all([
+      db.collection("surveys").where("userId", "==", userId).get(),
+      db.collection("users").doc(userId).get(),
+    ]);
 
     const surveys = surveysSnapshot.docs
       .map((doc) => {
@@ -33,7 +32,15 @@ export async function GET(
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .map(({ status, ...rest }) => rest);
 
-    return NextResponse.json({ surveys });
+    const userData = userDoc.data() || {};
+    const brand = {
+      brandColor: userData.brandColor || null,
+      logoUrl: userData.logoUrl || null,
+      displayName: userData.displayName || userData.companyName || null,
+      brandDescription: userData.brandDescription || null,
+    };
+
+    return NextResponse.json({ surveys, brand });
   } catch (error) {
     console.error("Error fetching user surveys:", error);
     return NextResponse.json(

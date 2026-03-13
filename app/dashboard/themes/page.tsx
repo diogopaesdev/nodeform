@@ -2,157 +2,290 @@
 
 import { Check, Lock } from "lucide-react";
 
-// Preview do tema básico — miniatura fiel ao surveys/user/[userId]/page.tsx
-function BasicThemePreview() {
-  const cards = [
-    { title: "Pesquisa de Satisfação", desc: "Como foi sua experiência?" },
-    { title: "Quiz de Conhecimentos", desc: "Teste seu nível" },
-    { title: "Avaliação de Produto", desc: "Nos ajude a melhorar" },
-  ];
+// ─── Mock survey cards shared between previews ────────────────────────────────
 
+function MockCard({
+  titleClass,
+  descClass,
+  btnClass,
+  cardClass,
+}: {
+  titleClass: string;
+  descClass: string;
+  btnClass: string;
+  cardClass: string;
+}) {
   return (
-    <div className="w-full h-full bg-gray-50 p-3 overflow-hidden">
-      {/* Header mockup */}
-      <div className="text-center mb-3">
-        <div className="h-2.5 w-32 bg-gray-300 rounded mx-auto mb-1.5" />
-        <div className="h-1.5 w-48 bg-gray-200 rounded mx-auto" />
+    <div className={`rounded-xl p-2 ${cardClass}`}>
+      <div className={`h-2 rounded mb-1.5 w-3/4 ${titleClass}`} />
+      <div className={`h-1.5 rounded mb-1 w-full ${descClass}`} />
+      <div className={`h-1.5 rounded mb-2 w-2/3 ${descClass}`} />
+      <div className={`h-4 rounded w-full ${btnClass}`} />
+    </div>
+  );
+}
+
+// ─── Theme previews ───────────────────────────────────────────────────────────
+
+function BasicPreview() {
+  return (
+    <div
+      className="w-full h-full bg-gray-50 p-4 flex flex-col"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle, #d1d5db 1px, transparent 1px)",
+        backgroundSize: "16px 16px",
+      }}
+    >
+      {/* Brand header */}
+      <div className="flex flex-col items-center mb-4">
+        <div className="w-7 h-7 bg-gray-200 rounded-lg mb-1.5" />
+        <div className="h-2 w-20 bg-gray-300 rounded mb-1" />
+        <div className="h-1.5 w-28 bg-gray-200 rounded" />
       </div>
-      {/* Cards grid */}
-      <div className="grid grid-cols-3 gap-2">
-        {cards.map((c, i) => (
-          <div key={i} className="bg-white border border-gray-200 rounded-lg p-2">
-            <div className="h-2 w-full bg-gray-200 rounded mb-1.5" />
-            <div className="h-1.5 w-3/4 bg-gray-100 rounded mb-2" />
-            <div className="h-4 w-12 bg-gray-900 rounded" />
-          </div>
-        ))}
+      {/* Cards */}
+      <div className="grid grid-cols-3 gap-2 flex-1">
+        <MockCard
+          cardClass="bg-white border border-gray-200"
+          titleClass="bg-gray-800"
+          descClass="bg-gray-200"
+          btnClass="bg-gray-800"
+        />
+        <MockCard
+          cardClass="bg-white border border-gray-200"
+          titleClass="bg-gray-800"
+          descClass="bg-gray-200"
+          btnClass="bg-gray-800"
+        />
+        <MockCard
+          cardClass="bg-white border border-gray-200"
+          titleClass="bg-gray-800"
+          descClass="bg-gray-200"
+          btnClass="bg-gray-800"
+        />
       </div>
     </div>
   );
 }
 
-// Placeholder de tema futuro
-function ComingSoonPreview({ color }: { color: string }) {
+function DarkPreview() {
   return (
-    <div className={`w-full h-full ${color} flex items-center justify-center`}>
-      <div className="text-center space-y-2 opacity-40">
-        <div className="w-8 h-8 border-2 border-current rounded-lg mx-auto flex items-center justify-center">
-          <Lock className="w-4 h-4" />
-        </div>
+    <div className="w-full h-full bg-gray-900 p-4 flex flex-col">
+      <div className="flex flex-col items-center mb-4">
+        <div className="w-7 h-7 bg-gray-700 rounded-lg mb-1.5" />
+        <div className="h-2 w-20 bg-gray-600 rounded mb-1" />
+        <div className="h-1.5 w-28 bg-gray-700 rounded" />
+      </div>
+      <div className="grid grid-cols-3 gap-2 flex-1">
+        <MockCard
+          cardClass="bg-gray-800 border border-gray-700"
+          titleClass="bg-gray-400"
+          descClass="bg-gray-600"
+          btnClass="bg-gray-500"
+        />
+        <MockCard
+          cardClass="bg-gray-800 border border-gray-700"
+          titleClass="bg-gray-400"
+          descClass="bg-gray-600"
+          btnClass="bg-gray-500"
+        />
+        <MockCard
+          cardClass="bg-gray-800 border border-gray-700"
+          titleClass="bg-gray-400"
+          descClass="bg-gray-600"
+          btnClass="bg-gray-500"
+        />
       </div>
     </div>
   );
 }
+
+function BoldPreview() {
+  return (
+    <div
+      className="w-full h-full p-4 flex flex-col"
+      style={{
+        background: "linear-gradient(135deg, #f97316 0%, #f59e0b 50%, #fbbf24 100%)",
+      }}
+    >
+      <div className="flex flex-col items-center mb-4">
+        <div className="w-7 h-7 bg-white/30 rounded-lg mb-1.5" />
+        <div className="h-2 w-20 bg-white/70 rounded mb-1" />
+        <div className="h-1.5 w-28 bg-white/50 rounded" />
+      </div>
+      <div className="grid grid-cols-3 gap-2 flex-1">
+        <MockCard
+          cardClass="bg-white/20 border border-white/30 backdrop-blur-sm"
+          titleClass="bg-white/80"
+          descClass="bg-white/50"
+          btnClass="bg-white/70"
+        />
+        <MockCard
+          cardClass="bg-white/20 border border-white/30 backdrop-blur-sm"
+          titleClass="bg-white/80"
+          descClass="bg-white/50"
+          btnClass="bg-white/70"
+        />
+        <MockCard
+          cardClass="bg-white/20 border border-white/30 backdrop-blur-sm"
+          titleClass="bg-white/80"
+          descClass="bg-white/50"
+          btnClass="bg-white/70"
+        />
+      </div>
+    </div>
+  );
+}
+
+function MinimalPreview() {
+  return (
+    <div className="w-full h-full bg-white p-4 flex flex-col">
+      <div className="flex flex-col items-center mb-4">
+        <div className="w-7 h-7 bg-gray-100 rounded-lg mb-1.5" />
+        <div className="h-2 w-20 bg-gray-200 rounded mb-1" />
+        <div className="h-1.5 w-28 bg-gray-100 rounded" />
+      </div>
+      <div className="grid grid-cols-3 gap-2 flex-1">
+        <MockCard
+          cardClass="bg-white border-0"
+          titleClass="bg-gray-700"
+          descClass="bg-gray-100"
+          btnClass="bg-gray-100"
+        />
+        <MockCard
+          cardClass="bg-white border-0"
+          titleClass="bg-gray-700"
+          descClass="bg-gray-100"
+          btnClass="bg-gray-100"
+        />
+        <MockCard
+          cardClass="bg-white border-0"
+          titleClass="bg-gray-700"
+          descClass="bg-gray-100"
+          btnClass="bg-gray-100"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Theme data ───────────────────────────────────────────────────────────────
 
 const THEMES = [
   {
     id: "basic",
     name: "Básico",
-    description: "Limpo, minimalista e focado no conteúdo. O tema padrão do SurveyFlow.",
+    description: "Limpo, minimalista e focado no conteúdo. Ideal para qualquer tipo de pesquisa.",
     active: true,
     soon: false,
-    preview: <BasicThemePreview />,
+    Preview: BasicPreview,
   },
   {
     id: "dark",
     name: "Dark",
-    description: "Fundo escuro com elementos suaves. Ideal para contextos noturnos.",
+    description: "Fundo escuro com elementos suaves. Perfeito para ambientes noturnos.",
     active: false,
     soon: true,
-    preview: <ComingSoonPreview color="bg-gray-900" />,
+    Preview: DarkPreview,
   },
   {
     id: "bold",
     name: "Bold",
-    description: "Cores vibrantes e tipografia marcante para quizzes e campanhas.",
+    description: "Cores vibrantes e energia visual alta. Ideal para quizzes e campanhas.",
     active: false,
     soon: true,
-    preview: <ComingSoonPreview color="bg-orange-50" />,
+    Preview: BoldPreview,
   },
   {
     id: "minimal",
     name: "Minimal",
-    description: "Apenas o essencial. Sem bordas, sem sombras — puro conteúdo.",
+    description: "Sem bordas, sem sombras — puro conteúdo. Máxima clareza e foco.",
     active: false,
     soon: true,
-    preview: <ComingSoonPreview color="bg-white" />,
+    Preview: MinimalPreview,
   },
 ];
 
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function ThemesPage() {
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-6xl">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-gray-900">Temas</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Escolha como sua lista de pesquisas e páginas públicas serão exibidas para os respondentes.
+          Escolha o layout e estilo das páginas públicas de pesquisas.
         </p>
       </div>
 
-      {/* Grid de temas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {THEMES.map((theme) => (
-          <div
-            key={theme.id}
-            className={`group relative bg-white rounded-2xl border-2 transition-all flex flex-col overflow-hidden ${
-              theme.active
-                ? "border-gray-900 shadow-sm"
-                : theme.soon
-                ? "border-gray-200 opacity-60 cursor-not-allowed"
-                : "border-gray-200 hover:border-gray-400 cursor-pointer"
-            }`}
-          >
-            {/* Badge ativo */}
-            {theme.active && (
-              <div className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-0.5 bg-gray-900 text-white text-[10px] font-semibold rounded-full">
-                <Check className="w-3 h-3" />
-                Ativo
-              </div>
-            )}
+      {/* Theme grid */}
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {THEMES.map((theme) => {
+          const { Preview } = theme;
+          return (
+            <div
+              key={theme.id}
+              className={`rounded-2xl overflow-hidden flex flex-col transition-all ${
+                theme.active
+                  ? "border-2 border-gray-900 shadow-sm"
+                  : "border border-gray-200 opacity-60"
+              }`}
+            >
+              {/* Preview area */}
+              <div className="h-52 relative overflow-hidden bg-gray-100">
+                <Preview />
 
-            {/* Badge em breve */}
-            {theme.soon && (
-              <div className="absolute top-3 right-3 z-10 px-2 py-0.5 bg-gray-100 text-gray-400 text-[10px] font-semibold rounded-full">
-                Em breve
-              </div>
-            )}
-
-            {/* Preview */}
-            <div className="h-44 overflow-hidden border-b border-gray-100">
-              {theme.preview}
-            </div>
-
-            {/* Info */}
-            <div className="p-4 flex-1 flex flex-col gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">{theme.name}</h3>
-                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{theme.description}</p>
-              </div>
-
-              <div className="mt-auto">
-                {theme.active ? (
-                  <div className="w-full h-8 flex items-center justify-center text-xs font-medium text-gray-900 bg-gray-50 border border-gray-200 rounded-lg">
-                    Tema atual
+                {/* Coming soon overlay */}
+                {theme.soon && (
+                  <div className="absolute inset-0 backdrop-blur-[2px] bg-white/30 flex items-center justify-center">
+                    <div className="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center">
+                      <Lock className="w-4 h-4 text-gray-500" />
+                    </div>
                   </div>
+                )}
+              </div>
+
+              {/* Card footer */}
+              <div className="p-4 bg-white flex flex-col gap-3 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{theme.name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{theme.description}</p>
+                  </div>
+                  {theme.active ? (
+                    <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold bg-gray-900 text-white px-2 py-0.5 rounded-full">
+                      <Check className="w-2.5 h-2.5" />
+                      Ativo
+                    </span>
+                  ) : (
+                    <span className="flex-shrink-0 text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                      Em breve
+                    </span>
+                  )}
+                </div>
+
+                {/* Action button */}
+                {theme.active ? (
+                  <button
+                    disabled
+                    className="w-full text-xs font-medium py-2 rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed"
+                  >
+                    Tema atual
+                  </button>
                 ) : (
                   <button
-                    disabled={theme.soon}
-                    className="w-full h-8 text-xs font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed"
+                    disabled
+                    className="w-full text-xs font-medium py-2 rounded-lg bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100"
                   >
-                    {theme.soon ? "Em breve" : "Aplicar tema"}
+                    Em breve
                   </button>
                 )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-
-      {/* Nota */}
-      <p className="mt-8 text-xs text-gray-400">
-        O tema selecionado é aplicado à sua página pública de pesquisas e às páginas de resposta individuais.
-      </p>
     </div>
   );
 }

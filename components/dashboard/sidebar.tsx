@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   FileText,
   Palette,
+  Paintbrush,
   Settings,
   LogOut,
   ChevronDown,
@@ -30,6 +31,11 @@ const navItems = [
     label: "Pesquisas",
     href: "/dashboard/surveys",
     icon: FileText,
+  },
+  {
+    label: "Aparência",
+    href: "/dashboard/appearance",
+    icon: Paintbrush,
   },
   {
     label: "Temas",

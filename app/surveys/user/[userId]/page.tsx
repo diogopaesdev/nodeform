@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { FileText, Loader2, Clock, Gift, ArrowRight } from "lucide-react";
 import { useEmbedResize } from "@/lib/hooks/use-embed-resize";
 
@@ -16,6 +17,13 @@ interface PublicSurvey {
   updatedAt: string;
 }
 
+interface Brand {
+  brandColor: string | null;
+  logoUrl: string | null;
+  displayName: string | null;
+  brandDescription: string | null;
+}
+
 export default function UserSurveysPage({
   params,
 }: {
@@ -26,6 +34,7 @@ export default function UserSurveysPage({
   const isEmbedMode = searchParams.get("embed") === "true";
 
   const [surveys, setSurveys] = useState<PublicSurvey[]>([]);
+  const [brand, setBrand] = useState<Brand>({ brandColor: null, logoUrl: null, displayName: null, brandDescription: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +53,7 @@ export default function UserSurveysPage({
       }
       const data = await res.json();
       setSurveys(data.surveys || []);
+      if (data.brand) setBrand(data.brand);
     } catch (err) {
       console.error("Error fetching surveys:", err);
       setError("Erro ao carregar pesquisas");
@@ -51,6 +61,8 @@ export default function UserSurveysPage({
       setLoading(false);
     }
   };
+
+  const accentColor = brand.brandColor || "#111827";
 
   if (loading) {
     return (
@@ -75,7 +87,34 @@ export default function UserSurveysPage({
   return (
     <div className={isEmbedMode ? "p-4" : "min-h-screen bg-gray-50 p-8"}>
       <div className={`mx-auto ${isEmbedMode ? "max-w-full" : "max-w-4xl"}`}>
-        {!isEmbedMode && (
+
+        {/* Brand header */}
+        {(brand.logoUrl || brand.displayName || brand.brandDescription) && (
+          <div className={`flex flex-col items-center text-center ${isEmbedMode ? "mb-5" : "mb-8"}`}>
+            {brand.logoUrl && (
+              <div className="mb-3">
+                <Image
+                  src={brand.logoUrl}
+                  alt={brand.displayName || "Logo"}
+                  width={56}
+                  height={56}
+                  className="rounded-xl object-contain"
+                />
+              </div>
+            )}
+            {brand.displayName && (
+              <h1 className={`font-bold text-gray-900 ${isEmbedMode ? "text-lg" : "text-xl"}`}>
+                {brand.displayName}
+              </h1>
+            )}
+            {brand.brandDescription && (
+              <p className="text-sm text-gray-500 mt-1">{brand.brandDescription}</p>
+            )}
+          </div>
+        )}
+
+        {/* Fallback header quando sem brand */}
+        {!brand.logoUrl && !brand.displayName && !isEmbedMode && (
           <div className="text-center mb-8">
             <h1 className="text-xl font-semibold text-gray-900 mb-1">Pesquisas Disponíveis</h1>
             <p className="text-sm text-gray-500">Selecione uma pesquisa para participar</p>
@@ -120,7 +159,8 @@ export default function UserSurveysPage({
 
                 <Link
                   href={`/survey/${survey.id}${isEmbedMode ? "?embed=true" : ""}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
+                  style={{ backgroundColor: accentColor }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-md transition-opacity hover:opacity-90"
                 >
                   Participar
                   <ArrowRight className="w-3 h-3" />
@@ -132,9 +172,7 @@ export default function UserSurveysPage({
 
         {!isEmbedMode && (
           <div className="text-center mt-8">
-            <p className="text-[11px] text-gray-400">
-              Criado com SurveyFlow
-            </p>
+            <p className="text-[11px] text-gray-400">Criado com SurveyFlow</p>
           </div>
         )}
       </div>
