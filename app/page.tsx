@@ -10,6 +10,7 @@ import {
   Share2, Clock, Zap, Shield, Users, TrendingUp,
   Play, CircleDot, CheckSquare, Star, FlagTriangleRight,
   GripVertical, Settings, Save, ArrowLeft, Trash2,
+  Sparkles, Brain, FileSearch, Languages, FileBarChart2, MessageSquare,
 } from "lucide-react";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
@@ -333,13 +334,57 @@ const PLAN_FEATURES: { label: string; soon?: boolean }[] = [
   { label: "Editor visual node-based" },
   { label: "Fluxo condicional por resposta" },
   { label: "Sistema de pontuação" },
-  { label: "Dashboard de resultados" },
+  { label: "Dashboard e analytics" },
   { label: "Exportação de dados" },
   { label: "Embed em qualquer site" },
   { label: "Coleta de nome e e-mail" },
+  { label: "Identidade visual personalizada" },
+  { label: "10 créditos IA por mês" },
   { label: "Suporte prioritário" },
-  { label: "Temas personalizados", soon: true },
-  { label: "Criação de pesquisas com IA", soon: true },
+  { label: "Temas visuais (Dark, Bold, Minimal)", soon: true },
+  { label: "Análise de respostas com IA", soon: true },
+  { label: "Sugestão de perguntas com IA", soon: true },
+  { label: "Relatório automático com IA", soon: true },
+  { label: "Tradução automática de pesquisas", soon: true },
+];
+
+const AI_FEATURES: { icon: React.ElementType; title: string; desc: string; available: boolean }[] = [
+  {
+    icon: Sparkles,
+    title: "Criação de pesquisas",
+    desc: "Descreva sua pesquisa em linguagem natural e a IA monta o fluxo completo com perguntas, opções e conexões.",
+    available: true,
+  },
+  {
+    icon: FileSearch,
+    title: "Análise de respostas",
+    desc: "A IA lê todas as respostas e gera um resumo com insights, padrões e pontos de atenção.",
+    available: false,
+  },
+  {
+    icon: Brain,
+    title: "Sugestão de perguntas",
+    desc: "Com base no contexto da pesquisa, a IA sugere perguntas relevantes para complementar seu fluxo.",
+    available: false,
+  },
+  {
+    icon: FileBarChart2,
+    title: "Relatório automático",
+    desc: "Geração de relatórios executivos prontos para apresentação, com gráficos e conclusões.",
+    available: false,
+  },
+  {
+    icon: MessageSquare,
+    title: "Reescrita inteligente",
+    desc: "Aprimore o tom, a clareza ou adapte perguntas para diferentes públicos com um clique.",
+    available: false,
+  },
+  {
+    icon: Languages,
+    title: "Tradução automática",
+    desc: "Traduza toda a pesquisa para outros idiomas mantendo o contexto e o fluxo intactos.",
+    available: false,
+  },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -379,6 +424,7 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-0.5 px-1">
             {[
               { href: "#features", label: "Recursos" },
+              { href: "#ai",       label: "IA" },
               { href: "#how",      label: "Como funciona" },
               { href: "#pricing",  label: "Preços" },
             ].map(({ href, label }) => (
@@ -641,6 +687,100 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─ AI Section ─────────────────────────────────────────────────────── */}
+      <section id="ai" className="py-24 px-6 bg-gray-950 overflow-hidden">
+        <div className="max-w-5xl mx-auto">
+
+          <FadeUp className="mb-16">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+              </div>
+              <p className="text-[12px] font-semibold text-white/50 uppercase tracking-widest">Inteligência Artificial</p>
+            </div>
+            <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-white mb-4">
+              IA que trabalha por você
+            </h2>
+            <p className="text-[16px] text-gray-400 max-w-xl leading-relaxed">
+              Funcionalidades inteligentes que eliminam o trabalho manual. Cada ação consome créditos — você recebe <strong className="text-white">10 por mês</strong> gratuitamente e pode comprar mais conforme precisar.
+            </p>
+          </FadeUp>
+
+          {/* Prompt mockup */}
+          <FadeUp delay={0.08} className="mb-14">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 max-w-2xl">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-7 h-7 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Users className="w-3.5 h-3.5 text-white/60" />
+                </div>
+                <div className="flex-1 bg-white/8 rounded-xl px-4 py-3 text-[14px] text-white/80 leading-relaxed border border-white/10">
+                  Crie uma pesquisa NPS com perguntas sobre atendimento, qualidade do produto e probabilidade de indicação. Público B2C, tom amigável.
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Sparkles className="w-3.5 h-3.5 text-gray-900" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <span className="text-[12px] font-medium text-white/40">Pesquisa gerada</span>
+                    <span className="text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">1 crédito usado</span>
+                  </div>
+                  <div className="space-y-2">
+                    {["Apresentação — Bem-vindo à nossa pesquisa!", "Como você avalia nosso atendimento? (1–5)", "O produto atendeu suas expectativas?", "Com que probabilidade nos indicaria? (NPS)", "Tela Final — Obrigado pelo feedback!"].map((node, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -8 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.3 + i * 0.08, duration: 0.4 }}
+                        className="flex items-center gap-2.5 bg-white/8 border border-white/10 rounded-lg px-3 py-2"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/30 flex-shrink-0" />
+                        <span className="text-[12px] text-white/70">{node}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeUp>
+
+          {/* AI Features grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {AI_FEATURES.map((feat, i) => (
+              <FadeUp key={feat.title} delay={i * 0.06}>
+                <div className={`relative p-5 rounded-2xl border transition-colors h-full ${
+                  feat.available
+                    ? "bg-white/8 border-white/20 hover:border-white/30"
+                    : "bg-white/3 border-white/8"
+                }`}>
+                  {feat.available ? (
+                    <span className="absolute top-4 right-4 text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
+                      Disponível
+                    </span>
+                  ) : (
+                    <span className="absolute top-4 right-4 text-[10px] font-semibold bg-white/10 text-white/40 px-2 py-0.5 rounded-full">
+                      Em breve
+                    </span>
+                  )}
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${feat.available ? "bg-white/15" : "bg-white/6"}`}>
+                    <feat.icon className={`w-4.5 h-4.5 ${feat.available ? "text-white" : "text-white/35"}`} />
+                  </div>
+                  <h3 className={`text-[14px] font-semibold mb-1.5 ${feat.available ? "text-white" : "text-white/40"}`}>
+                    {feat.title}
+                  </h3>
+                  <p className={`text-[13px] leading-relaxed ${feat.available ? "text-white/60" : "text-white/30"}`}>
+                    {feat.desc}
+                  </p>
+                </div>
+              </FadeUp>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
       {/* ─ Use Cases ──────────────────────────────────────────────────────── */}
       <section className="py-24 px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
@@ -789,7 +929,7 @@ export default function LandingPage() {
                       <ul className="space-y-2.5">
                         {PLAN_FEATURES.filter(f => f.soon).map((feat) => (
                           <li key={feat.label} className="flex items-center gap-3 text-[14px]">
-                            <Check className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                            <Sparkles className="w-4 h-4 text-gray-300 flex-shrink-0" />
                             <span className="text-gray-400">{feat.label}</span>
                           </li>
                         ))}
