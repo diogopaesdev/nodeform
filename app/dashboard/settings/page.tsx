@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -43,7 +43,6 @@ function SettingsContent() {
   const { data: session } = useSession();
   const { t } = useI18n();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,11 +60,11 @@ function SettingsContent() {
   useEffect(() => {
     const isCheckoutSuccess = searchParams.get("checkout") === "success";
     if (isCheckoutSuccess) {
-      // Sync com Stripe como fallback ao webhook, depois carrega dados frescos
+      // Sync com Stripe (fallback ao webhook) → redireciona ao dashboard
+      // O layout do dashboard lê o Firestore em tempo real, sem depender do JWT.
       fetch("/api/stripe/sync", { method: "POST" })
         .finally(() => {
-          fetchUser();
-          router.replace("/dashboard/settings");
+          window.location.href = "/dashboard";
         });
     } else {
       fetchUser();

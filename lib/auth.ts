@@ -56,6 +56,7 @@ export const authOptions: NextAuthOptions = {
           if (userDoc.exists) {
             const data = userDoc.data()!;
             token.onboardingCompleted = data.onboardingCompleted ?? false;
+            token.companyName = data.companyName ?? null;
             token.trialEnd = data.trialEnd ?? null;
             token.subscriptionStatus = data.subscriptionStatus ?? null;
           }
