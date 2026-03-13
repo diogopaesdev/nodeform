@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,6 +28,9 @@ export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { t } = useI18n();
+
+  const isPro = session?.user?.subscriptionStatus === "active";
+  const isTrialing = session?.user?.subscriptionStatus === "trialing";
 
   const navItems = [
     { label: t.sidebar.dashboard, href: "/dashboard",            icon: LayoutDashboard },
@@ -114,7 +118,20 @@ export function Sidebar() {
               )}
             </div>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name || "Usuário"}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name || "Usuário"}</p>
+                {isPro && (
+                  <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded-full leading-none">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    PRO
+                  </span>
+                )}
+                {isTrialing && !isPro && (
+                  <span className="flex-shrink-0 text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100 px-1.5 py-0.5 rounded-full leading-none">
+                    Trial
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-gray-400 truncate">{session?.user?.email}</p>
             </div>
             <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />

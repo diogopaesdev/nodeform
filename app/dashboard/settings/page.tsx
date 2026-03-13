@@ -40,7 +40,7 @@ export default function SettingsPage() {
 }
 
 function SettingsContent() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const { t } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -61,11 +61,11 @@ function SettingsContent() {
   useEffect(() => {
     const isCheckoutSuccess = searchParams.get("checkout") === "success";
     if (isCheckoutSuccess) {
-      // Sync com Stripe como fallback ao webhook, depois carrega dados frescos
+      // Sync com Stripe → atualiza JWT → remove param da URL
       fetch("/api/stripe/sync", { method: "POST" })
-        .finally(() => {
-          fetchUser();
-          router.replace("/dashboard/settings");
+        .finally(async () => {
+          await update(); // reescreve o JWT cookie com subscriptionStatus atualizado
+          window.location.href = "/dashboard";
         });
     } else {
       fetchUser();
