@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import {
-  Loader2, ArrowRight, Check, GitBranch, BarChart2,
+  ArrowRight, Check, GitBranch, BarChart2,
   Share2, Clock, Zap, Shield, Users, TrendingUp,
   Play, CircleDot, CheckSquare, Star, FlagTriangleRight,
   GripVertical, Settings, Save, ArrowLeft, Trash2,
@@ -351,14 +351,6 @@ export default function LandingPage() {
   useEffect(() => {
     if (session) router.push("/dashboard");
   }, [session, router]);
-
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen text-gray-900 antialiased">
