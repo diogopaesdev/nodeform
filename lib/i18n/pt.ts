@@ -458,4 +458,9 @@ export const pt = {
   },
 } as const;
 
-export type Translations = typeof pt;
+// Converte todos os valores literais em string, mantendo a estrutura de chaves
+type DeepString<T> = T extends string
+  ? string
+  : { [K in keyof T]: DeepString<T[K]> };
+
+export type Translations = DeepString<typeof pt>;

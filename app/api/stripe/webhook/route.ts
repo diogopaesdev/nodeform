@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
+import { addCredits } from "@/lib/credits";
 import Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
@@ -43,6 +44,17 @@ export async function POST(req: NextRequest) {
   switch (event.type) {
     case "checkout.session.completed": {
       const checkoutSession = event.data.object as Stripe.Checkout.Session;
+
+      // Compra de créditos avulsos
+      if (checkoutSession.metadata?.type === "credits" && checkoutSession.payment_status === "paid") {
+        const userId = checkoutSession.metadata.userId;
+        const creditAmount = parseInt(checkoutSession.metadata.creditAmount || "0", 10);
+        if (userId && creditAmount > 0) {
+          await addCredits(userId, creditAmount);
+        }
+        break;
+      }
+
       if (checkoutSession.mode !== "subscription") break;
 
       const customerId = checkoutSession.customer as string;

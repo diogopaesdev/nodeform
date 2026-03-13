@@ -148,7 +148,7 @@ export default function DashboardPage() {
   const handleBuyCredits = async (quantity: number) => {
     setBuyingCredits(true);
     try {
-      const res = await fetch("/api/credits/checkout", {
+      const res = await fetch("/api/stripe/credits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantity }),
