@@ -188,61 +188,52 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
     const state = get();
     if (!state.survey) return null;
 
-    console.log("=== getNextNodeId ===");
-    console.log("currentNodeId:", currentNodeId);
-    console.log("answer:", answer);
-    console.log("available edges:", state.survey.edges.filter(e => e.source === currentNodeId));
-
-    // Obter todas as edges do nó atual
     const availableEdges = state.survey.edges.filter(e => e.source === currentNodeId);
 
-    // Se não há edges, completar pesquisa
     if (availableEdges.length === 0) {
-      console.log("No edges found, completing survey");
       return null;
     }
 
+    // "source" é o id do handle genérico — tratar como ausência de optionId
+    // para compatibilidade com edges salvas antes da correção do onConnect
+    const isGenericEdge = (edge: { data?: { optionId?: string; ratingValue?: number } }) => {
+      const optId = edge.data?.optionId;
+      return !optId || optId === "source";
+    };
+
     // Encontrar edge que corresponde à resposta
     let matchingEdge = availableEdges.find((edge) => {
-      // Para presentation: usar primeira edge disponível (conexão padrão)
+      // Para presentation: usar primeira edge genérica disponível
       const isEmptyAnswer = !answer.selectedOptionId && !answer.selectedOptionIds && answer.ratingValue === undefined;
       if (isEmptyAnswer) {
-        console.log("Found presentation/default edge");
-        return true;
+        return isGenericEdge(edge);
       }
 
       // Para singleChoice: verificar se o optionId bate
       if (answer.selectedOptionId) {
-        // Se a edge tem optionId, verificar se bate com a resposta
-        if (edge.data?.optionId) {
-          console.log("Checking singleChoice edge:", edge.data.optionId, "vs", answer.selectedOptionId);
+        if (edge.data?.optionId && edge.data.optionId !== "source") {
           return edge.data.optionId === answer.selectedOptionId;
         }
-        // Se a edge não tem optionId (edge antiga/genérica), não aceitar para singleChoice
         return false;
       }
 
-      // Para multipleChoice: buscar edge sem optionId (conexão padrão)
-      if (answer.selectedOptionIds && !edge.data?.optionId && !edge.data?.ratingValue) {
-        console.log("Found multipleChoice default edge");
+      // Para multipleChoice: buscar edge genérica (sem optionId de opção real)
+      if (answer.selectedOptionIds && isGenericEdge(edge) && !edge.data?.ratingValue) {
         return true;
       }
 
-      // Para rating: verificar se o valor bate ou buscar conexão padrão
+      // Para rating: verificar se o valor bate ou buscar edge genérica
       if (answer.ratingValue !== undefined) {
         if (edge.data?.ratingValue !== undefined) {
           return edge.data.ratingValue === answer.ratingValue;
         }
-        // Se não tem ratingValue específico, aceita como conexão padrão
-        if (!edge.data?.optionId && !edge.data?.ratingValue) {
+        if (isGenericEdge(edge) && !edge.data?.ratingValue) {
           return true;
         }
       }
 
       return false;
     });
-
-    console.log("matchingEdge:", matchingEdge);
 
     // Se não encontrou edge correspondente, a pesquisa finaliza (retorna null)
     return matchingEdge?.target || null;
