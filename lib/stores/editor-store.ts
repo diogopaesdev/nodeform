@@ -113,13 +113,15 @@ export const useEditorStore = create<EditorState>()(
 
       onConnect: (connection) => {
         // Criar edge com data apropriada
+        // sourceHandle "source" é o handle genérico (presentation/multipleChoice/rating)
+        // apenas handles de opções reais (opt1, opt2...) devem ser salvos como optionId
+        const sourceHandle = connection.sourceHandle;
+        const optionId = sourceHandle && sourceHandle !== "source" ? sourceHandle : undefined;
+
         const newEdge: SurveyEdge = {
           ...connection,
           id: `edge_${connection.source}_${connection.target}_${Date.now()}`,
-          data: {
-            // Para singleChoice: sourceHandle contém o optionId
-            optionId: connection.sourceHandle || undefined,
-          },
+          data: { optionId },
         } as SurveyEdge;
 
         set({
