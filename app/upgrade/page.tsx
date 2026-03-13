@@ -52,11 +52,8 @@ export default function UpgradePage() {
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
           {/* Plan header */}
           <div className="bg-gray-900 px-6 py-5">
-            <div className="flex items-center justify-between mb-1">
+            <div className="mb-1">
               <span className="text-sm font-medium text-gray-400">{t.upgrade.planName}</span>
-              <span className="text-xs font-medium text-gray-900 bg-white/90 px-2 py-0.5 rounded-full">
-                {t.upgrade.planTrial}
-              </span>
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-4xl font-extrabold text-white tracking-tight">

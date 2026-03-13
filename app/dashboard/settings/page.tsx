@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -31,8 +32,18 @@ interface UserData {
 }
 
 export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsContent />
+    </Suspense>
+  );
+}
+
+function SettingsContent() {
   const { data: session } = useSession();
   const { t } = useI18n();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +59,17 @@ export default function SettingsPage() {
   const [billingLoading, setBillingLoading] = useState(false);
 
   useEffect(() => {
-    fetchUser();
+    const isCheckoutSuccess = searchParams.get("checkout") === "success";
+    if (isCheckoutSuccess) {
+      // Sync com Stripe como fallback ao webhook, depois carrega dados frescos
+      fetch("/api/stripe/sync", { method: "POST" })
+        .finally(() => {
+          fetchUser();
+          router.replace("/dashboard/settings");
+        });
+    } else {
+      fetchUser();
+    }
   }, []);
 
   const fetchUser = async () => {
@@ -400,3 +421,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

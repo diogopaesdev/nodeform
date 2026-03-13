@@ -31,6 +31,9 @@ export async function POST() {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+  // Só oferece trial se o usuário nunca teve um antes
+  const alreadyHadTrial = !!userData?.trialEnd;
+
   const checkoutSession = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
@@ -41,9 +44,11 @@ export async function POST() {
         quantity: 1,
       },
     ],
-    subscription_data: {
-      trial_period_days: 7,
-    },
+    ...(alreadyHadTrial ? {} : {
+      subscription_data: {
+        trial_period_days: 7,
+      },
+    }),
     success_url: `${appUrl}/dashboard/settings?checkout=success`,
     cancel_url: `${appUrl}/dashboard/settings?checkout=cancel`,
   });
