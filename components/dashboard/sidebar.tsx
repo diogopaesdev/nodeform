@@ -24,13 +24,13 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/language-toggle";
 
-export function Sidebar() {
+export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | null }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { t } = useI18n();
 
-  const isPro = session?.user?.subscriptionStatus === "active";
-  const isTrialing = session?.user?.subscriptionStatus === "trialing";
+  const isPro = subscriptionStatus === "active";
+  const isTrialing = subscriptionStatus === "trialing";
 
   const navItems = [
     { label: t.sidebar.dashboard, href: "/dashboard",            icon: LayoutDashboard },

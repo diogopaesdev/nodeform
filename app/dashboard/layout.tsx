@@ -32,19 +32,19 @@ export default async function DashboardLayout({
   const pathname = (await headers()).get("x-pathname") ?? "";
   const isExempt = EXEMPT_PATHS.some((p) => pathname.startsWith(p));
 
-  if (!isExempt) {
-    const { db } = getFirebaseAdmin();
-    const userDoc = await db.collection("users").doc(session.user.id).get();
-    const userData = userDoc.data();
+  const { db } = getFirebaseAdmin();
+  const userDoc = await db.collection("users").doc(session.user.id).get();
+  const userData = userDoc.data();
 
-    if (!hasValidAccess(userData ?? {})) {
-      redirect("/upgrade");
-    }
+  if (!isExempt && !hasValidAccess(userData ?? {})) {
+    redirect("/upgrade");
   }
+
+  const subscriptionStatus = (userData?.subscriptionStatus as string | undefined) ?? null;
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar />
+      <Sidebar subscriptionStatus={subscriptionStatus} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
