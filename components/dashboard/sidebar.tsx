@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -30,14 +31,14 @@ const navItems = [
     href: "/dashboard/surveys",
     icon: FileText,
   },
-];
-
-const comingSoonItems = [
   {
     label: "Temas",
+    href: "/dashboard/themes",
     icon: Palette,
   },
 ];
+
+const comingSoonItems: { label: string; icon: React.ElementType }[] = [];
 
 export function Sidebar() {
   const pathname = usePathname();
