@@ -159,6 +159,12 @@ export const en: Translations = {
       disclaimer: "The iframe automatically adjusts to content size.",
     },
     deleteConfirm: "Are you sure you want to delete this response?",
+    deleteResponseModal: {
+      title: "Delete response",
+      description: "Are you sure you want to delete this response? All associated data will be permanently removed.",
+      cannotBeUndone: "This action cannot be undone.",
+      deleteButton: "Delete response",
+    },
     getAnswerLabel: {
       namePrefix: "Name: ",
       emailPrefix: "Email: ",
@@ -457,6 +463,14 @@ export const en: Translations = {
     footerFound: " found",
     footerTotal: " total",
     deleteConfirm: "Are you sure you want to delete this survey?",
+    deleteModal: {
+      title: "Delete survey",
+      description: "Are you sure you want to delete this survey? All responses and associated data will be permanently removed.",
+      cannotBeUndone: "This action cannot be undone.",
+      deleteButton: "Delete survey",
+      typeToConfirm: "Type",
+      inputPlaceholder: "Survey name",
+    },
   },
   upgrade: {
     trialExpired: "Your trial has expired",

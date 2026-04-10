@@ -24,6 +24,7 @@ import {
   ShoppingCart,
   AlertTriangle,
 } from "lucide-react";
+import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 import {
   BarChart,
   Bar,
@@ -119,6 +120,9 @@ export default function DashboardPage() {
   const [buyingCredits, setBuyingCredits] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; surveyId: string; surveyTitle: string; loading: boolean }>({
+    open: false, surveyId: "", surveyTitle: "", loading: false,
+  });
 
   // STATUS_META built inside component so labels are translated
   const STATUS_META: Record<Survey["status"], { label: string; color: string; dot: string }> = {
@@ -224,16 +228,22 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeleteSurvey = async (id: string) => {
-    if (!confirm(t.surveys.deleteConfirm)) return;
+  const handleDeleteSurvey = (id: string, title: string) => {
+    setDeleteModal({ open: true, surveyId: id, surveyTitle: title, loading: false });
+  };
+
+  const confirmDeleteSurvey = async () => {
+    setDeleteModal((m) => ({ ...m, loading: true }));
     try {
-      await fetch(`/api/surveys/${id}`, { method: "DELETE" });
-      setSurveys(surveys.filter((s) => s.id !== id));
+      await fetch(`/api/surveys/${deleteModal.surveyId}`, { method: "DELETE" });
+      setSurveys(surveys.filter((s) => s.id !== deleteModal.surveyId));
       if (stats) {
         setStats({ ...stats, totalSurveys: stats.totalSurveys - 1 });
       }
+      setDeleteModal({ open: false, surveyId: "", surveyTitle: "", loading: false });
     } catch (error) {
       console.error("Error deleting survey:", error);
+      setDeleteModal((m) => ({ ...m, loading: false }));
     }
   };
 
@@ -860,7 +870,7 @@ window.addEventListener("message", function(e) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="min-w-[120px]">
                           <DropdownMenuItem
-                            onClick={() => handleDeleteSurvey(survey.id)}
+                            onClick={() => handleDeleteSurvey(survey.id, survey.title)}
                             className="text-red-600 text-xs"
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-2" />
@@ -875,6 +885,23 @@ window.addEventListener("message", function(e) {
           </div>
         )}
       </div>
+
+      <DeleteConfirmModal
+        open={deleteModal.open}
+        onOpenChange={(open) => !deleteModal.loading && setDeleteModal((m) => ({ ...m, open }))}
+        title={t.surveys.deleteModal.title}
+        description={t.surveys.deleteModal.description}
+        confirmName={deleteModal.surveyTitle}
+        onConfirm={confirmDeleteSurvey}
+        loading={deleteModal.loading}
+        labels={{
+          deleteButton: t.surveys.deleteModal.deleteButton,
+          cancelButton: t.common.cancel,
+          cannotBeUndone: t.surveys.deleteModal.cannotBeUndone,
+          typeToConfirm: t.surveys.deleteModal.typeToConfirm,
+          inputPlaceholder: t.surveys.deleteModal.inputPlaceholder,
+        }}
+      />
     </div>
   );
 }

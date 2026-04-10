@@ -12,6 +12,7 @@ import {
   Loader2,
   Search,
 } from "lucide-react";
+import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,9 @@ export default function SurveysPage() {
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; surveyId: string; surveyTitle: string; loading: boolean }>({
+    open: false, surveyId: "", surveyTitle: "", loading: false,
+  });
 
   const STATUS_OPTIONS = [
     { key: "all",       label: t.surveys.filterAll },
@@ -79,13 +83,19 @@ export default function SurveysPage() {
     }
   };
 
-  const handleDeleteSurvey = async (id: string) => {
-    if (!confirm(t.surveys.deleteConfirm)) return;
+  const handleDeleteSurvey = (id: string, title: string) => {
+    setDeleteModal({ open: true, surveyId: id, surveyTitle: title, loading: false });
+  };
+
+  const confirmDeleteSurvey = async () => {
+    setDeleteModal((m) => ({ ...m, loading: true }));
     try {
-      await fetch(`/api/surveys/${id}`, { method: "DELETE" });
-      setSurveys((prev) => prev.filter((s) => s.id !== id));
+      await fetch(`/api/surveys/${deleteModal.surveyId}`, { method: "DELETE" });
+      setSurveys((prev) => prev.filter((s) => s.id !== deleteModal.surveyId));
+      setDeleteModal({ open: false, surveyId: "", surveyTitle: "", loading: false });
     } catch (error) {
       console.error("Error deleting survey:", error);
+      setDeleteModal((m) => ({ ...m, loading: false }));
     }
   };
 
@@ -275,7 +285,7 @@ export default function SurveysPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="min-w-[120px]">
                         <DropdownMenuItem
-                          onClick={() => handleDeleteSurvey(survey.id)}
+                          onClick={() => handleDeleteSurvey(survey.id, survey.title)}
                           className="text-red-600 text-xs"
                         >
                           <Trash2 className="w-3.5 h-3.5 mr-2" />
@@ -297,6 +307,23 @@ export default function SurveysPage() {
           {footerText}{hasFilter ? t.surveys.footerFound : t.surveys.footerTotal}
         </p>
       )}
+
+      <DeleteConfirmModal
+        open={deleteModal.open}
+        onOpenChange={(open) => !deleteModal.loading && setDeleteModal((m) => ({ ...m, open }))}
+        title={t.surveys.deleteModal.title}
+        description={t.surveys.deleteModal.description}
+        confirmName={deleteModal.surveyTitle}
+        onConfirm={confirmDeleteSurvey}
+        loading={deleteModal.loading}
+        labels={{
+          deleteButton: t.surveys.deleteModal.deleteButton,
+          cancelButton: t.common.cancel,
+          cannotBeUndone: t.surveys.deleteModal.cannotBeUndone,
+          typeToConfirm: t.surveys.deleteModal.typeToConfirm,
+          inputPlaceholder: t.surveys.deleteModal.inputPlaceholder,
+        }}
+      />
     </div>
   );
 }
