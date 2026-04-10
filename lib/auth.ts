@@ -1,5 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import { getFirebaseAdmin } from "./firebase-admin";
 
 export const authOptions: NextAuthOptions = {
@@ -7,6 +9,35 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "E-mail", type: "email" },
+        password: { label: "Senha", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+
+        const { db } = getFirebaseAdmin();
+        const snapshot = await db
+          .collection("users")
+          .where("email", "==", credentials.email)
+          .limit(1)
+          .get();
+
+        if (snapshot.empty) return null;
+
+        const user = snapshot.docs[0].data();
+
+        if (user.provider !== "credentials" || !user.passwordHash) return null;
+        if (!user.emailVerified) return null;
+
+        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+        if (!valid) return null;
+
+        return { id: user.id, name: user.name, email: user.email, image: user.image };
+      },
     }),
   ],
   callbacks: {
