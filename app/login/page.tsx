@@ -64,8 +64,6 @@ function LoginContent() {
       setFeedback({ type: "error", message: "Link de verificação inválido." });
     } else if (error === "token-expired") {
       setFeedback({ type: "error", message: "Link de verificação expirado. Crie uma nova conta." });
-    } else if (error === "CredentialsSignin") {
-      setFeedback({ type: "error", message: "E-mail ou senha incorretos, ou e-mail não confirmado." });
     } else if (error === "email-exists") {
       setFeedback({ type: "error", message: "Este e-mail já está cadastrado com senha. Faça login com e-mail e senha." });
     }
@@ -83,16 +81,48 @@ function LoginContent() {
     e.preventDefault();
     setFeedback(null);
     setLoading(true);
-    const result = await signIn("credentials", {
-      email: loginEmail,
-      password: loginPassword,
-      redirect: false,
-    });
-    setLoading(false);
-    if (result?.error) {
-      setFeedback({ type: "error", message: "E-mail ou senha incorretos, ou e-mail não confirmado." });
-    } else {
-      router.push("/dashboard");
+
+    try {
+      const check = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail }),
+      });
+      const checkData = await check.json();
+
+      if (!checkData.exists) {
+        setFeedback({ type: "error", message: "Nenhuma conta encontrada com este e-mail." });
+        setLoading(false);
+        return;
+      }
+
+      if (checkData.provider === "google") {
+        setFeedback({ type: "error", message: "Este e-mail está cadastrado com o Google. Use o botão abaixo para entrar.", code: "google-account" });
+        setLoading(false);
+        return;
+      }
+
+      if (!checkData.emailVerified) {
+        setFeedback({ type: "error", message: "E-mail ainda não confirmado. Verifique sua caixa de entrada." });
+        setLoading(false);
+        return;
+      }
+
+      const result = await signIn("credentials", {
+        email: loginEmail,
+        password: loginPassword,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setFeedback({ type: "error", message: "Senha incorreta." });
+      } else {
+        router.push("/dashboard");
+      }
+    } catch {
+      setFeedback({ type: "error", message: "Erro ao fazer login. Tente novamente." });
+    } finally {
+      setLoading(false);
     }
   }
 
