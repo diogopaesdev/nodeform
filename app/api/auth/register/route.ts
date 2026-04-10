@@ -25,7 +25,11 @@ export async function POST(request: NextRequest) {
 
     const existing = await db.collection("users").where("email", "==", email).limit(1).get();
     if (!existing.empty) {
-      return NextResponse.json({ error: "E-mail já cadastrado" }, { status: 409 });
+      const provider = existing.docs[0].data().provider;
+      if (provider === "google") {
+        return NextResponse.json({ error: "Este e-mail já está vinculado a uma conta Google. Entre usando o botão \"Entrar com Google\".", code: "google-account" }, { status: 409 });
+      }
+      return NextResponse.json({ error: "E-mail já cadastrado.", code: "email-exists" }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);

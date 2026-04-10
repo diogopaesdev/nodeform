@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn, useSession } from "next-auth/react";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
@@ -37,7 +38,7 @@ function LoginContent() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string; code?: string } | null>(null);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -107,7 +108,7 @@ function LoginContent() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setFeedback({ type: "error", message: data.error ?? "Erro ao criar conta." });
+        setFeedback({ type: "error", message: data.error ?? "Erro ao criar conta.", code: data.code });
       } else {
         setRegisterDone(true);
       }
@@ -137,7 +138,16 @@ function LoginContent() {
                 : "bg-red-50 text-red-700 border border-red-200"
             }`}
           >
-            {feedback.message}
+            <p>{feedback.message}</p>
+            {feedback.code === "google-account" && (
+              <button
+                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                className="mt-2 flex items-center gap-2 text-xs font-medium text-red-700 underline underline-offset-2 hover:text-red-900"
+              >
+                {GOOGLE_ICON}
+                Entrar com Google
+              </button>
+            )}
           </div>
         )}
 
