@@ -4,10 +4,19 @@ import bcrypt from "bcryptjs";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { sendVerificationEmail } from "@/lib/email";
 
+const PasswordSchema = z
+  .string()
+  .min(8, "Mínimo 8 caracteres")
+  .max(100)
+  .regex(/[A-Z]/, "Deve conter ao menos uma letra maiúscula")
+  .regex(/[a-z]/, "Deve conter ao menos uma letra minúscula")
+  .regex(/\d/, "Deve conter ao menos um número")
+  .regex(/[^A-Za-z0-9]/, "Deve conter ao menos um caractere especial");
+
 const RegisterSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.string().email(),
-  password: z.string().min(8).max(100),
+  password: PasswordSchema,
 });
 
 export async function POST(request: NextRequest) {

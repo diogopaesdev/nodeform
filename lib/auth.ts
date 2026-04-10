@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 import { getFirebaseAdmin } from "./firebase-admin";
 
 export const authOptions: NextAuthOptions = {
@@ -14,10 +13,10 @@ export const authOptions: NextAuthOptions = {
       name: "credentials",
       credentials: {
         email: { label: "E-mail", type: "email" },
-        password: { label: "Senha", type: "password" },
+        otp: { label: "Código", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.otp) return null;
 
         const { db } = getFirebaseAdmin();
         const snapshot = await db
@@ -28,13 +27,14 @@ export const authOptions: NextAuthOptions = {
 
         if (snapshot.empty) return null;
 
-        const user = snapshot.docs[0].data();
+        const userDoc = snapshot.docs[0];
+        const user = userDoc.data();
 
-        if (user.provider !== "credentials" || !user.passwordHash) return null;
-        if (!user.emailVerified) return null;
+        if (!user.loginCode || user.loginCode !== credentials.otp) return null;
+        if (new Date(user.loginCodeExpiresAt) < new Date()) return null;
 
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!valid) return null;
+        // Consome o código após uso
+        await userDoc.ref.update({ loginCode: null, loginCodeExpiresAt: null });
 
         return { id: user.id, name: user.name, email: user.email, image: user.image };
       },

@@ -1,10 +1,9 @@
 "use client";
 
 import { signIn, useSession } from "next-auth/react";
-
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Check, X } from "lucide-react";
 
 const LOGO = (
   <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center">
@@ -30,6 +29,32 @@ const GOOGLE_ICON = (
   </svg>
 );
 
+// Requisitos de senha
+const PASSWORD_RULES = [
+  { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
+  { label: "Letra maiúscula", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "Letra minúscula", test: (p: string) => /[a-z]/.test(p) },
+  { label: "Número", test: (p: string) => /\d/.test(p) },
+  { label: "Caractere especial (!@#$%...)", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+
+function PasswordStrength({ password }: { password: string }) {
+  if (!password) return null;
+  return (
+    <div className="mt-2 space-y-1">
+      {PASSWORD_RULES.map((rule) => {
+        const ok = rule.test(password);
+        return (
+          <div key={rule.label} className={`flex items-center gap-1.5 text-xs ${ok ? "text-green-600" : "text-gray-400"}`}>
+            {ok ? <Check className="w-3 h-3 flex-shrink-0" /> : <X className="w-3 h-3 flex-shrink-0" />}
+            {rule.label}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function LoginContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -40,15 +65,21 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string; code?: string } | null>(null);
 
-  // Login form state
+  // Login — passo 1: credenciais
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  // Login — passo 2: OTP
+  const [loginStep, setLoginStep] = useState<"credentials" | "otp">("credentials");
+  const [otp, setOtp] = useState("");
 
-  // Register form state
+  // Register
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerDone, setRegisterDone] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+
+  const passwordValid = PASSWORD_RULES.every((r) => r.test(registerPassword));
 
   useEffect(() => {
     if (session) router.push("/dashboard");
@@ -57,7 +88,6 @@ function LoginContent() {
   useEffect(() => {
     const verified = searchParams.get("verified");
     const error = searchParams.get("error");
-
     if (verified === "true") {
       setFeedback({ type: "success", message: "E-mail confirmado! Você já pode entrar." });
     } else if (error === "invalid-token") {
@@ -77,57 +107,51 @@ function LoginContent() {
     );
   }
 
+  // Passo 1: valida senha e envia OTP
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setFeedback(null);
     setLoading(true);
-
     try {
-      const check = await fetch("/api/auth/check-email", {
+      const res = await fetch("/api/auth/send-login-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail }),
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
-      const checkData = await check.json();
-
-      if (!checkData.exists) {
-        setFeedback({ type: "error", message: "Nenhuma conta encontrada com este e-mail." });
-        setLoading(false);
-        return;
-      }
-
-      if (checkData.provider === "google") {
-        setFeedback({ type: "error", message: "Este e-mail está cadastrado com o Google. Use o botão abaixo para entrar.", code: "google-account" });
-        setLoading(false);
-        return;
-      }
-
-      if (!checkData.emailVerified) {
-        setFeedback({ type: "error", message: "E-mail ainda não confirmado. Verifique sua caixa de entrada." });
-        setLoading(false);
-        return;
-      }
-
-      const result = await signIn("credentials", {
-        email: loginEmail,
-        password: loginPassword,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setFeedback({ type: "error", message: "Senha incorreta." });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeedback({ type: "error", message: data.error ?? "Erro ao entrar.", code: data.code });
       } else {
-        router.push("/dashboard");
+        setLoginStep("otp");
+        setFeedback({ type: "success", message: `Código enviado para ${loginEmail}. Verifique sua caixa de entrada.` });
       }
     } catch {
-      setFeedback({ type: "error", message: "Erro ao fazer login. Tente novamente." });
+      setFeedback({ type: "error", message: "Erro ao entrar. Tente novamente." });
     } finally {
       setLoading(false);
     }
   }
 
+  // Passo 2: verifica OTP e faz login
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setFeedback(null);
+    setLoading(true);
+    const result = await signIn("credentials", { email: loginEmail, otp, redirect: false });
+    setLoading(false);
+    if (result?.error) {
+      setFeedback({ type: "error", message: "Código inválido ou expirado." });
+    } else {
+      router.push("/dashboard");
+    }
+  }
+
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+    if (!passwordValid) {
+      setFeedback({ type: "error", message: "A senha não atende aos requisitos mínimos." });
+      return;
+    }
     setFeedback(null);
     setLoading(true);
     try {
@@ -161,21 +185,18 @@ function LoginContent() {
         </div>
 
         {feedback && (
-          <div
-            className={`mb-5 px-4 py-3 rounded-lg text-sm ${
-              feedback.type === "success"
-                ? "bg-green-50 text-green-700 border border-green-200"
-                : "bg-red-50 text-red-700 border border-red-200"
-            }`}
-          >
+          <div className={`mb-5 px-4 py-3 rounded-lg text-sm ${
+            feedback.type === "success"
+              ? "bg-green-50 text-green-700 border border-green-200"
+              : "bg-red-50 text-red-700 border border-red-200"
+          }`}>
             <p>{feedback.message}</p>
             {feedback.code === "google-account" && (
               <button
                 onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                className="mt-2 flex items-center gap-2 text-xs font-medium text-red-700 underline underline-offset-2 hover:text-red-900"
+                className="mt-2 flex items-center gap-2 text-xs font-medium underline underline-offset-2"
               >
-                {GOOGLE_ICON}
-                Entrar com Google
+                {GOOGLE_ICON} Entrar com Google
               </button>
             )}
           </div>
@@ -184,88 +205,89 @@ function LoginContent() {
         {/* Tabs */}
         <div className="flex rounded-lg border border-gray-200 overflow-hidden mb-6">
           <button
-            onClick={() => { setTab("login"); setFeedback(null); }}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              tab === "login" ? "bg-gray-900 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
+            onClick={() => { setTab("login"); setFeedback(null); setLoginStep("credentials"); setOtp(""); }}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "login" ? "bg-gray-900 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
           >
             Entrar
           </button>
           <button
             onClick={() => { setTab("register"); setFeedback(null); setRegisterDone(false); }}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              tab === "register" ? "bg-gray-900 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === "register" ? "bg-gray-900 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
           >
             Cadastrar
           </button>
         </div>
 
-        {/* Login */}
+        {/* LOGIN */}
         {tab === "login" && (
           <div className="space-y-4">
-            <form onSubmit={handleLogin} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">E-mail</label>
-                <input
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">Senha</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-3 py-2 pr-9 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+            {loginStep === "credentials" ? (
+              <form onSubmit={handleLogin} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">E-mail</label>
+                  <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors" />
                 </div>
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-60 rounded-lg transition-colors"
-              >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Entrar
-              </button>
-            </form>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Senha</label>
+                  <div className="relative">
+                    <input type={showPassword ? "text" : "password"} required value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••"
+                      className="w-full px-3 py-2 pr-9 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors" />
+                    <button type="button" onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-60 rounded-lg transition-colors">
+                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Continuar
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Código de verificação</label>
+                  <input
+                    type="text" required maxLength={6} value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full px-3 py-2 text-sm text-center tracking-[0.5em] font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-400 mt-1.5">Código enviado para {loginEmail}</p>
+                </div>
+                <button type="submit" disabled={loading || otp.length !== 6}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-60 rounded-lg transition-colors">
+                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Entrar
+                </button>
+                <button type="button" onClick={() => { setLoginStep("credentials"); setOtp(""); setFeedback(null); }}
+                  className="w-full text-xs text-gray-400 hover:text-gray-600 text-center">
+                  Voltar e tentar novamente
+                </button>
+              </form>
+            )}
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs text-gray-400 bg-gray-50 px-3">
-                ou
-              </div>
-            </div>
-
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              {GOOGLE_ICON}
-              Entrar com Google
-            </button>
+            {loginStep === "credentials" && (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+                  <div className="relative flex justify-center text-xs text-gray-400 bg-gray-50 px-3">ou</div>
+                </div>
+                <button onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                  className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors">
+                  {GOOGLE_ICON} Entrar com Google
+                </button>
+              </>
+            )}
           </div>
         )}
 
-        {/* Register */}
+        {/* REGISTER */}
         {tab === "register" && (
           <>
             {registerDone ? (
@@ -277,87 +299,53 @@ function LoginContent() {
                 </div>
                 <p className="text-sm font-medium text-gray-900">Verifique seu e-mail</p>
                 <p className="text-sm text-gray-500">
-                  Enviamos um link de confirmação para <strong>{registerEmail}</strong>. Clique no link para ativar sua conta.
+                  Enviamos um link de confirmação para <strong>{registerEmail}</strong>.
                 </p>
-                <button
-                  onClick={() => { setTab("login"); setRegisterDone(false); }}
-                  className="text-xs text-gray-500 underline mt-2"
-                >
-                  Voltar para o login
-                </button>
+                <button onClick={() => { setTab("login"); setRegisterDone(false); }}
+                  className="text-xs text-gray-500 underline mt-2">Voltar para o login</button>
               </div>
             ) : (
               <div className="space-y-4">
                 <form onSubmit={handleRegister} className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1.5">Nome</label>
-                    <input
-                      type="text"
-                      required
-                      minLength={2}
-                      value={registerName}
-                      onChange={(e) => setRegisterName(e.target.value)}
-                      placeholder="Seu nome"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors"
-                    />
+                    <input type="text" required minLength={2} value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)} placeholder="Seu nome"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1.5">E-mail</label>
-                    <input
-                      type="email"
-                      required
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      placeholder="seu@email.com"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors"
-                    />
+                    <input type="email" required value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)} placeholder="seu@email.com"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1.5">Senha</label>
                     <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        minLength={8}
-                        value={registerPassword}
-                        onChange={(e) => setRegisterPassword(e.target.value)}
-                        placeholder="Mínimo 8 caracteres"
-                        className="w-full px-3 py-2 pr-9 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      <input type={showRegisterPassword ? "text" : "password"} required value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)} placeholder="Crie uma senha forte"
+                        className="w-full px-3 py-2 pr-9 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors" />
+                      <button type="button" onClick={() => setShowRegisterPassword((v) => !v)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showRegisterPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <PasswordStrength password={registerPassword} />
                   </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-60 rounded-lg transition-colors"
-                  >
+                  <button type="submit" disabled={loading || !passwordValid}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-60 rounded-lg transition-colors">
                     {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                     Criar conta
                   </button>
                 </form>
 
                 <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200" />
-                  </div>
-                  <div className="relative flex justify-center text-xs text-gray-400 bg-gray-50 px-3">
-                    ou
-                  </div>
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+                  <div className="relative flex justify-center text-xs text-gray-400 bg-gray-50 px-3">ou</div>
                 </div>
-
-                <button
-                  onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                  className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                  {GOOGLE_ICON}
-                  Cadastrar com Google
+                <button onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                  className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors">
+                  {GOOGLE_ICON} Cadastrar com Google
                 </button>
               </div>
             )}
