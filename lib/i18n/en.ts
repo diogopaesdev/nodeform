@@ -275,7 +275,7 @@ export const en: Translations = {
       title1: "Surveys that adapt",
       title2: "to every answer",
       subtitle: "A visual node-based editor where you connect questions like flow blocks. No code. Publish in seconds.",
-      cta: "Get started free with Google",
+      cta: "Get started free",
       ctaHow: "See how it works",
     },
     features: {
@@ -430,7 +430,7 @@ export const en: Translations = {
     ctaSection: {
       title: "Ready to get started?",
       subtitle: "Create your first survey in minutes. 7 days free, no card required.",
-      button: "Sign in with Google",
+      button: "Create free account",
     },
   },
   surveys: {

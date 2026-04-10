@@ -273,7 +273,7 @@ export const pt = {
       title1: "Pesquisas que se adaptam",
       title2: "a cada resposta",
       subtitle: "Editor visual node-based onde você conecta perguntas como blocos de fluxo. Sem código. Publique em segundos.",
-      cta: "Começar grátis com Google",
+      cta: "Começar grátis",
       ctaHow: "Ver como funciona",
     },
     features: {
@@ -428,7 +428,7 @@ export const pt = {
     ctaSection: {
       title: "Pronto para começar?",
       subtitle: "Crie sua primeira pesquisa em minutos. 7 dias grátis, sem precisar de cartão.",
-      button: "Entrar com Google",
+      button: "Criar conta grátis",
     },
   },
   surveys: {

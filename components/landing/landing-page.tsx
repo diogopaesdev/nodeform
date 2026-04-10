@@ -529,7 +529,6 @@ export function LandingPage() {
               onClick={() => router.push("/login")}
               className="w-full sm:w-auto h-11 px-6 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-medium rounded-[12px] transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
-              <GoogleIcon />
               {t.landing.hero.cta}
             </button>
             <Link
@@ -952,7 +951,6 @@ export function LandingPage() {
               onClick={() => router.push("/login")}
               className="inline-flex items-center gap-2 h-12 px-8 bg-white hover:bg-gray-100 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors"
             >
-              <GoogleIcon />
               {t.landing.ctaSection.button}
             </button>
           </div>
