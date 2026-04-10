@@ -65,6 +65,8 @@ function LoginContent() {
       setFeedback({ type: "error", message: "Link de verificação expirado. Crie uma nova conta." });
     } else if (error === "CredentialsSignin") {
       setFeedback({ type: "error", message: "E-mail ou senha incorretos, ou e-mail não confirmado." });
+    } else if (error === "email-exists") {
+      setFeedback({ type: "error", message: "Este e-mail já está cadastrado com senha. Faça login com e-mail e senha." });
     }
   }, [searchParams]);
 

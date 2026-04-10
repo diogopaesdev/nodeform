@@ -50,6 +50,18 @@ export const authOptions: NextAuthOptions = {
           const userDoc = await userRef.get();
 
           if (!userDoc.exists) {
+            // Verifica se já existe uma conta credentials com o mesmo email
+            const emailSnapshot = await db
+              .collection("users")
+              .where("email", "==", user.email)
+              .limit(1)
+              .get();
+
+            if (!emailSnapshot.empty) {
+              // Email já cadastrado com outro provider — bloqueia o login
+              return "/login?error=email-exists";
+            }
+
             await userRef.set({
               id: user.id,
               name: user.name,
