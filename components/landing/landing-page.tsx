@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
@@ -463,13 +463,13 @@ export function LandingPage() {
           {/* Actions */}
           <div className="flex items-center gap-1 pl-1 pr-1">
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => router.push("/login")}
               className="hidden sm:block px-3 py-1.5 text-[13px] text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
             >
               {t.landing.nav.signIn}
             </button>
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => router.push("/login")}
               className="h-8 px-3.5 bg-gray-900 hover:bg-gray-700 text-white text-[13px] font-medium rounded-full transition-colors flex items-center gap-1.5"
             >
               {t.landing.nav.getStarted} <ArrowRight className="w-3 h-3" />
@@ -526,7 +526,7 @@ export function LandingPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => router.push("/login")}
               className="w-full sm:w-auto h-11 px-6 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-medium rounded-[12px] transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
               <GoogleIcon />
@@ -922,7 +922,7 @@ export function LandingPage() {
                 {/* CTA */}
                 <div className="px-7 pt-5 pb-7 bg-white">
                   <button
-                    onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                    onClick={() => router.push("/login")}
                     className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                   >
                     {t.landing.pricing.trialCta} <ArrowRight className="w-4 h-4" />
@@ -949,7 +949,7 @@ export function LandingPage() {
               {t.landing.ctaSection.subtitle}
             </p>
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => router.push("/login")}
               className="inline-flex items-center gap-2 h-12 px-8 bg-white hover:bg-gray-100 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors"
             >
               <GoogleIcon />

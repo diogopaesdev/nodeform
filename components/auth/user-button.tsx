@@ -1,11 +1,13 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 
 export function UserButton() {
   const { data: session, status } = useSession();
+  const router = useRouter();
 
   if (status === "loading") {
     return (
@@ -16,7 +18,7 @@ export function UserButton() {
   if (!session) {
     return (
       <Button
-        onClick={() => signIn("google")}
+        onClick={() => router.push("/login")}
         variant="outline"
         size="sm"
       >
