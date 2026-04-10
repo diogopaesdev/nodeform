@@ -204,11 +204,6 @@ function FlowCanvasInner() {
         fitView
         attributionPosition="bottom-left"
         className="bg-gray-50"
-        defaultEdgeOptions={{
-          type: "smoothstep",
-          style: { stroke: "#d1d5db", strokeWidth: 1.5 },
-          animated: false,
-        }}
       >
         <Background
           variant={BackgroundVariant.Dots}
