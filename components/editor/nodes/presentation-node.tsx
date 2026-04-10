@@ -15,12 +15,12 @@ export const PresentationNode = memo(({ data, selected }: Props) => {
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border min-w-[240px] max-w-[280px] relative transition-all ${
+      className={`bg-white rounded-xl shadow-sm border min-w-[260px] max-w-[300px] relative transition-all ${
         selected ? "border-orange-400 shadow-md shadow-orange-100" : "border-gray-200"
       }`}
     >
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-100">
+      <div className="flex items-center gap-2.5 px-3 py-3 border-b border-gray-100">
         <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <Play className="w-3.5 h-3.5 text-orange-600" />
         </div>
@@ -31,7 +31,7 @@ export const PresentationNode = memo(({ data, selected }: Props) => {
       </div>
 
       {/* Body */}
-      <div className="p-3 space-y-2.5">
+      <div className="p-4 space-y-2.5">
         {data.description && (
           <p className="text-xs text-gray-500 line-clamp-2">{data.description}</p>
         )}
