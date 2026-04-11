@@ -157,6 +157,12 @@ export const pt = {
       disclaimer: "O iframe se adapta automaticamente ao tamanho do conteúdo.",
     },
     deleteConfirm: "Tem certeza que deseja excluir esta resposta?",
+    deleteResponseModal: {
+      title: "Excluir resposta",
+      description: "Tem certeza que deseja excluir esta resposta? Todos os dados associados serão permanentemente removidos.",
+      cannotBeUndone: "Esta ação não pode ser desfeita.",
+      deleteButton: "Excluir resposta",
+    },
     getAnswerLabel: {
       namePrefix: "Nome: ",
       emailPrefix: "Email: ",
@@ -273,7 +279,7 @@ export const pt = {
       title1: "Pesquisas que se adaptam",
       title2: "a cada resposta",
       subtitle: "Editor visual node-based onde você conecta perguntas como blocos de fluxo. Sem código. Publique em segundos.",
-      cta: "Começar grátis com Google",
+      cta: "Começar grátis",
       ctaHow: "Ver como funciona",
     },
     features: {
@@ -428,7 +434,7 @@ export const pt = {
     ctaSection: {
       title: "Pronto para começar?",
       subtitle: "Crie sua primeira pesquisa em minutos. 7 dias grátis, sem precisar de cartão.",
-      button: "Entrar com Google",
+      button: "Criar conta grátis",
     },
   },
   surveys: {
@@ -455,6 +461,14 @@ export const pt = {
     footerFound: " encontradas",
     footerTotal: " no total",
     deleteConfirm: "Tem certeza que deseja excluir esta pesquisa?",
+    deleteModal: {
+      title: "Excluir pesquisa",
+      description: "Tem certeza que deseja excluir esta pesquisa? Todas as respostas e dados associados serão permanentemente removidos.",
+      cannotBeUndone: "Esta ação não pode ser desfeita.",
+      deleteButton: "Excluir pesquisa",
+      typeToConfirm: "Digite",
+      inputPlaceholder: "Nome da pesquisa",
+    },
   },
   upgrade: {
     trialExpired: "Seu trial expirou",

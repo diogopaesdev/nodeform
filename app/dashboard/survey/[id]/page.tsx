@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Survey, SurveyResponse } from "@/types/survey";
 import { useI18n } from "@/lib/i18n";
+import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -284,6 +285,9 @@ export default function SurveyDetailPage({
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"analytics" | "responses">("analytics");
+  const [deleteResponseModal, setDeleteResponseModal] = useState<{ open: boolean; responseId: string; loading: boolean }>({
+    open: false, responseId: "", loading: false,
+  });
 
   // STATUS_META built inside component so labels are translated
   const STATUS_META: Record<Survey["status"], { label: string; badge: string }> = {
@@ -331,16 +335,22 @@ export default function SurveyDetailPage({
     }
   };
 
-  const handleDeleteResponse = async (responseId: string) => {
-    if (!confirm(t.surveyDetail.deleteConfirm)) return;
+  const handleDeleteResponse = (responseId: string) => {
+    setDeleteResponseModal({ open: true, responseId, loading: false });
+  };
+
+  const confirmDeleteResponse = async () => {
+    setDeleteResponseModal((m) => ({ ...m, loading: true }));
     try {
-      const res = await fetch(`/api/surveys/${id}/responses?responseId=${responseId}`, { method: "DELETE" });
+      const res = await fetch(`/api/surveys/${id}/responses?responseId=${deleteResponseModal.responseId}`, { method: "DELETE" });
       if (res.ok) {
-        setResponses(responses.filter((r) => r.id !== responseId));
+        setResponses(responses.filter((r) => r.id !== deleteResponseModal.responseId));
         if (survey) setSurvey({ ...survey, responseCount: survey.responseCount - 1 });
       }
+      setDeleteResponseModal({ open: false, responseId: "", loading: false });
     } catch (error) {
       console.error("Error deleting response:", error);
+      setDeleteResponseModal((m) => ({ ...m, loading: false }));
     }
   };
 
@@ -782,6 +792,20 @@ export default function SurveyDetailPage({
           )}
         </div>
       )}
+
+      <DeleteConfirmModal
+        open={deleteResponseModal.open}
+        onOpenChange={(open) => !deleteResponseModal.loading && setDeleteResponseModal((m) => ({ ...m, open }))}
+        title={t.surveyDetail.deleteResponseModal.title}
+        description={t.surveyDetail.deleteResponseModal.description}
+        onConfirm={confirmDeleteResponse}
+        loading={deleteResponseModal.loading}
+        labels={{
+          deleteButton: t.surveyDetail.deleteResponseModal.deleteButton,
+          cancelButton: t.common.cancel,
+          cannotBeUndone: t.surveyDetail.deleteResponseModal.cannotBeUndone,
+        }}
+      />
     </div>
   );
 }

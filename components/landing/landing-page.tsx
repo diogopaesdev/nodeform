@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
@@ -79,31 +79,19 @@ function GoogleIcon() {
 // ─── Edge animada ─────────────────────────────────────────────────────────────
 
 function AnimatedEdge({
-  from, to, delay = 0, color = "#b1b1b7",
+  from, to, delay = 0,
 }: {
   from: { x: number; y: number };
   to: { x: number; y: number };
   delay?: number;
-  color?: string;
 }) {
   const d = bezier(from, to);
   return (
-    <g>
-      <motion.path d={d} fill="none" stroke="#b1b1b7" strokeWidth="1.5"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.6, delay, ease: "easeInOut" }}
-      />
-      <motion.path d={d} fill="none" stroke={color} strokeWidth="1.5"
-        strokeLinecap="round" strokeDasharray="5 8"
-        initial={{ opacity: 0, strokeDashoffset: 0 }}
-        animate={{ opacity: 0.6, strokeDashoffset: -130 }}
-        transition={{
-          opacity: { duration: 0.01, delay: delay + 0.65 },
-          strokeDashoffset: { duration: 1.6, repeat: Infinity, ease: "linear", delay: delay + 0.65 },
-        }}
-      />
-    </g>
+    <motion.path d={d} fill="none" stroke="#d1d5db" strokeWidth="1.5"
+      initial={{ pathLength: 0, opacity: 0 }}
+      animate={{ pathLength: 1, opacity: 1 }}
+      transition={{ duration: 0.6, delay, ease: "easeInOut" }}
+    />
   );
 }
 
@@ -134,10 +122,10 @@ function NodePresentation({ x, y }: { x: number; y: number }) {
   const { t } = useI18n();
   return (
     <motion.div {...ni(0)}
-      className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[240px]"
+      className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[260px]"
       style={{ left: x, top: y }}
     >
-      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-100">
+      <div className="flex items-center gap-2.5 px-3 py-3 border-b border-gray-100">
         <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <Play className="w-3.5 h-3.5 text-orange-600" />
         </div>
@@ -146,7 +134,7 @@ function NodePresentation({ x, y }: { x: number; y: number }) {
           <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.presentationTitle}</div>
         </div>
       </div>
-      <div className="p-3 space-y-2.5">
+      <div className="p-4 space-y-2.5">
         <p className="text-xs text-gray-500 line-clamp-2">{t.landing.mockNodes.presentationDesc}</p>
         <div className="flex justify-center pt-1">
           <div className="px-4 py-1.5 bg-orange-500 text-white text-xs font-medium rounded-md">
@@ -164,7 +152,7 @@ function NodeSingleChoice({ x, y }: { x: number; y: number }) {
   const opts = [t.landing.mockNodes.singleChoiceOpt1, t.landing.mockNodes.singleChoiceOpt2, t.landing.mockNodes.singleChoiceOpt3];
   return (
     <motion.div {...ni(0.14)}
-      className="absolute bg-white rounded-xl shadow-md shadow-blue-100 border border-blue-400 w-[240px]"
+      className="absolute bg-white rounded-xl shadow-md shadow-blue-100 border border-blue-400 w-[260px]"
       style={{ left: x, top: y }}
     >
       <motion.div
@@ -172,7 +160,7 @@ function NodeSingleChoice({ x, y }: { x: number; y: number }) {
         animate={{ opacity: [0.3, 0.65, 0.3] }}
         transition={{ duration: 2.4, repeat: Infinity }}
       />
-      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-100">
+      <div className="flex items-center gap-2.5 px-3 py-3 border-b border-gray-100">
         <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <CircleDot className="w-3.5 h-3.5 text-blue-600" />
         </div>
@@ -181,7 +169,7 @@ function NodeSingleChoice({ x, y }: { x: number; y: number }) {
           <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.singleChoiceTitle}</div>
         </div>
       </div>
-      <div className="p-3 space-y-2">
+      <div className="p-4 space-y-2">
         {opts.map((opt, i) => (
           <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-md pr-5">
             <div className="w-3 h-3 rounded-full border-2 border-blue-400 flex-shrink-0" />
@@ -198,10 +186,10 @@ function NodeRating({ x, y }: { x: number; y: number }) {
   const { t } = useI18n();
   return (
     <motion.div {...ni(0.28)}
-      className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[240px]"
+      className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[260px]"
       style={{ left: x, top: y }}
     >
-      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-100">
+      <div className="flex items-center gap-2.5 px-3 py-3 border-b border-gray-100">
         <div className="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <Star className="w-3.5 h-3.5 text-purple-600" />
         </div>
@@ -210,7 +198,7 @@ function NodeRating({ x, y }: { x: number; y: number }) {
           <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.ratingTitle}</div>
         </div>
       </div>
-      <div className="p-3 space-y-2">
+      <div className="p-4 space-y-2">
         <div className="space-y-1.5">
           <div className="flex items-center justify-center gap-0.5 py-1.5">
             {[1, 2, 3, 4, 5].map(n => (
@@ -232,10 +220,10 @@ function NodeEndScreen({ x, y }: { x: number; y: number }) {
   const { t } = useI18n();
   return (
     <motion.div {...ni(0.42)}
-      className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[240px]"
+      className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[260px]"
       style={{ left: x, top: y }}
     >
-      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-100">
+      <div className="flex items-center gap-2.5 px-3 py-3 border-b border-gray-100">
         <div className="w-7 h-7 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
           <FlagTriangleRight className="w-3.5 h-3.5 text-rose-600" />
         </div>
@@ -244,7 +232,7 @@ function NodeEndScreen({ x, y }: { x: number; y: number }) {
           <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.endScreenTitle}</div>
         </div>
       </div>
-      <div className="p-3 space-y-2">
+      <div className="p-4 space-y-2">
         <p className="text-xs text-gray-500 line-clamp-2">{t.landing.mockNodes.endScreenDesc}</p>
       </div>
     </motion.div>
@@ -263,15 +251,18 @@ function FlowCanvas() {
   //   opt2 center: 49+12+26+8+26+8+13=142 → y=92+142=234
   // N4 End:    left=560, top=40   → target x=560,  y=92    (40  + 105/2)
   // N3 Rating: left=560, top=252  → target x=560,  y=314   (252 + 124/2)
+  // Largura dos nós: 260px
+  // N1 Pres:    left=16,  right=276
+  // N2 Choice:  left=320, right=580  (gap=44px)
+  // N3/N4:      left=624             (gap=44px)
   const h = {
-    n1src:  { x: 256, y: 179 },
-    n2tgt:  { x: 286, y: 175 },
-    n2o1:   { x: 526, y: 166 },
-    n2o2:   { x: 526, y: 200 },
-    n2o3:   { x: 526, y: 234 },
-    n3tgt:  { x: 560, y: 314 },
-    n4tgt:  { x: 560, y: 92  },
-    n3src:  { x: 800, y: 314 },
+    n1src:  { x: 276, y: 179 },
+    n2tgt:  { x: 320, y: 185 },
+    n2o1:   { x: 580, y: 196 },
+    n2o2:   { x: 580, y: 228 },
+    n2o3:   { x: 580, y: 260 },
+    n3tgt:  { x: 624, y: 322 },
+    n4tgt:  { x: 624, y: 90  },
   };
 
   return (
@@ -287,12 +278,12 @@ function FlowCanvas() {
     >
       {/* Edges SVG */}
       <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 2 }}>
-        <AnimatedEdge from={h.n1src} to={h.n2tgt} delay={0.5}  color="#f97316" />
-        <AnimatedEdge from={h.n2o1}  to={h.n4tgt} delay={0.82} color="#3b82f6" />
-        <AnimatedEdge from={h.n2o2}  to={h.n3tgt} delay={1.02} color="#8b5cf6" />
-        <AnimatedEdge from={h.n2o3}  to={h.n3tgt} delay={1.22} color="#8b5cf6" />
+        <AnimatedEdge from={h.n1src} to={h.n2tgt} delay={0.5}  />
+        <AnimatedEdge from={h.n2o1}  to={h.n4tgt} delay={0.82} />
+        <AnimatedEdge from={h.n2o2}  to={h.n3tgt} delay={1.02} />
+        <AnimatedEdge from={h.n2o3}  to={h.n3tgt} delay={1.22} />
 
-        {/* Handles — mesmas cores e tamanho dos componentes reais (!w-3 !h-3) */}
+        {/* Handles */}
         <SvgHandle cx={h.n1src.x} cy={h.n1src.y} fill="#f97316" delay={0.45} />
         <SvgHandle cx={h.n2tgt.x} cy={h.n2tgt.y} fill="#9ca3af"  delay={0.45} />
         <SvgHandle cx={h.n2o1.x}  cy={h.n2o1.y}  fill="#3b82f6"  delay={0.5}  />
@@ -305,9 +296,9 @@ function FlowCanvas() {
       {/* Nodes */}
       <div className="absolute inset-0" style={{ zIndex: 3 }}>
         <NodePresentation  x={16}  y={108} />
-        <NodeSingleChoice  x={286} y={92}  />
-        <NodeRating        x={560} y={252} />
-        <NodeEndScreen     x={560} y={40}  />
+        <NodeSingleChoice  x={320} y={88}  />
+        <NodeRating        x={624} y={240} />
+        <NodeEndScreen     x={624} y={36}  />
       </div>
 
       {/* Fade lateral (para o canvas "desaparecer" na borda direita) */}
@@ -463,13 +454,13 @@ export function LandingPage() {
           {/* Actions */}
           <div className="flex items-center gap-1 pl-1 pr-1">
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => router.push("/login")}
               className="hidden sm:block px-3 py-1.5 text-[13px] text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
             >
               {t.landing.nav.signIn}
             </button>
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => router.push("/login")}
               className="h-8 px-3.5 bg-gray-900 hover:bg-gray-700 text-white text-[13px] font-medium rounded-full transition-colors flex items-center gap-1.5"
             >
               {t.landing.nav.getStarted} <ArrowRight className="w-3 h-3" />
@@ -526,10 +517,9 @@ export function LandingPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => router.push("/login")}
               className="w-full sm:w-auto h-11 px-6 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-medium rounded-[12px] transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
-              <GoogleIcon />
               {t.landing.hero.cta}
             </button>
             <Link
@@ -922,7 +912,7 @@ export function LandingPage() {
                 {/* CTA */}
                 <div className="px-7 pt-5 pb-7 bg-white">
                   <button
-                    onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                    onClick={() => router.push("/login")}
                     className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                   >
                     {t.landing.pricing.trialCta} <ArrowRight className="w-4 h-4" />
@@ -949,10 +939,9 @@ export function LandingPage() {
               {t.landing.ctaSection.subtitle}
             </p>
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => router.push("/login")}
               className="inline-flex items-center gap-2 h-12 px-8 bg-white hover:bg-gray-100 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors"
             >
-              <GoogleIcon />
               {t.landing.ctaSection.button}
             </button>
           </div>

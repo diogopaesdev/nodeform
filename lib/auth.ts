@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { getFirebaseAdmin } from "./firebase-admin";
 
 export const authOptions: NextAuthOptions = {
@@ -7,6 +8,36 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "E-mail", type: "email" },
+        otp: { label: "Código", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.otp) return null;
+
+        const { db } = getFirebaseAdmin();
+        const snapshot = await db
+          .collection("users")
+          .where("email", "==", credentials.email)
+          .limit(1)
+          .get();
+
+        if (snapshot.empty) return null;
+
+        const userDoc = snapshot.docs[0];
+        const user = userDoc.data();
+
+        if (!user.loginCode || user.loginCode !== credentials.otp) return null;
+        if (new Date(user.loginCodeExpiresAt) < new Date()) return null;
+
+        // Consome o código após uso
+        await userDoc.ref.update({ loginCode: null, loginCodeExpiresAt: null });
+
+        return { id: user.id, name: user.name, email: user.email, image: user.image };
+      },
     }),
   ],
   callbacks: {
@@ -19,6 +50,18 @@ export const authOptions: NextAuthOptions = {
           const userDoc = await userRef.get();
 
           if (!userDoc.exists) {
+            // Verifica se já existe uma conta credentials com o mesmo email
+            const emailSnapshot = await db
+              .collection("users")
+              .where("email", "==", user.email)
+              .limit(1)
+              .get();
+
+            if (!emailSnapshot.empty) {
+              // Email já cadastrado com outro provider — bloqueia o login
+              return "/login?error=email-exists";
+            }
+
             await userRef.set({
               id: user.id,
               name: user.name,

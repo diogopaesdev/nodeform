@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Star, Check, ArrowRight, User, Mail, Trophy } from "lucide-react";
 import type { SurveyNode, PresentationData, EndScreenData } from "@/types";
+import DOMPurify from "dompurify";
 
 function HtmlDescription({ html, className }: { html: string; className?: string }) {
+  const clean = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
   return (
     <div
       className={className}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: clean }}
     />
   );
 }

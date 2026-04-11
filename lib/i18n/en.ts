@@ -159,6 +159,12 @@ export const en: Translations = {
       disclaimer: "The iframe automatically adjusts to content size.",
     },
     deleteConfirm: "Are you sure you want to delete this response?",
+    deleteResponseModal: {
+      title: "Delete response",
+      description: "Are you sure you want to delete this response? All associated data will be permanently removed.",
+      cannotBeUndone: "This action cannot be undone.",
+      deleteButton: "Delete response",
+    },
     getAnswerLabel: {
       namePrefix: "Name: ",
       emailPrefix: "Email: ",
@@ -275,7 +281,7 @@ export const en: Translations = {
       title1: "Surveys that adapt",
       title2: "to every answer",
       subtitle: "A visual node-based editor where you connect questions like flow blocks. No code. Publish in seconds.",
-      cta: "Get started free with Google",
+      cta: "Get started free",
       ctaHow: "See how it works",
     },
     features: {
@@ -430,7 +436,7 @@ export const en: Translations = {
     ctaSection: {
       title: "Ready to get started?",
       subtitle: "Create your first survey in minutes. 7 days free, no card required.",
-      button: "Sign in with Google",
+      button: "Create free account",
     },
   },
   surveys: {
@@ -457,6 +463,14 @@ export const en: Translations = {
     footerFound: " found",
     footerTotal: " total",
     deleteConfirm: "Are you sure you want to delete this survey?",
+    deleteModal: {
+      title: "Delete survey",
+      description: "Are you sure you want to delete this survey? All responses and associated data will be permanently removed.",
+      cannotBeUndone: "This action cannot be undone.",
+      deleteButton: "Delete survey",
+      typeToConfirm: "Type",
+      inputPlaceholder: "Survey name",
+    },
   },
   upgrade: {
     trialExpired: "Your trial has expired",

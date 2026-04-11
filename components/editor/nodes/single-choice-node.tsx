@@ -47,10 +47,10 @@ export const SingleChoiceNode = memo(({ data, selected }: Props) => {
 
         {/* Options */}
         <div className="space-y-1.5">
-          {data.options.map((option, index) => (
+          {data.options.map((option) => (
             <div
               key={option.id}
-              className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-md pr-5"
+              className="relative flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-md"
             >
               <div className="w-3 h-3 rounded-full border-2 border-blue-400 flex-shrink-0" />
               <span className="text-xs text-gray-700 flex-1 truncate">{option.label}</span>
@@ -59,6 +59,13 @@ export const SingleChoiceNode = memo(({ data, selected }: Props) => {
                   +{option.score}
                 </span>
               )}
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={option.id}
+                className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white"
+                style={{ right: -6, top: "50%", transform: "translateY(-50%)" }}
+              />
             </div>
           ))}
         </div>
@@ -69,20 +76,6 @@ export const SingleChoiceNode = memo(({ data, selected }: Props) => {
           </p>
         )}
       </div>
-
-      {/* Handles de saída para cada opção */}
-      {data.options.map((option, index) => (
-        <Handle
-          key={option.id}
-          type="source"
-          position={Position.Right}
-          id={option.id}
-          className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white !-right-1.5"
-          style={{
-            top: `${110 + index * 35}px`,
-          }}
-        />
-      ))}
     </div>
   );
 });
