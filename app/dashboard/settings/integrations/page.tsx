@@ -44,6 +44,30 @@ function IntegrationsContent() {
   const addonSuccess = searchParams.get("addon_success") === "true";
   const [syncing, setSyncing] = useState(false);
 
+  // Ao montar, compara Firestore com a sessão em cache — corrige JWT desatualizado
+  useEffect(() => {
+    const sync = async () => {
+      try {
+        const res = await fetch("/api/workspace/addons");
+        if (!res.ok) return;
+        const data = await res.json();
+        const sessionAddons = session?.user?.addons ?? {};
+        const firestoreDiffers =
+          (data.addons?.respondents?.active === true && sessionAddons?.respondents?.active !== true) ||
+          (data.addons?.surveyProgress?.active === true && sessionAddons?.surveyProgress?.active !== true);
+
+        if (firestoreDiffers) {
+          await updateSession();
+          window.location.replace("/dashboard/settings/integrations");
+        }
+      } catch {
+        // silently ignore
+      }
+    };
+
+    if (session) sync();
+  }, [session?.user?.id]);
+
   useEffect(() => {
     if (!addonSuccess) return;
 
