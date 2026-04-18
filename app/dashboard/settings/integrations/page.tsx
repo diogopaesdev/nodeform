@@ -16,7 +16,9 @@ import {
   EyeOff,
   RefreshCw,
   BookmarkCheck,
+  ChevronLeft,
 } from "lucide-react";
+import Link from "next/link";
 import { ProfileSchemaEditor } from "@/components/integrations/profile-schema-editor";
 
 interface ApiKey {
@@ -138,11 +140,18 @@ function IntegrationsContent() {
     new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="p-6 max-w-2xl space-y-8">
       <div>
+        <Link
+          href="/dashboard/settings"
+          className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-4 transition-colors"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+          Configurações
+        </Link>
         <h1 className="text-lg font-semibold text-gray-900">Integrações</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Conecte sua plataforma ao NodeForm para autenticar respondentes via SSO.
+          Conecte sua plataforma ao SurveyFlow para autenticar respondentes via SSO.
         </p>
       </div>
 
@@ -400,7 +409,7 @@ function IntegrationsContent() {
             <h3 className="text-xs font-semibold text-gray-700">Exemplo de integração (Node.js)</h3>
             <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre-wrap leading-relaxed">
 {`// 1. Gerar token SSO (backend da sua plataforma)
-const res = await fetch('https://nodeform.app/api/sso/token', {
+const res = await fetch('https://surveyflowapp.com/api/sso/token', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -418,7 +427,7 @@ const res = await fetch('https://nodeform.app/api/sso/token', {
 const { token } = await res.json();
 
 // 2. Redirecionar o usuário
-res.redirect(\`https://nodeform.app/survey/\${surveyId}?sso_token=\${token}\`);`}
+res.redirect(\`https://surveyflowapp.com/survey/\${surveyId}?sso_token=\${token}\`);`}
             </pre>
           </div>
 
@@ -432,7 +441,7 @@ res.redirect(\`https://nodeform.app/survey/\${surveyId}?sso_token=\${token}\`);`
             <h3 className="text-xs font-semibold text-gray-700">Sync de perfil em massa (opcional)</h3>
             <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre-wrap leading-relaxed">
 {`// Atualizar perfis sem exigir login dos usuários
-await fetch('https://nodeform.app/api/workspace/respondents/sync', {
+await fetch('https://surveyflowapp.com/api/workspace/respondents/sync', {
   method: 'POST',
   body: JSON.stringify({
     apiKey: 'nfk_sua_chave_aqui',
