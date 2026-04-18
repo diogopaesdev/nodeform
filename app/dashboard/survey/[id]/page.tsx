@@ -26,6 +26,7 @@ import {
   Star,
   Hash,
   TrendingUp,
+  GitCompareArrows,
 } from "lucide-react";
 import {
   BarChart,
@@ -35,6 +36,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  Legend,
 } from "recharts";
 import {
   Dialog,
@@ -47,7 +49,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Survey, SurveyResponse } from "@/types/survey";
+import { Survey, SurveyResponse, ChoiceOption } from "@/types/survey";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 
@@ -266,6 +268,204 @@ function QuestionAnalyticsCard({ item }: {
   );
 }
 
+// ─── Cross-analysis ───────────────────────────────────────────────────────────
+
+const CROSS_COLORS = ["#111827", "#374151", "#6b7280", "#9ca3af", "#d1d5db", "#e5e7eb", "#1d4ed8", "#7c3aed", "#065f46", "#92400e"];
+
+function getNodeOptions(node: Survey["nodes"][0]): ChoiceOption[] {
+  const d = node.data;
+  if (d.type === "singleChoice" || d.type === "multipleChoice") return d.options;
+  return [];
+}
+
+function useCrossAnalytics(
+  survey: Survey | null,
+  responses: SurveyResponse[],
+  segmentNodeId: string | null,
+  targetNodeId: string | null,
+) {
+  return useMemo(() => {
+    if (!survey || !segmentNodeId || !targetNodeId || segmentNodeId === targetNodeId || responses.length === 0) return null;
+
+    const segmentNode = survey.nodes.find((n) => n.id === segmentNodeId);
+    const targetNode = survey.nodes.find((n) => n.id === targetNodeId);
+    if (!segmentNode || !targetNode) return null;
+
+    const segOpts = getNodeOptions(segmentNode);
+    const tgtOpts = getNodeOptions(targetNode);
+    if (segOpts.length === 0 || tgtOpts.length === 0) return null;
+
+    const rows = segOpts.map((segOpt) => {
+      const segResponses = responses.filter((r) => {
+        const ans = r.answers.find((a) => a.nodeId === segmentNodeId);
+        if (!ans) return false;
+        if (segmentNode.data.type === "singleChoice") return ans.selectedOptionId === segOpt.id;
+        return ans.selectedOptionIds?.includes(segOpt.id) ?? false;
+      });
+
+      const counts: Record<string, number> = {};
+      tgtOpts.forEach((o) => { counts[o.id] = 0; });
+      segResponses.forEach((r) => {
+        const ans = r.answers.find((a) => a.nodeId === targetNodeId);
+        if (!ans) return;
+        if (targetNode.data.type === "singleChoice" && ans.selectedOptionId) {
+          counts[ans.selectedOptionId] = (counts[ans.selectedOptionId] || 0) + 1;
+        } else if (targetNode.data.type === "multipleChoice" && ans.selectedOptionIds) {
+          ans.selectedOptionIds.forEach((id) => { counts[id] = (counts[id] || 0) + 1; });
+        }
+      });
+
+      const row: Record<string, string | number> = {
+        name: segOpt.label.length > 22 ? segOpt.label.slice(0, 22) + "…" : segOpt.label,
+        _total: segResponses.length,
+      };
+      tgtOpts.forEach((o) => { row[o.id] = counts[o.id]; });
+      return row;
+    }).filter((r) => (r._total as number) > 0);
+
+    return { rows, segmentNode, targetNode, tgtOpts };
+  }, [survey, responses, segmentNodeId, targetNodeId]);
+}
+
+function CrossAnalysisPanel({
+  survey,
+  responses,
+}: {
+  survey: Survey;
+  responses: SurveyResponse[];
+}) {
+  const { t } = useI18n();
+  const choiceNodes = survey.nodes.filter((n) =>
+    n.data.type === "singleChoice" || n.data.type === "multipleChoice"
+  );
+
+  const [segmentId, setSegmentId] = useState<string>(choiceNodes[0]?.id ?? "");
+  const [targetId, setTargetId] = useState<string>(choiceNodes[1]?.id ?? "");
+
+  const result = useCrossAnalytics(survey, responses, segmentId, targetId);
+
+  if (choiceNodes.length < 2) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl text-center py-16">
+        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <GitCompareArrows className="w-6 h-6 text-gray-400" />
+        </div>
+        <p className="text-sm text-gray-500">{t.surveyDetail.crossAnalysis.needMoreQuestions}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Selects */}
+      <div className="bg-white border border-gray-200 rounded-xl px-5 py-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              {t.surveyDetail.crossAnalysis.segmentBy}
+            </label>
+            <select
+              value={segmentId}
+              onChange={(e) => setSegmentId(e.target.value)}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            >
+              {choiceNodes.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.data.title || t.surveyDetail.analytics.noTitle}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              {t.surveyDetail.crossAnalysis.analyzeQuestion}
+            </label>
+            <select
+              value={targetId}
+              onChange={(e) => setTargetId(e.target.value)}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            >
+              {choiceNodes
+                .filter((n) => n.id !== segmentId)
+                .map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.data.title || t.surveyDetail.analytics.noTitle}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Chart */}
+      {!result || result.rows.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-xl text-center py-16">
+          <p className="text-sm text-gray-500">{t.surveyDetail.crossAnalysis.noData}</p>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-5 pt-4 pb-2 border-b border-gray-100">
+            <p className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-800">
+                {result.targetNode.data.title || t.surveyDetail.analytics.noTitle}
+              </span>
+              {" · "}{t.surveyDetail.crossAnalysis.segmentBy.toLowerCase()}{": "}
+              <span className="font-semibold text-gray-800">
+                {result.segmentNode.data.title || t.surveyDetail.analytics.noTitle}
+              </span>
+            </p>
+          </div>
+          <div className="px-5 py-4">
+            <ResponsiveContainer width="100%" height={Math.max(280, result.rows.length * 60 + 60)}>
+              <BarChart
+                data={result.rows}
+                layout="vertical"
+                margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
+                barCategoryGap="30%"
+                barGap={2}
+              >
+                <XAxis type="number" hide />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={150}
+                  tick={{ fontSize: 12, fill: "#6b7280" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  formatter={(value: unknown, name: unknown) => {
+                    const opt = result.tgtOpts.find((o) => o.id === String(name));
+                    return [String(value) + " " + t.surveyDetail.crossAnalysis.respondents, opt?.label ?? String(name)];
+                  }}
+                  cursor={{ fill: "#f9fafb" }}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
+                />
+                <Legend
+                  formatter={(value: string) => {
+                    const opt = result.tgtOpts.find((o) => o.id === value);
+                    const label = opt?.label ?? value;
+                    return label.length > 30 ? label.slice(0, 30) + "…" : label;
+                  }}
+                  wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
+                />
+                {result.tgtOpts.map((opt, i) => (
+                  <Bar
+                    key={opt.id}
+                    dataKey={opt.id}
+                    radius={[0, 4, 4, 0]}
+                    fill={CROSS_COLORS[i % CROSS_COLORS.length]}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SurveyDetailPage({
@@ -284,7 +484,7 @@ export default function SurveyDetailPage({
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"analytics" | "responses">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis">("analytics");
   const [deleteResponseModal, setDeleteResponseModal] = useState<{ open: boolean; responseId: string; loading: boolean }>({
     open: false, responseId: "", loading: false,
   });
@@ -409,6 +609,9 @@ export default function SurveyDetailPage({
     if (data.type === "rating" && answer.ratingValue !== undefined) {
       return `${answer.ratingValue} ${t.surveyDetail.getAnswerLabel.ratingOf} ${data.maxValue}`;
     }
+    if (data.type === "textInput" && answer.textValue !== undefined) {
+      return answer.textValue;
+    }
     return t.surveyDetail.getAnswerLabel.noAnswer;
   };
 
@@ -435,6 +638,27 @@ export default function SurveyDetailPage({
     link.download = `${survey.title.replace(/[^a-zA-Z0-9]/g, "_")}_respostas.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportXLSX = async () => {
+    if (!survey || responses.length === 0) return;
+    const XLSX = await import("xlsx");
+    const questionNodes = survey.nodes.filter((n) => n.data.type !== "presentation" && n.data.type !== "endScreen");
+    const headers = [t.surveyDetail.csv.name, t.surveyDetail.csv.email, ...questionNodes.map((n) => n.data.title || t.surveyDetail.csv.question), ...(survey.enableScoring ? [t.surveyDetail.csv.score] : []), t.surveyDetail.csv.date];
+    const rows = responses.map((response) => [
+      response.respondentName || "",
+      response.respondentEmail || "",
+      ...questionNodes.map((node) => {
+        const answer = response.answers.find((a) => a.nodeId === node.id);
+        return answer ? getAnswerLabel(node, answer) : "";
+      }),
+      ...(survey.enableScoring ? [response.totalScore] : []),
+      formatDate(response.completedAt),
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Respostas");
+    XLSX.writeFile(wb, `${survey.title.replace(/[^a-zA-Z0-9]/g, "_")}_respostas.xlsx`);
   };
 
   const avgScore = useMemo(() => {
@@ -650,6 +874,15 @@ export default function SurveyDetailPage({
               {t.surveyDetail.tabs.responses.replace("{n}", String(survey.responseCount))}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab("crossanalysis")}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "crossanalysis" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            <span className="flex items-center gap-1.5">
+              <GitCompareArrows className="w-3.5 h-3.5" />
+              {t.surveyDetail.tabs.crossAnalysis}
+            </span>
+          </button>
         </div>
       )}
 
@@ -694,13 +927,22 @@ export default function SurveyDetailPage({
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">{t.surveyDetail.responses.title}</h2>
             {responses.length > 0 && (
-              <button
-                onClick={handleExportCSV}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {t.surveyDetail.responses.exportCsv}
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors">
+                    <Download className="w-3.5 h-3.5" />
+                    {t.surveyDetail.responses.exportCsv}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer">
+                    Exportar CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportXLSX} className="text-xs cursor-pointer">
+                    Exportar Excel (.xlsx)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
@@ -791,6 +1033,17 @@ export default function SurveyDetailPage({
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Cross-Analysis Tab ──────────────────────────────────────────────── */}
+      {activeTab === "crossanalysis" && survey.responseCount > 0 && (
+        loadingResponses ? (
+          <div className="grid md:grid-cols-2 gap-4">
+            {[1, 2].map((i) => <div key={i} className="h-48 bg-gray-100 rounded-xl animate-pulse" />)}
+          </div>
+        ) : (
+          <CrossAnalysisPanel survey={survey} responses={responses} />
+        )
       )}
 
       <DeleteConfirmModal

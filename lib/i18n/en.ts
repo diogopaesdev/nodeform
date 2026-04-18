@@ -124,6 +124,7 @@ export const en: Translations = {
     tabs: {
       analytics: "Analytics",
       responses: "Responses ({n})",
+      crossAnalysis: "Cross-Analysis",
     },
     analytics: {
       noResponses: "No responses yet",
@@ -135,6 +136,17 @@ export const en: Translations = {
       resp: "resp.",
       avg: "average of {n} ratings",
       noTitle: "Untitled",
+    },
+    crossAnalysis: {
+      title: "Cross-Data Analysis",
+      description: "Segment responses of one question by the values of another.",
+      segmentBy: "Segment by",
+      analyzeQuestion: "Analyze question",
+      selectQuestion: "Select question...",
+      noData: "No respondents answered both of these questions.",
+      needMoreQuestions: "At least 2 choice questions are needed to use cross-analysis.",
+      respondents: "respondents",
+      totalSegment: "total in segment",
     },
     responses: {
       title: "Individual responses",
