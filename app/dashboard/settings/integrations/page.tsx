@@ -39,7 +39,7 @@ export default function IntegrationsPage() {
 }
 
 function IntegrationsContent() {
-  const { data: session, update: updateSession } = useSession();
+  const { data: session, update: updateSession } = useSession(); // updateSession força o JWT a reler o Firestore após confirmação
   const searchParams = useSearchParams();
   const addonSuccess = searchParams.get("addon_success") === "true";
   const [syncing, setSyncing] = useState(false);
@@ -51,18 +51,31 @@ function IntegrationsContent() {
     let attempts = 0;
 
     const poll = async () => {
-      await updateSession();
+      try {
+        const res = await fetch("/api/workspace/addons");
+        if (res.ok) {
+          const data = await res.json();
+          const activated =
+            data.addons?.respondents?.active === true ||
+            data.addons?.surveyProgress?.active === true;
+
+          if (activated) {
+            await updateSession();
+            window.location.replace("/dashboard/settings/integrations");
+            return;
+          }
+        }
+      } catch {
+        // ignora erros de rede e tenta novamente
+      }
+
       attempts++;
-      if (attempts < 8) setTimeout(poll, 1500);
+      if (attempts < 10) setTimeout(poll, 1500);
       else setSyncing(false);
     };
 
-    setTimeout(poll, 1000);
+    setTimeout(poll, 1500);
   }, [addonSuccess]);
-
-  useEffect(() => {
-    if (syncing && (hasAddon || hasProgressAddon)) setSyncing(false);
-  }, [session, syncing]);
 
   const hasAddon = session?.user?.addons?.respondents?.active === true;
   const hasProgressAddon = session?.user?.addons?.surveyProgress?.active === true;
