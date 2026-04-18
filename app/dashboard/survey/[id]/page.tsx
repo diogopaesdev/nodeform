@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -27,6 +28,11 @@ import {
   Hash,
   TrendingUp,
   GitCompareArrows,
+  Gift,
+  XCircle,
+  RotateCcw,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import {
   BarChart,
@@ -50,6 +56,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Survey, SurveyResponse, ChoiceOption } from "@/types/survey";
+import { ParticipationWithRespondent } from "@/types/respondent";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 
@@ -466,6 +473,253 @@ function CrossAnalysisPanel({
   );
 }
 
+// ─── Bonus Panel ─────────────────────────────────────────────────────────────
+
+const BONUS_STATUS_META = {
+  pending:    { label: "Pendente",    badge: "bg-amber-100 text-amber-700" },
+  released:   { label: "Liberado",   badge: "bg-green-100 text-green-700" },
+  ineligible: { label: "Inelegível", badge: "bg-red-100 text-red-600" },
+};
+
+function BonusPanel({ surveyId, survey, onSurveyChange }: {
+  surveyId: string;
+  survey: Survey;
+  onSurveyChange: (s: Survey) => void;
+}) {
+  const [participations, setParticipations] = useState<ParticipationWithRespondent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchParticipations();
+  }, [surveyId]);
+
+  const fetchParticipations = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/surveys/${surveyId}/participations`);
+      if (res.ok) {
+        const data = await res.json();
+        setParticipations(data.participations ?? []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateBonus = async (
+    participationId: string,
+    bonusStatus: "pending" | "released" | "ineligible"
+  ) => {
+    setUpdating(participationId);
+    try {
+      const res = await fetch(
+        `/api/surveys/${surveyId}/participations/${participationId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bonusStatus }),
+        }
+      );
+      if (!res.ok) return;
+
+      setParticipations((prev) =>
+        prev.map((p) =>
+          p.id === participationId
+            ? {
+                ...p,
+                bonusStatus,
+                bonusReleasedAt: bonusStatus === "released" ? new Date().toISOString() : p.bonusReleasedAt,
+              }
+            : p
+        )
+      );
+
+      // Reflect quota changes on survey object
+      const prev = participations.find((p) => p.id === participationId);
+      if (prev) {
+        const wasIneligible = prev.bonusStatus === "ineligible";
+        const becomingIneligible = bonusStatus === "ineligible";
+        if (!wasIneligible && becomingIneligible) {
+          const newCount = survey.responseCount - 1;
+          const newStatus =
+            survey.status === "finished" && survey.maxResponses && newCount < survey.maxResponses
+              ? "published"
+              : survey.status;
+          onSurveyChange({ ...survey, responseCount: newCount, status: newStatus });
+        } else if (wasIneligible && !becomingIneligible) {
+          const newCount = survey.responseCount + 1;
+          const newStatus =
+            survey.maxResponses && newCount >= survey.maxResponses ? "finished" : survey.status;
+          onSurveyChange({ ...survey, responseCount: newCount, status: newStatus });
+        }
+      }
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const counts = useMemo(() => ({
+    total: participations.length,
+    pending: participations.filter((p) => p.bonusStatus === "pending").length,
+    released: participations.filter((p) => p.bonusStatus === "released").length,
+    ineligible: participations.filter((p) => p.bonusStatus === "ineligible").length,
+  }), [participations]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (participations.length === 0) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl">
+        <div className="text-center py-16">
+          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+            <Gift className="w-6 h-6 text-gray-400" />
+          </div>
+          <h3 className="text-sm font-medium text-gray-900 mb-1">Nenhum respondente concluiu ainda</h3>
+          <p className="text-xs text-gray-500">
+            As participações concluídas aparecerão aqui para revisão e liberação de bonificação.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Total", value: counts.total, color: "text-gray-900" },
+          { label: "Pendentes", value: counts.pending, color: "text-amber-600" },
+          { label: "Liberados", value: counts.released, color: "text-green-600" },
+          { label: "Inelegíveis", value: counts.ineligible, color: "text-red-500" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-center">
+            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* List */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-900">Respondentes</h2>
+        </div>
+
+        <div className="divide-y divide-gray-100">
+          {participations.map((p) => {
+            const meta = BONUS_STATUS_META[p.bonusStatus];
+            const isUpdating = updating === p.id;
+            const profileEntries = Object.entries(p.profile).filter(
+              ([, v]) => v !== undefined && v !== null && v !== ""
+            );
+
+            return (
+              <div key={p.id} className="px-5 py-4">
+                <div className="flex items-start gap-4">
+                  {/* Avatar */}
+                  <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold text-gray-600">
+                    {getInitials(p.name)}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-gray-900">{p.name}</span>
+                      <span className="flex items-center gap-1 text-xs text-gray-400">
+                        <Mail className="w-3 h-3" />{p.email}
+                      </span>
+                      <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${meta.badge}`}>
+                        {meta.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      {p.completedAt && (
+                        <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                          <Clock className="w-3 h-3" />{formatDate(p.completedAt)}
+                        </span>
+                      )}
+                      {p.totalScore !== undefined && survey.enableScoring && (
+                        <span className="text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                          {p.totalScore} pts
+                        </span>
+                      )}
+                      {p.bonusReleasedAt && (
+                        <span className="text-[11px] text-green-600">
+                          Liberado em {formatDate(p.bonusReleasedAt)}
+                        </span>
+                      )}
+                    </div>
+
+                    {profileEntries.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {profileEntries.map(([k, v]) => (
+                          <span key={k} className="text-[11px] bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5 text-gray-600">
+                            <span className="font-medium text-gray-400">{k}:</span> {String(v)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {p.bonusStatus !== "released" && (
+                      <button
+                        onClick={() => updateBonus(p.id, "released")}
+                        disabled={isUpdating}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors"
+                      >
+                        {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Gift className="w-3.5 h-3.5" />}
+                        Liberar
+                      </button>
+                    )}
+                    {p.bonusStatus !== "ineligible" && (
+                      <button
+                        onClick={() => updateBonus(p.id, "ineligible")}
+                        disabled={isUpdating}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 rounded-lg transition-colors"
+                      >
+                        {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                        Inelegível
+                      </button>
+                    )}
+                    {p.bonusStatus !== "pending" && (
+                      <button
+                        onClick={() => updateBonus(p.id, "pending")}
+                        disabled={isUpdating}
+                        title="Reverter para pendente"
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {!survey.requiresRespondentLogin && (
+        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          Esta pesquisa não exige login de respondente. Apenas participações autenticadas aparecem aqui.
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SurveyDetailPage({
@@ -476,6 +730,8 @@ export default function SurveyDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const { t } = useI18n();
+  const { data: session } = useSession();
+  const hasRespondentsAddon = session?.user?.addons?.respondents?.active === true;
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -484,7 +740,7 @@ export default function SurveyDetailPage({
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis" | "bonus">("analytics");
   const [deleteResponseModal, setDeleteResponseModal] = useState<{ open: boolean; responseId: string; loading: boolean }>({
     open: false, responseId: "", loading: false,
   });
@@ -883,6 +1139,17 @@ export default function SurveyDetailPage({
               {t.surveyDetail.tabs.crossAnalysis}
             </span>
           </button>
+          {hasRespondentsAddon && survey.requiresRespondentLogin && (
+            <button
+              onClick={() => setActiveTab("bonus")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "bonus" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Gift className="w-3.5 h-3.5" />
+                Bonificação
+              </span>
+            </button>
+          )}
         </div>
       )}
 
@@ -1044,6 +1311,15 @@ export default function SurveyDetailPage({
         ) : (
           <CrossAnalysisPanel survey={survey} responses={responses} />
         )
+      )}
+
+      {/* ── Bonus Tab ───────────────────────────────────────────────────────── */}
+      {activeTab === "bonus" && hasRespondentsAddon && (
+        <BonusPanel
+          surveyId={id}
+          survey={survey}
+          onSurveyChange={setSurvey}
+        />
       )}
 
       <DeleteConfirmModal

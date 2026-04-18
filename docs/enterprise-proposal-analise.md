@@ -156,11 +156,7 @@ _Nenhum — todos os requisitos parciais foram resolvidos._
 
 ### 2.3 Requisitos Não Atendidos ❌
 
-#### Painel de Liberação de Assinatura/Bonificação
-
-**Situação atual:** Não existe painel ou ação administrativa para liberar benefícios (assinatura, acesso a conteúdo) para respondentes que concluíram a pesquisa.  
-**Impacto:** Importante para o fluxo de bonificação pós-participação.  
-**Esforço para implementar:** Médio — interface de revisão de respostas com ação de aprovação/liberação de assinatura.
+_Nenhum — todos os requisitos foram atendidos com a Sprint 5._
 
 ---
 
@@ -177,14 +173,14 @@ _Nenhum — todos os requisitos parciais foram resolvidos._
 | 7   | Participação única por usuário                 | ✅ Atendido   |     —      |
 | 8   | Pausar, retomar e editar respostas             | ✅ Atendido   |     —      |
 | 9   | Sync de dados cadastrais                       | ✅ Atendido   |     —      |
-| 10  | Painel de liberação de assinatura              | ❌ Falta      |    Alta    |
+| 10  | Painel de liberação de assinatura              | ✅ Atendido   |     —      |
 | 11  | Cota de respondentes e encerramento automático | ✅ Atendido   |     —      |
 | 12  | Dashboard com cruzamento de dados              | ✅ Atendido   |     —      |
 | 13  | Exportação Excel                               | ✅ Atendido   |     —      |
 
 **Legenda:** ✅ Atendido | ⚠️ Parcial | ❌ Não atendido
 
-**Percentual de adequação atual: ~96%** _(era 92% na v3.0)_
+**Percentual de adequação atual: 100%**
 
 ---
 
@@ -253,27 +249,29 @@ Os módulos opcionais são cobrados **além** da assinatura Pro (R$ 499/mês) e 
 
 - [x] Cruzamento de dados entre questões no dashboard (tab "Cruzamento" com gráfico agrupado e seletores de segmentação)
 
-### Sprint 5 — Painel Administrativo de Bonificação
+### ✅ Sprint 5 — Painel Administrativo de Bonificação (concluída)
 
-- [ ] Interface de revisão e aprovação de respondentes
-- [ ] Ação de liberação de assinatura/bonificação por respondente
-- [ ] Marcação de respondentes inelegíveis com exclusão da cota
-
-**Estimativa restante:** 1 semana de desenvolvimento
+- [x] Interface de revisão e aprovação de respondentes (nova aba "Bonificação" no dashboard)
+- [x] Ação de liberação de bonificação por respondente com registro de data/hora
+- [x] Marcação de respondentes inelegíveis com exclusão automática da cota (e reabertura da pesquisa se aplicável)
+- [x] Reversão de status (pendente → liberado → inelegível e vice-versa)
+- [x] Exibição de perfil do respondente (especialidade, setor, CRM etc.) no painel
+- [x] Contadores por status: total, pendentes, liberados, inelegíveis
 
 ---
 
 ## 7. Conclusão
 
-Com a Sprint 4 concluída, o SurveyFlow atinge **~96% de adequação** aos requisitos do cliente. Todos os requisitos de alta prioridade estão implementados, incluindo o cruzamento de dados no dashboard analítico.
+Com a Sprint 5 concluída, o SurveyFlow atinge **100% de adequação** aos requisitos do cliente.
 
-A nova aba **Cruzamento** permite segmentar as respostas de qualquer questão pelos valores de outra, com gráfico de barras agrupado, seletores intuitivos e legenda dinâmica.
+A nova aba **Bonificação** (disponível em pesquisas com login obrigatório + Módulo Respondentes ativo) permite:
+- Revisar cada respondente que concluiu a pesquisa com seus dados de perfil, score e data de conclusão
+- Liberar bonificação individualmente com registro de data/hora
+- Marcar respondentes como inelegíveis, excluindo-os automaticamente da cota e reabrindo a pesquisa caso necessário
+- Reverter qualquer status a qualquer momento
 
-**Pendente (Sprint 5):** painel de liberação de assinatura/bonificação pós-participação.
-
-**Percentual de adequação atual: ~96%**  
-**Percentual de adequação pós-Sprint 5: 100%**
+**Percentual de adequação: 100%**
 
 ---
 
-_Documento atualizado em Abril de 2026 — SurveyFlow Platform Assessment v4.0_
+_Documento atualizado em Abril de 2026 — SurveyFlow Platform Assessment v5.0_

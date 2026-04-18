@@ -295,3 +295,77 @@ export async function getWorkspaceRespondents(workspaceId: string): Promise<Resp
 
   return snapshot.docs.map((d) => d.data() as Respondent);
 }
+
+export async function getSurveyParticipations(
+  surveyId: string,
+  workspaceId: string
+): Promise<ParticipationWithRespondent[]> {
+  const { db } = getFirebaseAdmin();
+
+  const snapshot = await db
+    .collection("surveyParticipations")
+    .where("surveyId", "==", surveyId)
+    .where("workspaceId", "==", workspaceId)
+    .where("status", "==", "completed")
+    .get();
+
+  if (snapshot.empty) return [];
+
+  const participations = snapshot.docs.map((d) => d.data() as SurveyParticipation);
+
+  const results = await Promise.all(
+    participations.map(async (p) => {
+      const respondent = await getRespondentById(p.respondentId);
+
+      let totalScore: number | undefined;
+      if (p.responseId) {
+        const responseDoc = await db
+          .collection("surveys")
+          .doc(surveyId)
+          .collection("responses")
+          .doc(p.responseId)
+          .get();
+        if (responseDoc.exists) {
+          totalScore = (responseDoc.data() as { totalScore?: number }).totalScore;
+        }
+      }
+
+      const { id: _rid, workspaceId: _wid, loginCode: _lc, loginCodeExpiresAt: _lce, createdAt: _ca, updatedAt: _ua, ...profileFields } = respondent ?? {};
+      const profile: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(profileFields ?? {})) {
+        if (v !== undefined && v !== null && v !== "") profile[k] = v;
+      }
+
+      return {
+        id: p.id,
+        respondentId: p.respondentId,
+        responseId: p.responseId,
+        name: respondent?.name ?? "—",
+        email: respondent?.email ?? "—",
+        profile,
+        totalScore,
+        completedAt: p.completedAt,
+        bonusStatus: p.bonusStatus ?? "pending",
+        bonusReleasedAt: p.bonusReleasedAt,
+        bonusNotes: p.bonusNotes,
+      } as ParticipationWithRespondent;
+    })
+  );
+
+  return results.sort((a, b) =>
+    (a.completedAt ?? "") < (b.completedAt ?? "") ? 1 : -1
+  );
+}
+
+export async function updateParticipationBonus(
+  participationId: string,
+  bonusStatus: "pending" | "released" | "ineligible",
+  bonusNotes?: string
+): Promise<void> {
+  const { db } = getFirebaseAdmin();
+  const now = new Date().toISOString();
+  const update: Record<string, unknown> = { bonusStatus };
+  if (bonusStatus === "released") update.bonusReleasedAt = now;
+  if (bonusNotes !== undefined) update.bonusNotes = bonusNotes;
+  await db.collection("surveyParticipations").doc(participationId).update(update);
+}
