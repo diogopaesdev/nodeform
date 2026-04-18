@@ -16,3 +16,5 @@ export type {
   RuntimeState,
   SurveyResponse,
 } from "./survey";
+
+export type { Respondent, RespondentSession, SurveyParticipation } from "./respondent";

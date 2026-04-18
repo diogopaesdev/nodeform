@@ -126,8 +126,10 @@ export interface Survey {
   enableScoring?: boolean;
   status: "draft" | "published" | "finished" | "archived";
   responseCount: number;
-  timeLimit?: number; // Tempo limite em minutos (opcional)
-  prize?: string; // Prêmio da pesquisa (opcional)
+  timeLimit?: number;
+  prize?: string;
+  requiresRespondentLogin?: boolean;
+  maxResponses?: number;
 }
 
 /**
@@ -191,6 +193,7 @@ export interface SurveyResponse {
   path: string[];
   respondentName?: string;
   respondentEmail?: string;
+  respondentId?: string;
   completedAt: string;
   createdAt: string;
 }

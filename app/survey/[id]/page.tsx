@@ -3,8 +3,9 @@
 import { useEffect, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { X, ArrowLeft, Loader2 } from "lucide-react";
+import { X, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
+import { RespondentLoginGate } from "@/components/survey/respondent-login-gate";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
 import { useEmbedResize } from "@/lib/hooks/use-embed-resize";
 import { Survey } from "@/types/survey";
@@ -15,6 +16,14 @@ interface Brand {
   displayName: string | null;
   brandDescription: string | null;
 }
+
+interface RespondentInfo {
+  id: string;
+  name: string;
+  email: string;
+}
+
+type AuthStatus = "loading" | "unauthenticated" | "authenticated" | "already_completed";
 
 export default function SurveyPage({
   params,
@@ -41,6 +50,8 @@ export default function SurveyPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [brand, setBrand] = useState<Brand>({ brandColor: null, logoUrl: null, displayName: null, brandDescription: null });
+  const [respondent, setRespondent] = useState<RespondentInfo | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
 
   useEmbedResize(isEmbedMode);
 
@@ -50,7 +61,6 @@ export default function SurveyPage({
 
   const fetchAndStartSurvey = async () => {
     try {
-      // Usar API pública (não requer autenticação)
       const res = await fetch(`/api/public/surveys/${id}`);
 
       if (!res.ok) {
@@ -67,7 +77,13 @@ export default function SurveyPage({
         return;
       }
 
-      startSurvey(surveyData);
+      // Se requer login, verificar sessão do respondente antes de iniciar
+      if (surveyData.requiresRespondentLogin) {
+        await checkRespondentAuth(surveyData);
+      } else {
+        setAuthStatus("authenticated");
+        startSurvey(surveyData);
+      }
     } catch (err) {
       console.error("Error fetching survey:", err);
       setError("Erro ao carregar pesquisa");
@@ -76,11 +92,53 @@ export default function SurveyPage({
     }
   };
 
+  const checkRespondentAuth = async (surveyData: Survey) => {
+    // Verificar sessão ativa
+    const meRes = await fetch("/api/respondent/me");
+    const meData = await meRes.json();
+
+    if (!meData.respondent) {
+      setAuthStatus("unauthenticated");
+      return;
+    }
+
+    // Verificar participação
+    const statusRes = await fetch(`/api/respondent/survey/${id}/status`);
+    const statusData = await statusRes.json();
+
+    if (statusData.status === "completed") {
+      setAuthStatus("already_completed");
+      return;
+    }
+
+    setRespondent(meData.respondent);
+    setAuthStatus("authenticated");
+    startSurvey(surveyData);
+  };
+
+  const handleRespondentAuthenticated = async (info: RespondentInfo) => {
+    setRespondent(info);
+
+    // Verificar se já participou após login
+    const statusRes = await fetch(`/api/respondent/survey/${id}/status`);
+    const statusData = await statusRes.json();
+
+    if (statusData.status === "completed") {
+      setAuthStatus("already_completed");
+      return;
+    }
+
+    // Recarregar pesquisa e iniciar
+    const res = await fetch(`/api/public/surveys/${id}`);
+    const data = await res.json();
+    setAuthStatus("authenticated");
+    startSurvey(data.survey as Survey);
+  };
+
   const handleExitSurvey = () => {
     if (confirm("Deseja sair da pesquisa? O progresso será perdido.")) {
       resetSurvey();
       window.close();
-      // Se window.close() não funcionar (não foi aberto como popup)
       router.push(`/dashboard/survey/${id}`);
     }
   };
@@ -92,7 +150,6 @@ export default function SurveyPage({
     }
   }, [isCompleted, router, id, isEmbedMode]);
 
-  // Mostrar loading enquanto redireciona para resultado
   if (isCompleted) {
     return (
       <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
@@ -126,6 +183,35 @@ export default function SurveyPage({
           >
             Fechar
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Gate de login para respondentes
+  if (authStatus === "unauthenticated") {
+    return (
+      <RespondentLoginGate
+        surveyId={id}
+        surveyTitle={survey?.title || ""}
+        brandColor={brand.brandColor || undefined}
+        onAuthenticated={handleRespondentAuthenticated}
+      />
+    );
+  }
+
+  // Já participou
+  if (authStatus === "already_completed") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
+          <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-gray-900">Você já participou</h2>
+            <p className="text-sm text-gray-500">
+              {respondent?.name ? `${respondent.name}, sua` : "Sua"} resposta já foi registrada. Cada participante pode responder apenas uma vez.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -173,7 +259,6 @@ export default function SurveyPage({
 
   return (
     <div className={isEmbedMode ? "" : "min-h-screen bg-gray-50"}>
-      {/* Exit Button - hide in embed mode */}
       {!isEmbedMode && (
         <div className="absolute top-4 right-4 z-10">
           <button
@@ -188,7 +273,6 @@ export default function SurveyPage({
 
       <div className={`px-4 ${isEmbedMode ? "py-6" : "py-12"}`}>
         <div className={`mx-auto space-y-6 ${isEmbedMode ? "max-w-full" : "max-w-4xl space-y-8"}`}>
-          {/* Brand header */}
           {(brand.logoUrl || brand.displayName) && (
             <div className="flex items-center justify-center gap-2.5">
               {brand.logoUrl && (
@@ -206,7 +290,6 @@ export default function SurveyPage({
             </div>
           )}
 
-          {/* Survey title */}
           <div className="text-center space-y-1.5">
             <h1 className={`font-semibold text-gray-900 ${isEmbedMode ? "text-lg" : "text-xl"}`}>{survey.title}</h1>
             {survey.description && (
@@ -214,10 +297,8 @@ export default function SurveyPage({
             )}
           </div>
 
-          {/* Question */}
           <QuestionRenderer node={currentNode} onAnswer={handleAnswer} totalScore={totalScore} brandColor={brand.brandColor || undefined} />
 
-          {/* Back Button */}
           {canGoBack() && (
             <div className="flex justify-center">
               <button
@@ -230,7 +311,6 @@ export default function SurveyPage({
             </div>
           )}
 
-          {/* Progress */}
           {survey?.enableScoring && !isEmbedMode && (
             <div className="text-center text-xs text-gray-400">
               <p>Pontuação atual: {totalScore} pontos</p>
