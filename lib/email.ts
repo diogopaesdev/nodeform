@@ -28,6 +28,33 @@ export async function sendLoginCode(email: string, name: string, code: string) {
   });
 }
 
+export async function sendRespondentLoginCode(
+  email: string,
+  name: string,
+  code: string,
+  surveyTitle: string
+) {
+  await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: `${code} é seu código de acesso para a pesquisa`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #111827;">
+        <div style="margin-bottom: 32px;">
+          <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">Código de acesso</h1>
+          <p style="color: #6b7280; margin: 0;">Olá, ${name}! Use o código abaixo para acessar a pesquisa <strong>${surveyTitle}</strong>.</p>
+        </div>
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
+          <span style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #111827;">${code}</span>
+        </div>
+        <p style="color: #9ca3af; font-size: 12px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+          Este código expira em 10 minutos. Se você não solicitou o acesso, ignore este e-mail.
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendVerificationEmail(
   email: string,
   name: string,

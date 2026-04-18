@@ -102,6 +102,7 @@ export const authOptions: NextAuthOptions = {
             token.companyName = data.companyName ?? null;
             token.trialEnd = data.trialEnd ?? null;
             token.subscriptionStatus = data.subscriptionStatus ?? null;
+            token.addons = data.addons ?? {};
           }
         } catch {
           // mantém o valor anterior em caso de erro
@@ -115,6 +116,7 @@ export const authOptions: NextAuthOptions = {
         session.user.onboardingCompleted = token.onboardingCompleted ?? false;
         session.user.trialEnd = token.trialEnd ?? undefined;
         session.user.subscriptionStatus = token.subscriptionStatus ?? undefined;
+        session.user.addons = token.addons ?? {};
       }
       return session;
     },

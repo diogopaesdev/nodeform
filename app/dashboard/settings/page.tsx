@@ -4,7 +4,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles } from "lucide-react";
+import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles, KeyRound, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 
 function formatCNPJ(value: string) {
@@ -323,6 +324,25 @@ function SettingsContent() {
             )}
           </div>
         </div>
+
+        {/* Integrations */}
+        <Link
+          href="/dashboard/settings/integrations"
+          className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 transition-colors block"
+        >
+          <div className="px-5 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <KeyRound className="w-4 h-4 text-gray-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Integrações</p>
+                <p className="text-xs text-gray-400">API Keys, Módulo Respondentes e sync de perfil</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+          </div>
+        </Link>
 
         {/* Company details */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

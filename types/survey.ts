@@ -1,9 +1,10 @@
 import { Node, Edge } from "@xyflow/react";
+import { EligibilityRule } from "./addon";
 
 /**
  * Tipos de nós suportados no editor
  */
-export type NodeType = "presentation" | "singleChoice" | "multipleChoice" | "rating" | "endScreen";
+export type NodeType = "presentation" | "singleChoice" | "multipleChoice" | "rating" | "endScreen" | "textInput";
 
 /**
  * Dados específicos para nó de apresentação (intro)
@@ -43,6 +44,7 @@ export interface SingleChoiceData {
   title: string;
   description?: string;
   options: ChoiceOption[];
+  eligibilityRules?: EligibilityRule[]; // node only shown to matching respondents
   [key: string]: unknown;
 }
 
@@ -55,6 +57,7 @@ export interface MultipleChoiceData {
   title: string;
   description?: string;
   options: ChoiceOption[];
+  eligibilityRules?: EligibilityRule[];
   [key: string]: unknown;
 }
 
@@ -67,8 +70,23 @@ export interface RatingData {
   description?: string;
   minValue: number;
   maxValue: number;
-  minLabel?: string; // ex: "Muito Insatisfeito"
-  maxLabel?: string; // ex: "Muito Satisfeito"
+  minLabel?: string;
+  maxLabel?: string;
+  eligibilityRules?: EligibilityRule[];
+  [key: string]: unknown;
+}
+
+/**
+ * Dados específicos para nó de texto livre (curto ou longo)
+ */
+export interface TextInputData {
+  type: "textInput";
+  title: string;
+  description?: string;
+  isLong?: boolean;
+  placeholder?: string;
+  required?: boolean;
+  eligibilityRules?: EligibilityRule[];
   [key: string]: unknown;
 }
 
@@ -80,13 +98,15 @@ export interface EndScreenData {
   title: string;
   description?: string;
   showScore?: boolean;
+  redirectUrl?: string;
+  redirectDelay?: number;
   [key: string]: unknown;
 }
 
 /**
  * União de todos os tipos de dados de nó
  */
-export type NodeData = PresentationData | SingleChoiceData | MultipleChoiceData | RatingData | EndScreenData;
+export type NodeData = PresentationData | SingleChoiceData | MultipleChoiceData | RatingData | EndScreenData | TextInputData;
 
 /**
  * Nó de pesquisa (extends Node do React Flow)
@@ -126,8 +146,11 @@ export interface Survey {
   enableScoring?: boolean;
   status: "draft" | "published" | "finished" | "archived";
   responseCount: number;
-  timeLimit?: number; // Tempo limite em minutos (opcional)
-  prize?: string; // Prêmio da pesquisa (opcional)
+  timeLimit?: number;
+  prize?: string;
+  requiresRespondentLogin?: boolean;
+  maxResponses?: number;
+  eligibilityRules?: EligibilityRule[]; // survey-level: block ineligible respondents
 }
 
 /**
@@ -150,6 +173,8 @@ export interface NodeAnswer {
   selectedOptionIds?: string[];
   // Para rating
   ratingValue?: number;
+  // Para textInput
+  textValue?: string;
   // Para presentation (captura de dados)
   respondentName?: string;
   respondentEmail?: string;
@@ -191,6 +216,7 @@ export interface SurveyResponse {
   path: string[];
   respondentName?: string;
   respondentEmail?: string;
+  respondentId?: string;
   completedAt: string;
   createdAt: string;
 }

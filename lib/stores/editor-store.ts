@@ -8,7 +8,7 @@ import {
   NodeChange,
   EdgeChange,
 } from "@xyflow/react";
-import type { SurveyNode, SurveyEdge, NodeData, Survey } from "@/types";
+import type { SurveyNode, SurveyEdge, NodeData, Survey, EligibilityRule } from "@/types";
 
 interface EditorState {
   // Estado do React Flow
@@ -23,7 +23,10 @@ interface EditorState {
   timeLimit?: number;
   prize?: string;
   status: Survey["status"];
-  isConfigured: boolean; // Se o modal inicial foi preenchido
+  isConfigured: boolean;
+  requiresRespondentLogin: boolean;
+  maxResponses?: number;
+  eligibilityRules: EligibilityRule[];
 
   // Actions para nodes
   setNodes: (nodes: SurveyNode[]) => void;
@@ -46,6 +49,9 @@ interface EditorState {
   setPrize: (prize: string | undefined) => void;
   setStatus: (status: Survey["status"]) => void;
   setIsConfigured: (configured: boolean) => void;
+  setRequiresRespondentLogin: (v: boolean) => void;
+  setMaxResponses: (v: number | undefined) => void;
+  setEligibilityRules: (rules: EligibilityRule[]) => void;
   loadSurvey: (survey: Survey) => void;
   clearSurvey: () => void;
 
@@ -69,6 +75,9 @@ export const useEditorStore = create<EditorState>()(
       prize: undefined,
       status: "draft" as Survey["status"],
       isConfigured: false,
+      requiresRespondentLogin: false,
+      maxResponses: undefined,
+      eligibilityRules: [],
 
       // Node actions
       setNodes: (nodes) => set({ nodes }),
@@ -147,8 +156,10 @@ export const useEditorStore = create<EditorState>()(
       setPrize: (prize) => set({ prize: prize }),
 
       setStatus: (status) => set({ status }),
-
       setIsConfigured: (configured) => set({ isConfigured: configured }),
+      setRequiresRespondentLogin: (v) => set({ requiresRespondentLogin: v }),
+      setMaxResponses: (v) => set({ maxResponses: v }),
+      setEligibilityRules: (rules) => set({ eligibilityRules: rules }),
 
       loadSurvey: (survey) => {
         // Se a pesquisa já tem nodes ou foi configurada (título diferente de "Nova Pesquisa")
@@ -162,6 +173,9 @@ export const useEditorStore = create<EditorState>()(
           prize: survey.prize,
           status: survey.status,
           isConfigured,
+          requiresRespondentLogin: survey.requiresRespondentLogin ?? false,
+          maxResponses: survey.maxResponses,
+          eligibilityRules: survey.eligibilityRules ?? [],
           nodes: survey.nodes,
           edges: survey.edges,
         });
@@ -177,6 +191,9 @@ export const useEditorStore = create<EditorState>()(
           prize: undefined,
           status: "draft" as Survey["status"],
           isConfigured: false,
+          requiresRespondentLogin: false,
+          maxResponses: undefined,
+          eligibilityRules: [],
           nodes: [],
           edges: [],
         });
@@ -193,6 +210,9 @@ export const useEditorStore = create<EditorState>()(
           enableScoring: state.enableScoring,
           timeLimit: state.timeLimit,
           prize: state.prize,
+          requiresRespondentLogin: state.requiresRespondentLogin,
+          maxResponses: state.maxResponses,
+          eligibilityRules: state.eligibilityRules,
           nodes: state.nodes,
           edges: state.edges,
           createdAt: new Date().toISOString(),
@@ -213,6 +233,9 @@ export const useEditorStore = create<EditorState>()(
         prize: state.prize,
         status: state.status,
         isConfigured: state.isConfigured,
+        requiresRespondentLogin: state.requiresRespondentLogin,
+        maxResponses: state.maxResponses,
+        eligibilityRules: state.eligibilityRules,
         nodes: state.nodes,
         edges: state.edges,
       }),

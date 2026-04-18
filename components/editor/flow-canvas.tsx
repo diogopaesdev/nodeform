@@ -17,7 +17,7 @@ import { ZoomIn, ZoomOut, Maximize2, Lock, Unlock } from "lucide-react";
 import { useEditorStore } from "@/lib/stores";
 import { nodeTypes } from "./nodes";
 import { NodeEditModal } from "./node-edit-modal";
-import type { SurveyNode, PresentationData, SingleChoiceData, MultipleChoiceData, RatingData, EndScreenData } from "@/types";
+import type { SurveyNode, PresentationData, SingleChoiceData, MultipleChoiceData, RatingData, EndScreenData, TextInputData } from "@/types";
 
 const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -69,6 +69,15 @@ const getDefaultNodeData = (type: string) => {
         description: "Sua resposta foi registrada com sucesso.",
         showScore: false,
       } as EndScreenData;
+    case "textInput":
+      return {
+        type: "textInput",
+        title: "Nova Pergunta Aberta",
+        description: "Descreva sua resposta",
+        isLong: false,
+        placeholder: "Digite sua resposta aqui...",
+        required: false,
+      } as TextInputData;
     default:
       return null;
   }
@@ -79,6 +88,7 @@ const NODE_COLORS: Record<string, string> = {
   singleChoice:   "#3b82f6",
   multipleChoice: "#22c55e",
   rating:         "#a855f7",
+  textInput:      "#7c3aed",
   endScreen:      "#f43f5e",
 };
 

@@ -122,6 +122,7 @@ export const pt = {
     tabs: {
       analytics: "Análise",
       responses: "Respostas ({n})",
+      crossAnalysis: "Cruzamento",
     },
     analytics: {
       noResponses: "Nenhuma resposta ainda",
@@ -133,6 +134,17 @@ export const pt = {
       resp: "resp.",
       avg: "média de {n} avaliações",
       noTitle: "Sem título",
+    },
+    crossAnalysis: {
+      title: "Cruzamento de Dados",
+      description: "Segmente as respostas de uma pergunta pelos valores de outra.",
+      segmentBy: "Segmentar por",
+      analyzeQuestion: "Analisar pergunta",
+      selectQuestion: "Selecionar pergunta...",
+      noData: "Nenhum respondente cruzou essas duas perguntas.",
+      needMoreQuestions: "São necessárias pelo menos 2 perguntas de escolha para usar o cruzamento.",
+      respondents: "respondentes",
+      totalSegment: "total no segmento",
     },
     responses: {
       title: "Respostas individuais",

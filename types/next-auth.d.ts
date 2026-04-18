@@ -1,4 +1,5 @@
 import "next-auth";
+import { WorkspaceAddons } from "./addon";
 
 declare module "next-auth" {
   interface Session {
@@ -10,6 +11,7 @@ declare module "next-auth" {
       onboardingCompleted?: boolean;
       trialEnd?: string;
       subscriptionStatus?: string;
+      addons?: WorkspaceAddons;
     };
   }
 }
@@ -19,5 +21,6 @@ declare module "next-auth/jwt" {
     onboardingCompleted?: boolean;
     trialEnd?: string;
     subscriptionStatus?: string;
+    addons?: WorkspaceAddons;
   }
 }
