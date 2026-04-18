@@ -39,9 +39,30 @@ export default function IntegrationsPage() {
 }
 
 function IntegrationsContent() {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const searchParams = useSearchParams();
   const addonSuccess = searchParams.get("addon_success") === "true";
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    if (!addonSuccess) return;
+
+    setSyncing(true);
+    let attempts = 0;
+
+    const poll = async () => {
+      await updateSession();
+      attempts++;
+      if (attempts < 8) setTimeout(poll, 1500);
+      else setSyncing(false);
+    };
+
+    setTimeout(poll, 1000);
+  }, [addonSuccess]);
+
+  useEffect(() => {
+    if (syncing && (hasAddon || hasProgressAddon)) setSyncing(false);
+  }, [session, syncing]);
 
   const hasAddon = session?.user?.addons?.respondents?.active === true;
   const hasProgressAddon = session?.user?.addons?.surveyProgress?.active === true;
@@ -164,8 +185,12 @@ function IntegrationsContent() {
 
       {addonSuccess && (
         <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
-          <Check className="w-4 h-4 shrink-0" />
-          Módulo ativado com sucesso!
+          {syncing ? (
+            <Loader2 className="w-4 h-4 shrink-0 animate-spin text-green-600" />
+          ) : (
+            <Check className="w-4 h-4 shrink-0" />
+          )}
+          {syncing ? "Ativando módulo, aguarde..." : "Módulo ativado com sucesso!"}
         </div>
       )}
 
