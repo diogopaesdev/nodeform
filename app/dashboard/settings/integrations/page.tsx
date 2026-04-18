@@ -46,6 +46,13 @@ function IntegrationsContent() {
   const hasAddon = session?.user?.addons?.respondents?.active === true;
   const hasProgressAddon = session?.user?.addons?.surveyProgress?.active === true;
 
+  const subscriptionStatus = session?.user?.subscriptionStatus;
+  const trialEnd = session?.user?.trialEnd;
+  const hasSubscription =
+    subscriptionStatus === "active" ||
+    subscriptionStatus === "trialing" ||
+    (!!trialEnd && new Date(trialEnd).getTime() > Date.now());
+
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -185,18 +192,24 @@ function IntegrationsContent() {
           </div>
 
           {!hasAddon && (
-            <button
-              onClick={handleActivateAddon}
-              disabled={activating}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
-            >
-              {activating ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
+            hasSubscription ? (
+              <button
+                onClick={handleActivateAddon}
+                disabled={activating}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+              >
+                {activating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                Ativar módulo
+              </button>
+            ) : (
+              <Link
+                href="/dashboard/settings?require_plan=true"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+              >
                 <Sparkles className="w-3.5 h-3.5" />
-              )}
-              Ativar módulo
-            </button>
+                Requer assinatura
+              </Link>
+            )
           )}
         </div>
 
@@ -246,18 +259,24 @@ function IntegrationsContent() {
           </div>
 
           {!hasProgressAddon && (
-            <button
-              onClick={handleActivateProgressAddon}
-              disabled={activatingProgress}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {activatingProgress ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
+            hasSubscription ? (
+              <button
+                onClick={handleActivateProgressAddon}
+                disabled={activatingProgress}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {activatingProgress ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                Ativar módulo
+              </button>
+            ) : (
+              <Link
+                href="/dashboard/settings?require_plan=true"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+              >
                 <Sparkles className="w-3.5 h-3.5" />
-              )}
-              Ativar módulo
-            </button>
+                Requer assinatura
+              </Link>
+            )
           )}
         </div>
 

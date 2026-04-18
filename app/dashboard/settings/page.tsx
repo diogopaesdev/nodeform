@@ -44,6 +44,7 @@ function SettingsContent() {
   const { data: session } = useSession();
   const { t } = useI18n();
   const searchParams = useSearchParams();
+  const requirePlan = searchParams.get("require_plan") === "true";
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -191,6 +192,16 @@ function SettingsContent() {
         <h1 className="text-xl font-semibold text-gray-900">{t.settings.title}</h1>
         <p className="text-sm text-gray-500 mt-0.5">{t.settings.subtitle}</p>
       </div>
+
+      {requirePlan && (
+        <div className="mb-4 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+          <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Assinatura necessária</p>
+            <p className="text-xs text-amber-700 mt-0.5">Os módulos de integração estão disponíveis apenas para assinantes. Ative seu plano abaixo para continuar.</p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* Connected account */}
