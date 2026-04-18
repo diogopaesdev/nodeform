@@ -17,9 +17,240 @@ import {
   RefreshCw,
   BookmarkCheck,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Link from "next/link";
 import { ProfileSchemaEditor } from "@/components/integrations/profile-schema-editor";
+import { useI18n } from "@/lib/i18n";
+
+// ─── Code Example Component ───────────────────────────────────────────────────
+
+type Lang = "node" | "python" | "php" | "curl";
+
+const LANG_LABELS: Record<Lang, string> = {
+  node: "Node.js",
+  python: "Python",
+  php: "PHP",
+  curl: "cURL",
+};
+
+function CodeExample({
+  title,
+  snippets,
+}: {
+  title: string;
+  snippets: Record<Lang, string>;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(true);
+  const [lang, setLang] = useState<Lang>("node");
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(snippets[lang]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+      >
+        <span className="text-xs font-semibold text-gray-700">{title}</span>
+        {open ? (
+          <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+        )}
+      </button>
+
+      {open && (
+        <div>
+          <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-100 bg-white">
+            {(Object.keys(LANG_LABELS) as Lang[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                  lang === l
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {LANG_LABELS[l]}
+              </button>
+            ))}
+            <button
+              onClick={handleCopy}
+              className="ml-auto flex items-center gap-1 px-2 py-1 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {copied ? (
+                <><Check className="w-3 h-3 text-green-500" /> {t.common.copied}</>
+              ) : (
+                <><Copy className="w-3 h-3" /> {t.common.copy}</>
+              )}
+            </button>
+          </div>
+          <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre leading-relaxed p-4 bg-gray-50">
+            {snippets[lang]}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Code Snippets ─────────────────────────────────────────────────────────────
+
+const SSO_SNIPPETS: Record<Lang, string> = {
+  node: `// 1. Gerar token SSO (backend da sua plataforma)
+const res = await fetch('https://surveyflowapp.com/api/sso/token', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    apiKey: 'nfk_sua_chave_aqui',
+    surveyId: 'id_da_pesquisa',
+    email: usuario.email,
+    name: usuario.nome,
+    profile: {
+      specialty: usuario.especialidade, // ex: 'oncologia'
+      sector: usuario.setor,           // ex: 'privado'
+      crm: usuario.crm,
+    }
+  })
+});
+const { token } = await res.json();
+
+// 2. Redirecionar o usuário
+res.redirect(\`https://surveyflowapp.com/survey/\${surveyId}?sso_token=\${token}\`);`,
+
+  python: `import requests
+
+# 1. Gerar token SSO (backend da sua plataforma)
+res = requests.post('https://surveyflowapp.com/api/sso/token', json={
+    'apiKey': 'nfk_sua_chave_aqui',
+    'surveyId': 'id_da_pesquisa',
+    'email': usuario['email'],
+    'name': usuario['nome'],
+    'profile': {
+        'specialty': usuario['especialidade'],  # ex: 'oncologia'
+        'sector': usuario['setor'],             # ex: 'privado'
+        'crm': usuario['crm'],
+    }
+})
+token = res.json()['token']
+
+# 2. Redirecionar o usuário
+redirect_url = f'https://surveyflowapp.com/survey/{survey_id}?sso_token={token}'
+return redirect(redirect_url)`,
+
+  php: `<?php
+// 1. Gerar token SSO (backend da sua plataforma)
+$ch = curl_init('https://surveyflowapp.com/api/sso/token');
+curl_setopt_array($ch, [
+    CURLOPT_POST           => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+    CURLOPT_POSTFIELDS     => json_encode([
+        'apiKey'   => 'nfk_sua_chave_aqui',
+        'surveyId' => 'id_da_pesquisa',
+        'email'    => $usuario['email'],
+        'name'     => $usuario['nome'],
+        'profile'  => [
+            'specialty' => $usuario['especialidade'], // ex: 'oncologia'
+            'sector'    => $usuario['setor'],         // ex: 'privado'
+            'crm'       => $usuario['crm'],
+        ],
+    ]),
+]);
+$token = json_decode(curl_exec($ch), true)['token'];
+curl_close($ch);
+
+// 2. Redirecionar o usuário
+header("Location: https://surveyflowapp.com/survey/{$surveyId}?sso_token={$token}");`,
+
+  curl: `# 1. Gerar token SSO
+curl -X POST https://surveyflowapp.com/api/sso/token \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "apiKey": "nfk_sua_chave_aqui",
+    "surveyId": "id_da_pesquisa",
+    "email": "usuario@email.com",
+    "name": "Nome do Usuário",
+    "profile": {
+      "specialty": "oncologia",
+      "sector": "privado",
+      "crm": "12345"
+    }
+  }'
+
+# Resposta: { "token": "eyJ..." }
+
+# 2. Redirecionar para:
+# https://surveyflowapp.com/survey/{surveyId}?sso_token={token}`,
+};
+
+const SYNC_SNIPPETS: Record<Lang, string> = {
+  node: `// Atualizar perfis sem exigir login dos usuários
+await fetch('https://surveyflowapp.com/api/workspace/respondents/sync', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    apiKey: 'nfk_sua_chave_aqui',
+    respondents: [
+      { email: 'dr@email.com', name: 'Dr. João',
+        profile: { specialty: 'oncologia', sector: 'privado' } },
+      // ... até 500 por requisição
+    ]
+  })
+});`,
+
+  python: `import requests
+
+# Atualizar perfis sem exigir login dos usuários
+requests.post('https://surveyflowapp.com/api/workspace/respondents/sync', json={
+    'apiKey': 'nfk_sua_chave_aqui',
+    'respondents': [
+        { 'email': 'dr@email.com', 'name': 'Dr. João',
+          'profile': { 'specialty': 'oncologia', 'sector': 'privado' } },
+        # ... até 500 por requisição
+    ]
+})`,
+
+  php: `<?php
+$ch = curl_init('https://surveyflowapp.com/api/workspace/respondents/sync');
+curl_setopt_array($ch, [
+    CURLOPT_POST           => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+    CURLOPT_POSTFIELDS     => json_encode([
+        'apiKey'      => 'nfk_sua_chave_aqui',
+        'respondents' => [
+            [ 'email'   => 'dr@email.com', 'name' => 'Dr. João',
+              'profile' => [ 'specialty' => 'oncologia', 'sector' => 'privado' ] ],
+            // ... até 500 por requisição
+        ],
+    ]),
+]);
+curl_exec($ch);
+curl_close($ch);`,
+
+  curl: `curl -X POST https://surveyflowapp.com/api/workspace/respondents/sync \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "apiKey": "nfk_sua_chave_aqui",
+    "respondents": [
+      {
+        "email": "dr@email.com",
+        "name": "Dr. João",
+        "profile": { "specialty": "oncologia", "sector": "privado" }
+      }
+    ]
+  }'`,
+};
 
 interface ApiKey {
   id: string;
@@ -39,6 +270,7 @@ export default function IntegrationsPage() {
 }
 
 function IntegrationsContent() {
+  const { t } = useI18n();
   const { data: session, update: updateSession } = useSession(); // updateSession força o JWT a reler o Firestore após confirmação
   const searchParams = useSearchParams();
   const addonSuccess = searchParams.get("addon_success") === "true";
@@ -190,7 +422,7 @@ function IntegrationsContent() {
   };
 
   const handleDeleteKey = async (keyId: string) => {
-    if (!confirm("Revogar esta API key? Integrações que a utilizam pararão de funcionar.")) return;
+    if (!confirm(t.integrations.apiKeys.revokeConfirm)) return;
     await fetch(`/api/workspace/api-keys/${keyId}`, { method: "DELETE" });
     setKeys((prev) => prev.filter((k) => k.id !== keyId));
   };
@@ -212,12 +444,10 @@ function IntegrationsContent() {
           className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-4 transition-colors"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
-          Configurações
+          {t.integrations.back}
         </Link>
-        <h1 className="text-lg font-semibold text-gray-900">Integrações</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Conecte sua plataforma ao SurveyFlow para autenticar respondentes via SSO.
-        </p>
+        <h1 className="text-lg font-semibold text-gray-900">{t.integrations.title}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t.integrations.subtitle}</p>
       </div>
 
       {addonSuccess && (
@@ -227,7 +457,7 @@ function IntegrationsContent() {
           ) : (
             <Check className="w-4 h-4 shrink-0" />
           )}
-          {syncing ? "Ativando módulo, aguarde..." : "Módulo ativado com sucesso!"}
+          {syncing ? t.integrations.syncing : t.integrations.addonActivated}
         </div>
       )}
 
@@ -240,15 +470,15 @@ function IntegrationsContent() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-gray-900">Módulo Respondentes</h2>
+                <h2 className="text-sm font-semibold text-gray-900">{t.integrations.respondentsAddon.name}</h2>
                 {hasAddon ? (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">Ativo</span>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">{t.integrations.respondentsAddon.active}</span>
                 ) : (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded-full">Não ativo</span>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded-full">{t.integrations.respondentsAddon.inactive}</span>
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                Autenticação dedicada, controle de acesso e integração B2B para pesquisas enterprise.
+                {t.integrations.respondentsAddon.description}
               </p>
             </div>
           </div>
@@ -261,7 +491,7 @@ function IntegrationsContent() {
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
               >
                 {activating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                Ativar módulo
+                {t.integrations.respondentsAddon.activate}
               </button>
             ) : (
               <Link
@@ -269,7 +499,7 @@ function IntegrationsContent() {
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Requer assinatura
+                {t.integrations.respondentsAddon.requiresSubscription}
               </Link>
             )
           )}
@@ -277,18 +507,7 @@ function IntegrationsContent() {
 
         {!hasAddon && (
           <div className="px-5 pb-5 space-y-2">
-            {[
-              "Login obrigatório via OTP por e-mail ou SSO",
-              "SSO — usuários da sua plataforma chegam autenticados, sem tela de login",
-              "Sync de perfil em massa (até 500 respondentes por chamada)",
-              "Elegibilidade por perfil — filtre por especialidade, setor, CRM e mais",
-              "Critérios de visibilidade por questão — perguntas condicionais por perfil",
-              "Participação única — bloqueio automático de segunda tentativa",
-              "Cota máxima com encerramento automático da pesquisa",
-              "Workspace Profile Schema com rule builder tipado",
-              "API Keys seguras para integração server-to-server",
-              "Painel de liberação de bonificação pós-participação",
-            ].map((feature) => (
+            {(t.integrations.respondentsAddon.features as readonly string[]).map((feature) => (
               <div key={feature} className="flex items-center gap-2 text-xs text-gray-500">
                 <Lock className="w-3 h-3 text-gray-300 shrink-0" />
                 {feature}
@@ -307,15 +526,15 @@ function IntegrationsContent() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-gray-900">Módulo Progresso</h2>
+                <h2 className="text-sm font-semibold text-gray-900">{t.integrations.progressAddon.name}</h2>
                 {hasProgressAddon ? (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">Ativo</span>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">{t.integrations.progressAddon.active}</span>
                 ) : (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded-full">Não ativo</span>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded-full">{t.integrations.progressAddon.inactive}</span>
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                Persistência de respostas entre sessões com retomada inteligente em qualquer dispositivo.
+                {t.integrations.progressAddon.description}
               </p>
             </div>
           </div>
@@ -328,7 +547,7 @@ function IntegrationsContent() {
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 {activatingProgress ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                Ativar módulo
+                {t.integrations.progressAddon.activate}
               </button>
             ) : (
               <Link
@@ -336,45 +555,22 @@ function IntegrationsContent() {
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Requer assinatura
+                {t.integrations.progressAddon.requiresSubscription}
               </Link>
             )
           )}
         </div>
 
-        {!hasProgressAddon && (
-          <div className="px-5 pb-5 space-y-2">
-            {[
-              "Progresso salvo automaticamente após cada resposta",
-              "Respondente retoma de onde parou em qualquer device ou sessão",
-              "Dialog de escolha: retomar de onde parou ou recomeçar do início",
-              "Funciona com autenticação OTP e SSO",
-              "Progresso deletado automaticamente ao concluir — sem dados residuais",
-            ].map((feature) => (
-              <div key={feature} className="flex items-center gap-2 text-xs text-gray-500">
-                <Lock className="w-3 h-3 text-gray-300 shrink-0" />
-                {feature}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {hasProgressAddon && (
-          <div className="px-5 pb-5 space-y-2">
-            {[
-              "Progresso salvo automaticamente após cada resposta",
-              "Respondente retoma de onde parou em qualquer device ou sessão",
-              "Dialog de escolha: retomar de onde parou ou recomeçar do início",
-              "Funciona com autenticação OTP e SSO",
-              "Progresso deletado automaticamente ao concluir — sem dados residuais",
-            ].map((feature) => (
-              <div key={feature} className="flex items-center gap-2 text-xs text-gray-500">
-                <Check className="w-3 h-3 text-green-500 shrink-0" />
-                {feature}
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="px-5 pb-5 space-y-2">
+          {(t.integrations.progressAddon.features as readonly string[]).map((feature) => (
+            <div key={feature} className="flex items-center gap-2 text-xs text-gray-500">
+              {hasProgressAddon
+                ? <Check className="w-3 h-3 text-green-500 shrink-0" />
+                : <Lock className="w-3 h-3 text-gray-300 shrink-0" />}
+              {feature}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* API Keys section */}
@@ -382,8 +578,8 @@ function IntegrationsContent() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-gray-900">API Keys</h2>
-              <p className="text-xs text-gray-500">Use para autenticar chamadas server-to-server da sua plataforma.</p>
+              <h2 className="text-sm font-semibold text-gray-900">{t.integrations.apiKeys.title}</h2>
+              <p className="text-xs text-gray-500">{t.integrations.apiKeys.subtitle}</p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={loadKeys} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md transition-colors">
@@ -394,7 +590,7 @@ function IntegrationsContent() {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Nova chave
+                {t.integrations.apiKeys.newKey}
               </button>
             </div>
           </div>
@@ -404,7 +600,7 @@ function IntegrationsContent() {
               <input
                 autoFocus
                 type="text"
-                placeholder="Nome da chave (ex: MOC Produção)"
+                placeholder={t.integrations.apiKeys.namePlaceholder}
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreateKey()}
@@ -415,10 +611,10 @@ function IntegrationsContent() {
                 disabled={creating || !newKeyName.trim()}
                 className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg disabled:opacity-50"
               >
-                {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Criar"}
+                {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t.integrations.apiKeys.create}
               </button>
               <button onClick={() => setShowCreate(false)} className="text-xs text-gray-500 hover:text-gray-700 px-2">
-                Cancelar
+                {t.common.cancel}
               </button>
             </div>
           )}
@@ -429,7 +625,7 @@ function IntegrationsContent() {
             </div>
           ) : keys.length === 0 ? (
             <div className="text-center py-8 text-sm text-gray-400">
-              Nenhuma API key criada ainda.
+              {t.integrations.apiKeys.empty}
             </div>
           ) : (
             <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
@@ -472,13 +668,13 @@ function IntegrationsContent() {
 
                   {key.rawKey && (
                     <p className="text-xs text-amber-700">
-                      Copie agora. A chave completa não será exibida novamente.
+                      {t.integrations.apiKeys.copyNow}
                     </p>
                   )}
 
                   <div className="flex items-center gap-3 text-xs text-gray-400">
-                    <span>Criada em {formatDate(key.createdAt)}</span>
-                    {key.lastUsedAt && <span>· Último uso {formatDate(key.lastUsedAt)}</span>}
+                    <span>{t.integrations.apiKeys.createdAt} {formatDate(key.createdAt)}</span>
+                    {key.lastUsedAt && <span>· {t.integrations.apiKeys.lastUsed} {formatDate(key.lastUsedAt)}</span>}
                   </div>
                 </div>
               ))}
@@ -486,31 +682,7 @@ function IntegrationsContent() {
           )}
 
           {/* Integration example */}
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
-            <h3 className="text-xs font-semibold text-gray-700">Exemplo de integração (Node.js)</h3>
-            <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-{`// 1. Gerar token SSO (backend da sua plataforma)
-const res = await fetch('https://surveyflowapp.com/api/sso/token', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    apiKey: 'nfk_sua_chave_aqui',
-    surveyId: 'id_da_pesquisa',
-    email: usuario.email,
-    name: usuario.nome,
-    profile: {
-      specialty: usuario.especialidade, // ex: 'oncologia'
-      sector: usuario.setor,           // ex: 'privado'
-      crm: usuario.crm,
-    }
-  })
-});
-const { token } = await res.json();
-
-// 2. Redirecionar o usuário
-res.redirect(\`https://surveyflowapp.com/survey/\${surveyId}?sso_token=\${token}\`);`}
-            </pre>
-          </div>
+          <CodeExample title={t.integrations.codeExamples.ssoTitle} snippets={SSO_SNIPPETS} />
 
           {/* Profile Schema */}
           <div className="border border-gray-200 rounded-xl p-5">
@@ -518,23 +690,7 @@ res.redirect(\`https://surveyflowapp.com/survey/\${surveyId}?sso_token=\${token}
           </div>
 
           {/* Sync example */}
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
-            <h3 className="text-xs font-semibold text-gray-700">Sync de perfil em massa (opcional)</h3>
-            <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-{`// Atualizar perfis sem exigir login dos usuários
-await fetch('https://surveyflowapp.com/api/workspace/respondents/sync', {
-  method: 'POST',
-  body: JSON.stringify({
-    apiKey: 'nfk_sua_chave_aqui',
-    respondents: [
-      { email: 'dr@email.com', name: 'Dr. João',
-        profile: { specialty: 'oncologia', sector: 'privado' } },
-      // ... até 500 por requisição
-    ]
-  })
-});`}
-            </pre>
-          </div>
+          <CodeExample title={t.integrations.codeExamples.syncTitle} snippets={SYNC_SNIPPETS} />
         </div>
       )}
     </div>
