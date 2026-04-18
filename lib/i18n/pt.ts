@@ -539,6 +539,29 @@ export const pt = {
       ssoTitle: "Exemplo de integração SSO",
       syncTitle: "Sync de perfil em massa (opcional)",
     },
+    apiRef: {
+      title: "Referência da API",
+      subtitle: "Endpoints disponíveis para integração com sua plataforma.",
+      noKeyHint: "Crie uma API key acima para ver sua chave preenchida automaticamente nos exemplos.",
+      request: "Requisição",
+      response: "Resposta",
+      redirectTo: "Redirecione o usuário para:",
+      noAuth: "Não requer autenticação.",
+      endpoints: {
+        sso: {
+          summary: "Gera token SSO para autenticar respondente",
+          description: "Gera um token de acesso único (TTL 5 min) para autenticar um respondente da sua plataforma sem exibir tela de login.",
+        },
+        sync: {
+          summary: "Sync em massa de respondentes",
+          description: "Cria ou atualiza perfis de respondentes em lote. Não exige que o respondente tenha feito login.",
+        },
+        schema: {
+          summary: "Retorna schema de perfil do workspace",
+          description: "Retorna os campos de perfil configurados no workspace. Use para montar o objeto profile no SSO.",
+        },
+      },
+    },
   },
   upgrade: {
     trialExpired: "Seu trial expirou",

@@ -541,6 +541,29 @@ export const en: Translations = {
       ssoTitle: "SSO integration example",
       syncTitle: "Bulk profile sync (optional)",
     },
+    apiRef: {
+      title: "API Reference",
+      subtitle: "Available endpoints for integrating with your platform.",
+      noKeyHint: "Create an API key above to see your key pre-filled in the examples.",
+      request: "Request",
+      response: "Response",
+      redirectTo: "Redirect the user to:",
+      noAuth: "No authentication required.",
+      endpoints: {
+        sso: {
+          summary: "Generate SSO token to authenticate respondent",
+          description: "Generates a one-time access token (TTL 5 min) to authenticate a respondent from your platform without showing a login screen.",
+        },
+        sync: {
+          summary: "Bulk respondent sync",
+          description: "Creates or updates respondent profiles in bulk. Does not require the respondent to have logged in.",
+        },
+        schema: {
+          summary: "Returns workspace profile schema",
+          description: "Returns the profile fields configured in the workspace. Use to build the profile object in SSO.",
+        },
+      },
+    },
   },
   upgrade: {
     trialExpired: "Your trial has expired",

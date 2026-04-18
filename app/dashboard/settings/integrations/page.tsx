@@ -19,6 +19,8 @@ import {
   ChevronLeft,
   ChevronDown,
   ChevronUp,
+  BookOpen,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { ProfileSchemaEditor } from "@/components/integrations/profile-schema-editor";
@@ -251,6 +253,186 @@ curl_close($ch);`,
     ]
   }'`,
 };
+
+// ─── API Reference ────────────────────────────────────────────────────────────
+
+const METHOD_BADGE: Record<string, string> = {
+  POST:   "bg-blue-100 text-blue-700",
+  GET:    "bg-green-100 text-green-700",
+  PATCH:  "bg-amber-100 text-amber-700",
+  DELETE: "bg-red-100 text-red-600",
+  PUT:    "bg-purple-100 text-purple-700",
+};
+
+function makeSnippets(
+  template: Record<Lang, string>,
+  apiKey: string,
+): Record<Lang, string> {
+  const result = {} as Record<Lang, string>;
+  for (const lang of Object.keys(template) as Lang[]) {
+    result[lang] = template[lang].replaceAll("nfk_sua_chave_aqui", apiKey);
+  }
+  return result;
+}
+
+function ApiEndpointCard({
+  method,
+  path,
+  summary,
+  description,
+  snippets,
+  response,
+  footer,
+}: {
+  method: string;
+  path: string;
+  summary: string;
+  description: string;
+  snippets: Record<Lang, string>;
+  response: string;
+  footer?: React.ReactNode;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+      >
+        <span className={`shrink-0 px-2 py-0.5 text-[11px] font-bold rounded-md ${METHOD_BADGE[method] ?? "bg-gray-100 text-gray-600"}`}>
+          {method}
+        </span>
+        <code className="flex-1 text-xs text-gray-700 font-mono truncate">{path}</code>
+        <span className="text-xs text-gray-400 hidden sm:block truncate max-w-[200px]">{summary}</span>
+        {open ? <ChevronUp className="w-3.5 h-3.5 text-gray-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-100 divide-y divide-gray-100">
+          <p className="px-4 py-3 text-xs text-gray-500 leading-relaxed">{description}</p>
+
+          <div className="px-4 py-3 space-y-2">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t.integrations.apiRef.request}</p>
+            <CodeExample title="" snippets={snippets} />
+          </div>
+
+          <div className="px-4 py-3 space-y-2">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t.integrations.apiRef.response}</p>
+            <pre className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 overflow-x-auto">
+              {response}
+            </pre>
+          </div>
+
+          {footer && (
+            <div className="px-4 py-3">{footer}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ApiReferenceSection({ apiKeyPrefix }: { apiKeyPrefix?: string }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(true);
+  const keyPlaceholder = apiKeyPrefix ?? "nfk_sua_chave_aqui";
+
+  const ssoSnippets = makeSnippets(SSO_SNIPPETS, keyPlaceholder);
+  const syncSnippets = makeSnippets(SYNC_SNIPPETS, keyPlaceholder);
+
+  const schemaSnippets: Record<Lang, string> = {
+    node: `const res = await fetch('https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema');
+const { fields } = await res.json();
+// fields: [{ key: "specialty", label: "Especialidade", type: "text" }, ...]`,
+    python: `import requests
+
+res = requests.get('https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema')
+fields = res.json()['fields']
+# fields: [{ 'key': 'specialty', 'label': 'Especialidade', 'type': 'text' }, ...]`,
+    php: `<?php
+$res   = file_get_contents('https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema');
+$fields = json_decode($res, true)['fields'];
+// fields: [['key' => 'specialty', 'label' => 'Especialidade', 'type' => 'text'], ...]`,
+    curl: `curl https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema`,
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 px-5 py-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+      >
+        <BookOpen className="w-4 h-4 text-gray-500 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900">{t.integrations.apiRef.title}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{t.integrations.apiRef.subtitle}</p>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
+      </button>
+
+      {open && (
+        <div className="divide-y divide-gray-100">
+          {!apiKeyPrefix && (
+            <div className="flex items-center gap-2 px-5 py-3 bg-amber-50 text-xs text-amber-700">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              {t.integrations.apiRef.noKeyHint}
+            </div>
+          )}
+
+          <div className="p-4 space-y-2">
+            <ApiEndpointCard
+              method="POST"
+              path="/api/sso/token"
+              summary={t.integrations.apiRef.endpoints.sso.summary}
+              description={t.integrations.apiRef.endpoints.sso.description}
+              snippets={ssoSnippets}
+              response={`{ "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }`}
+              footer={
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                    {t.integrations.apiRef.redirectTo}
+                  </p>
+                  <code className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 block">
+                    {`https://surveyflowapp.com/survey/{surveyId}?sso_token={token}`}
+                  </code>
+                </div>
+              }
+            />
+
+            <ApiEndpointCard
+              method="POST"
+              path="/api/workspace/respondents/sync"
+              summary={t.integrations.apiRef.endpoints.sync.summary}
+              description={t.integrations.apiRef.endpoints.sync.description}
+              snippets={syncSnippets}
+              response={`{ "synced": 3, "created": 1, "updated": 2 }`}
+            />
+
+            <ApiEndpointCard
+              method="GET"
+              path="/api/public/workspace/{userId}/profile-schema"
+              summary={t.integrations.apiRef.endpoints.schema.summary}
+              description={t.integrations.apiRef.endpoints.schema.description}
+              snippets={schemaSnippets}
+              response={`{
+  "fields": [
+    { "key": "specialty", "label": "Especialidade", "type": "text" },
+    { "key": "sector",    "label": "Setor",          "type": "text" },
+    { "key": "crm",       "label": "CRM",            "type": "text" }
+  ]
+}`}
+              footer={
+                <p className="text-xs text-gray-400">{t.integrations.apiRef.noAuth}</p>
+              }
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface ApiKey {
   id: string;
@@ -691,6 +873,9 @@ function IntegrationsContent() {
 
           {/* Sync example */}
           <CodeExample title={t.integrations.codeExamples.syncTitle} snippets={SYNC_SNIPPETS} />
+
+          {/* API Reference */}
+          <ApiReferenceSection apiKeyPrefix={keys[0]?.keyPrefix} />
         </div>
       )}
     </div>
