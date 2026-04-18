@@ -547,6 +547,13 @@ export const pt = {
       response: "Resposta",
       redirectTo: "Redirecione o usuário para:",
       noAuth: "Não requer autenticação.",
+      requiresRespondentsAddon: "Requer Módulo Respondentes ativo.",
+      groups: {
+        integration: "SSO & Respondentes",
+        integrationDesc: "Auth via apiKey no body da requisição",
+        platform: "Plataforma",
+        platformDesc: "Auth via Authorization: Bearer <sua_api_key>",
+      },
       endpoints: {
         sso: {
           summary: "Gera token SSO para autenticar respondente",
@@ -559,6 +566,26 @@ export const pt = {
         schema: {
           summary: "Retorna schema de perfil do workspace",
           description: "Retorna os campos de perfil configurados no workspace. Use para montar o objeto profile no SSO.",
+        },
+        surveys: {
+          summary: "Lista pesquisas do workspace",
+          description: "Retorna todas as pesquisas do workspace autenticado com status e contagem de respostas.",
+        },
+        survey: {
+          summary: "Busca pesquisa por ID",
+          description: "Retorna os dados completos de uma pesquisa específica, incluindo nós, conexões e configurações.",
+        },
+        responses: {
+          summary: "Lista respostas de uma pesquisa",
+          description: "Retorna todas as respostas coletadas de uma pesquisa com dados de identificação e pontuação.",
+        },
+        participations: {
+          summary: "Lista participações de uma pesquisa",
+          description: "Retorna participações com dados de perfil, score e status de bonificação.",
+        },
+        updateParticipation: {
+          summary: "Atualiza status de bonificação",
+          description: "Altera o status de bonificação de uma participação. Use para liberar ou marcar como inelegível a partir do seu sistema.",
         },
       },
     },

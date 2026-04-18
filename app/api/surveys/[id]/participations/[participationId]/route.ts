@@ -1,34 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { getSurvey } from "@/lib/services/surveys";
 import { updateParticipationBonus } from "@/lib/services/respondents";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { SurveyParticipation } from "@/types/respondent";
+import { resolveWorkspace } from "@/lib/services/resolve-workspace";
+import { hasAddon } from "@/lib/services/addons";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; participationId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const auth = await resolveWorkspace(request);
+    if (!auth) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-    if (!session.user.addons?.respondents?.active) {
+    if (!(await hasAddon(auth.workspaceId, "respondents"))) {
       return NextResponse.json({ error: "Módulo Respondentes não ativo" }, { status: 403 });
     }
 
     const { id: surveyId, participationId } = await params;
 
     const survey = await getSurvey(surveyId);
-    if (!survey) {
-      return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
-    }
-    if (survey.userId !== session.user.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
-    }
+    if (!survey) return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
+    if (survey.userId !== auth.workspaceId) return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
 
     const body = await request.json();
     const { bonusStatus, bonusNotes } = body as {

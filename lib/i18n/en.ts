@@ -549,6 +549,13 @@ export const en: Translations = {
       response: "Response",
       redirectTo: "Redirect the user to:",
       noAuth: "No authentication required.",
+      requiresRespondentsAddon: "Requires active Respondents Module.",
+      groups: {
+        integration: "SSO & Respondents",
+        integrationDesc: "Auth via apiKey in request body",
+        platform: "Platform",
+        platformDesc: "Auth via Authorization: Bearer <your_api_key>",
+      },
       endpoints: {
         sso: {
           summary: "Generate SSO token to authenticate respondent",
@@ -561,6 +568,26 @@ export const en: Translations = {
         schema: {
           summary: "Returns workspace profile schema",
           description: "Returns the profile fields configured in the workspace. Use to build the profile object in SSO.",
+        },
+        surveys: {
+          summary: "List workspace surveys",
+          description: "Returns all surveys in the authenticated workspace with status and response count.",
+        },
+        survey: {
+          summary: "Get survey by ID",
+          description: "Returns the full data of a specific survey, including nodes, connections and settings.",
+        },
+        responses: {
+          summary: "List survey responses",
+          description: "Returns all collected responses for a survey with identification data and score.",
+        },
+        participations: {
+          summary: "List survey participations",
+          description: "Returns participations with profile data, score and bonus status.",
+        },
+        updateParticipation: {
+          summary: "Update bonus status",
+          description: "Changes the bonus status of a participation. Use to release or mark as ineligible from your system.",
         },
       },
     },

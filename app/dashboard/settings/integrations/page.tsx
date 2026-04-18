@@ -334,28 +334,77 @@ function ApiEndpointCard({
   );
 }
 
+function makePlatformSnippets(
+  method: string,
+  path: string,
+  apiKey: string,
+  body?: object,
+): Record<Lang, string> {
+  const url = `https://surveyflowapp.com${path}`;
+  const hasBody = body !== undefined;
+  const bodyJson = hasBody ? JSON.stringify(body, null, 2) : "";
+
+  return {
+    node: `const res = await fetch('${url}', {
+  method: '${method}',
+  headers: {
+    'Authorization': 'Bearer ${apiKey}',${hasBody ? "\n    'Content-Type': 'application/json'," : ""}
+  },${hasBody ? `\n  body: JSON.stringify(${bodyJson}),` : ""}
+});
+const data = await res.json();`,
+
+    python: `import requests
+
+res = requests.${method.toLowerCase()}(
+    '${url}',
+    headers={'Authorization': f'Bearer ${apiKey}'},${hasBody ? `\n    json=${JSON.stringify(body)},` : ""}
+)
+data = res.json()`,
+
+    php: `<?php
+$ch = curl_init('${url}');
+curl_setopt_array($ch, [
+    CURLOPT_CUSTOMREQUEST  => '${method}',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => [
+        'Authorization: Bearer ${apiKey}',${hasBody ? "\n        'Content-Type: application/json'," : ""}
+    ],${hasBody ? `\n    CURLOPT_POSTFIELDS => '${JSON.stringify(body)}',` : ""}
+]);
+$data = json_decode(curl_exec($ch), true);
+curl_close($ch);`,
+
+    curl: `curl${method !== "GET" ? ` -X ${method}` : ""} '${url}' \\
+  -H 'Authorization: Bearer ${apiKey}'${hasBody ? ` \\
+  -H 'Content-Type: application/json' \\
+  -d '${JSON.stringify(body)}'` : ""}`,
+  };
+}
+
+function EndpointGroup({ label, desc, children }: { label: string; desc: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div className="px-1">
+        <p className="text-xs font-semibold text-gray-700">{label}</p>
+        <p className="text-[11px] text-gray-400 font-mono mt-0.5">{desc}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function ApiReferenceSection({ apiKeyPrefix }: { apiKeyPrefix?: string }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(true);
-  const keyPlaceholder = apiKeyPrefix ?? "nfk_sua_chave_aqui";
+  const key = apiKeyPrefix ?? "nfk_sua_chave_aqui";
 
-  const ssoSnippets = makeSnippets(SSO_SNIPPETS, keyPlaceholder);
-  const syncSnippets = makeSnippets(SYNC_SNIPPETS, keyPlaceholder);
+  const ssoSnippets    = makeSnippets(SSO_SNIPPETS, key);
+  const syncSnippets   = makeSnippets(SYNC_SNIPPETS, key);
 
   const schemaSnippets: Record<Lang, string> = {
-    node: `const res = await fetch('https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema');
-const { fields } = await res.json();
-// fields: [{ key: "specialty", label: "Especialidade", type: "text" }, ...]`,
-    python: `import requests
-
-res = requests.get('https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema')
-fields = res.json()['fields']
-# fields: [{ 'key': 'specialty', 'label': 'Especialidade', 'type': 'text' }, ...]`,
-    php: `<?php
-$res   = file_get_contents('https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema');
-$fields = json_decode($res, true)['fields'];
-// fields: [['key' => 'specialty', 'label' => 'Especialidade', 'type' => 'text'], ...]`,
-    curl: `curl https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema`,
+    node:   `const res = await fetch('https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema');\nconst { fields } = await res.json();`,
+    python: `import requests\n\nres = requests.get('https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema')\nfields = res.json()['fields']`,
+    php:    `<?php\n$data = json_decode(file_get_contents(\n    'https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema'\n), true);\n$fields = $data['fields'];`,
+    curl:   `curl 'https://surveyflowapp.com/api/public/workspace/{userId}/profile-schema'`,
   };
 
   return (
@@ -381,52 +430,97 @@ $fields = json_decode($res, true)['fields'];
             </div>
           )}
 
-          <div className="p-4 space-y-2">
-            <ApiEndpointCard
-              method="POST"
-              path="/api/sso/token"
-              summary={t.integrations.apiRef.endpoints.sso.summary}
-              description={t.integrations.apiRef.endpoints.sso.description}
-              snippets={ssoSnippets}
-              response={`{ "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }`}
-              footer={
-                <div className="space-y-1">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
-                    {t.integrations.apiRef.redirectTo}
-                  </p>
-                  <code className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 block">
-                    {`https://surveyflowapp.com/survey/{surveyId}?sso_token={token}`}
-                  </code>
-                </div>
-              }
-            />
+          <div className="p-4 space-y-6">
 
-            <ApiEndpointCard
-              method="POST"
-              path="/api/workspace/respondents/sync"
-              summary={t.integrations.apiRef.endpoints.sync.summary}
-              description={t.integrations.apiRef.endpoints.sync.description}
-              snippets={syncSnippets}
-              response={`{ "synced": 3, "created": 1, "updated": 2 }`}
-            />
+            {/* Group 1: SSO & Respondentes */}
+            <EndpointGroup
+              label={t.integrations.apiRef.groups.integration}
+              desc={t.integrations.apiRef.groups.integrationDesc}
+            >
+              <ApiEndpointCard
+                method="POST"
+                path="/api/sso/token"
+                summary={t.integrations.apiRef.endpoints.sso.summary}
+                description={t.integrations.apiRef.endpoints.sso.description}
+                snippets={ssoSnippets}
+                response={`{ "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "expiresAt": "2026-04-18T15:00:00.000Z" }`}
+                footer={
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t.integrations.apiRef.redirectTo}</p>
+                    <code className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 block">
+                      {`https://surveyflowapp.com/survey/{surveyId}?sso_token={token}`}
+                    </code>
+                  </div>
+                }
+              />
+              <ApiEndpointCard
+                method="POST"
+                path="/api/workspace/respondents/sync"
+                summary={t.integrations.apiRef.endpoints.sync.summary}
+                description={t.integrations.apiRef.endpoints.sync.description}
+                snippets={syncSnippets}
+                response={`{ "synced": 3, "failed": 0 }`}
+              />
+              <ApiEndpointCard
+                method="GET"
+                path="/api/public/workspace/{userId}/profile-schema"
+                summary={t.integrations.apiRef.endpoints.schema.summary}
+                description={t.integrations.apiRef.endpoints.schema.description}
+                snippets={schemaSnippets}
+                response={`{\n  "fields": [\n    { "key": "specialty", "label": "Especialidade", "type": "text" },\n    { "key": "crm",       "label": "CRM",            "type": "text" }\n  ]\n}`}
+                footer={<p className="text-xs text-gray-400">{t.integrations.apiRef.noAuth}</p>}
+              />
+            </EndpointGroup>
 
-            <ApiEndpointCard
-              method="GET"
-              path="/api/public/workspace/{userId}/profile-schema"
-              summary={t.integrations.apiRef.endpoints.schema.summary}
-              description={t.integrations.apiRef.endpoints.schema.description}
-              snippets={schemaSnippets}
-              response={`{
-  "fields": [
-    { "key": "specialty", "label": "Especialidade", "type": "text" },
-    { "key": "sector",    "label": "Setor",          "type": "text" },
-    { "key": "crm",       "label": "CRM",            "type": "text" }
-  ]
-}`}
-              footer={
-                <p className="text-xs text-gray-400">{t.integrations.apiRef.noAuth}</p>
-              }
-            />
+            {/* Group 2: Plataforma */}
+            <EndpointGroup
+              label={t.integrations.apiRef.groups.platform}
+              desc={t.integrations.apiRef.groups.platformDesc}
+            >
+              <ApiEndpointCard
+                method="GET"
+                path="/api/surveys"
+                summary={t.integrations.apiRef.endpoints.surveys.summary}
+                description={t.integrations.apiRef.endpoints.surveys.description}
+                snippets={makePlatformSnippets("GET", "/api/surveys", key)}
+                response={`{\n  "surveys": [\n    { "id": "abc123", "title": "Pesquisa de Satisfação", "status": "published", "responseCount": 42 }\n  ]\n}`}
+              />
+              <ApiEndpointCard
+                method="GET"
+                path="/api/surveys/{id}"
+                summary={t.integrations.apiRef.endpoints.survey.summary}
+                description={t.integrations.apiRef.endpoints.survey.description}
+                snippets={makePlatformSnippets("GET", "/api/surveys/{id}", key)}
+                response={`{ "survey": { "id": "abc123", "title": "...", "status": "published", "nodes": [...], "edges": [...] } }`}
+              />
+              <ApiEndpointCard
+                method="GET"
+                path="/api/surveys/{id}/responses"
+                summary={t.integrations.apiRef.endpoints.responses.summary}
+                description={t.integrations.apiRef.endpoints.responses.description}
+                snippets={makePlatformSnippets("GET", "/api/surveys/{id}/responses", key)}
+                response={`{\n  "responses": [\n    { "id": "r1", "respondentName": "Dr. João", "totalScore": 11, "completedAt": "2026-04-18T..." }\n  ]\n}`}
+              />
+              <ApiEndpointCard
+                method="GET"
+                path="/api/surveys/{id}/participations"
+                summary={t.integrations.apiRef.endpoints.participations.summary}
+                description={t.integrations.apiRef.endpoints.participations.description}
+                snippets={makePlatformSnippets("GET", "/api/surveys/{id}/participations", key)}
+                response={`{\n  "participations": [\n    { "id": "p1", "name": "Dr. João", "email": "dr@email.com", "bonusStatus": "pending", "profile": { "specialty": "oncologia" } }\n  ]\n}`}
+                footer={<p className="text-xs text-gray-400">{t.integrations.apiRef.requiresRespondentsAddon}</p>}
+              />
+              <ApiEndpointCard
+                method="PATCH"
+                path="/api/surveys/{id}/participations/{participationId}"
+                summary={t.integrations.apiRef.endpoints.updateParticipation.summary}
+                description={t.integrations.apiRef.endpoints.updateParticipation.description}
+                snippets={makePlatformSnippets("PATCH", "/api/surveys/{id}/participations/{participationId}", key, { bonusStatus: "released" })}
+                response={`{ "success": true }`}
+                footer={<p className="text-xs text-gray-400">{t.integrations.apiRef.requiresRespondentsAddon}</p>}
+              />
+            </EndpointGroup>
+
           </div>
         </div>
       )}
@@ -863,16 +957,10 @@ function IntegrationsContent() {
             </div>
           )}
 
-          {/* Integration example */}
-          <CodeExample title={t.integrations.codeExamples.ssoTitle} snippets={SSO_SNIPPETS} />
-
           {/* Profile Schema */}
           <div className="border border-gray-200 rounded-xl p-5">
             <ProfileSchemaEditor />
           </div>
-
-          {/* Sync example */}
-          <CodeExample title={t.integrations.codeExamples.syncTitle} snippets={SYNC_SNIPPETS} />
 
           {/* API Reference */}
           <ApiReferenceSection apiKeyPrefix={keys[0]?.keyPrefix} />
