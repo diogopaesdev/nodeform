@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { addCredits } from "@/lib/credits";
+import { activateAddon, deactivateAddon } from "@/lib/services/addons";
+import { AddonId } from "@/types/addon";
 import Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
@@ -51,6 +53,17 @@ export async function POST(req: NextRequest) {
         const creditAmount = parseInt(checkoutSession.metadata.creditAmount || "0", 10);
         if (userId && creditAmount > 0) {
           await addCredits(userId, creditAmount);
+        }
+        break;
+      }
+
+      // Ativação de addon
+      if (checkoutSession.metadata?.type === "addon" && checkoutSession.payment_status === "paid") {
+        const userId = checkoutSession.metadata.userId;
+        const addonId = checkoutSession.metadata.addonId as AddonId;
+        if (userId && addonId) {
+          const subscriptionId = checkoutSession.subscription as string;
+          await activateAddon(userId, addonId, subscriptionId);
         }
         break;
       }
@@ -112,12 +125,32 @@ export async function POST(req: NextRequest) {
       const userDoc = await getUserByCustomerId(customerId);
       if (!userDoc) break;
 
-      await userDoc.ref.update({
-        subscriptionStatus: "inactive",
-        stripeSubscriptionId: null,
-        subscriptionCurrentPeriodEnd: null,
-        trialEnd: null,
-      });
+      // Check if this is an addon subscription
+      const items = subscription.items.data;
+      const addonPrices: Record<string, AddonId> = {
+        [process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? ""]: "respondents",
+      };
+
+      for (const item of items) {
+        const addonId = addonPrices[item.price.id];
+        if (addonId) {
+          await deactivateAddon(userDoc.id, addonId);
+        }
+      }
+
+      // Only mark main subscription as inactive if it's the main plan
+      const isMainSub = items.some(
+        (item) => item.price.id === process.env.STRIPE_PRICE_ID
+      );
+
+      if (isMainSub) {
+        await userDoc.ref.update({
+          subscriptionStatus: "inactive",
+          stripeSubscriptionId: null,
+          subscriptionCurrentPeriodEnd: null,
+          trialEnd: null,
+        });
+      }
       break;
     }
   }

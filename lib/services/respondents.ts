@@ -50,6 +50,20 @@ export async function createRespondent(
   return respondent;
 }
 
+// Create respondent or update profile if already exists (used by SSO)
+export async function upsertRespondent(
+  workspaceId: string,
+  data: { name: string; email: string; [key: string]: unknown }
+): Promise<Respondent> {
+  const existing = await getRespondentByEmail(workspaceId, data.email);
+  if (existing) {
+    const { name, email, ...rest } = data;
+    await updateRespondentProfile(existing.id, { name, email, ...rest });
+    return { ...existing, name, email, ...rest };
+  }
+  return createRespondent(workspaceId, data);
+}
+
 export async function updateRespondentProfile(
   respondentId: string,
   fields: Record<string, unknown>

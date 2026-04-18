@@ -18,3 +18,4 @@ export type {
 } from "./survey";
 
 export type { Respondent, RespondentSession, SurveyParticipation } from "./respondent";
+export type { AddonId, WorkspaceAddon, WorkspaceAddons, EligibilityRule } from "./addon";

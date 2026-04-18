@@ -1,11 +1,14 @@
 import { create } from "zustand";
 import type { Survey, RuntimeState, NodeAnswer, SurveyResult } from "@/types";
+import type { Respondent } from "@/types/respondent";
+import { isNodeVisibleToRespondent } from "@/lib/utils/eligibility";
 
 interface RuntimeStoreState extends RuntimeState {
-  // Survey sendo executada
   survey: Survey | null;
+  respondent: Respondent | null;
 
   // Actions
+  setRespondent: (respondent: Respondent | null) => void;
   startSurvey: (survey: Survey) => void;
   answerNode: (answer: NodeAnswer) => void;
   goToNode: (nodeId: string) => void;
@@ -21,13 +24,15 @@ interface RuntimeStoreState extends RuntimeState {
 }
 
 export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
-  // Estado inicial
   survey: null,
+  respondent: null,
   currentNodeId: null,
   answers: [],
   totalScore: 0,
   visitedNodeIds: [],
   isCompleted: false,
+
+  setRespondent: (respondent) => set({ respondent }),
 
   // Iniciar pesquisa
   startSurvey: (survey) => {
@@ -168,6 +173,7 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
   resetSurvey: () => {
     set({
       survey: null,
+      respondent: null,
       currentNodeId: null,
       answers: [],
       totalScore: 0,
@@ -235,8 +241,24 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
       return false;
     });
 
-    // Se não encontrou edge correspondente, a pesquisa finaliza (retorna null)
-    return matchingEdge?.target || null;
+    if (!matchingEdge) return null;
+
+    // If the target node has eligibility rules that exclude this respondent, skip it
+    const targetNode = state.survey.nodes.find((n) => n.id === matchingEdge!.target);
+    if (targetNode) {
+      const rules = (targetNode.data as { eligibilityRules?: import("@/types/addon").EligibilityRule[] }).eligibilityRules;
+      if (rules && rules.length > 0 && !isNodeVisibleToRespondent(rules, state.respondent)) {
+        // Auto-skip: find the next node after this one using an empty answer
+        const skipEdges = state.survey.edges.filter((e) => e.source === matchingEdge!.target);
+        const fallback = skipEdges.find((e) => {
+          const optId = e.data?.optionId;
+          return !optId || optId === "source";
+        });
+        return fallback?.target ?? null;
+      }
+    }
+
+    return matchingEdge.target;
   },
 
   // Obter resultado final

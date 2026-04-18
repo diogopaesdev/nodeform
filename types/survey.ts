@@ -1,4 +1,5 @@
 import { Node, Edge } from "@xyflow/react";
+import { EligibilityRule } from "./addon";
 
 /**
  * Tipos de nós suportados no editor
@@ -43,6 +44,7 @@ export interface SingleChoiceData {
   title: string;
   description?: string;
   options: ChoiceOption[];
+  eligibilityRules?: EligibilityRule[]; // node only shown to matching respondents
   [key: string]: unknown;
 }
 
@@ -55,6 +57,7 @@ export interface MultipleChoiceData {
   title: string;
   description?: string;
   options: ChoiceOption[];
+  eligibilityRules?: EligibilityRule[];
   [key: string]: unknown;
 }
 
@@ -67,8 +70,9 @@ export interface RatingData {
   description?: string;
   minValue: number;
   maxValue: number;
-  minLabel?: string; // ex: "Muito Insatisfeito"
-  maxLabel?: string; // ex: "Muito Satisfeito"
+  minLabel?: string;
+  maxLabel?: string;
+  eligibilityRules?: EligibilityRule[];
   [key: string]: unknown;
 }
 
@@ -130,6 +134,7 @@ export interface Survey {
   prize?: string;
   requiresRespondentLogin?: boolean;
   maxResponses?: number;
+  eligibilityRules?: EligibilityRule[]; // survey-level: block ineligible respondents
 }
 
 /**

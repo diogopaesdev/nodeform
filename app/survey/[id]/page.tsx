@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { X, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
+import { X, ArrowLeft, Loader2, CheckCircle, ShieldX } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { RespondentLoginGate } from "@/components/survey/respondent-login-gate";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
@@ -23,7 +23,12 @@ interface RespondentInfo {
   email: string;
 }
 
-type AuthStatus = "loading" | "unauthenticated" | "authenticated" | "already_completed";
+type AuthStatus =
+  | "loading"
+  | "unauthenticated"
+  | "authenticated"
+  | "already_completed"
+  | "ineligible";
 
 export default function SurveyPage({
   params,
@@ -34,6 +39,8 @@ export default function SurveyPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEmbedMode = searchParams.get("embed") === "true";
+  const ssoToken = searchParams.get("sso_token");
+
   const {
     survey,
     currentNodeId,
@@ -49,9 +56,15 @@ export default function SurveyPage({
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [brand, setBrand] = useState<Brand>({ brandColor: null, logoUrl: null, displayName: null, brandDescription: null });
+  const [brand, setBrand] = useState<Brand>({
+    brandColor: null,
+    logoUrl: null,
+    displayName: null,
+    brandDescription: null,
+  });
   const [respondent, setRespondent] = useState<RespondentInfo | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+  const [ineligibleReason, setIneligibleReason] = useState<string | null>(null);
 
   useEmbedResize(isEmbedMode);
 
@@ -62,7 +75,6 @@ export default function SurveyPage({
   const fetchAndStartSurvey = async () => {
     try {
       const res = await fetch(`/api/public/surveys/${id}`);
-
       if (!res.ok) {
         setError("Pesquisa não encontrada");
         return;
@@ -77,9 +89,13 @@ export default function SurveyPage({
         return;
       }
 
-      // Se requer login, verificar sessão do respondente antes de iniciar
       if (surveyData.requiresRespondentLogin) {
-        await checkRespondentAuth(surveyData);
+        // SSO auto-login via token from URL
+        if (ssoToken) {
+          await handleSSOLogin(ssoToken, surveyData);
+        } else {
+          await checkRespondentAuth(surveyData);
+        }
       } else {
         setAuthStatus("authenticated");
         startSurvey(surveyData);
@@ -92,8 +108,26 @@ export default function SurveyPage({
     }
   };
 
+  const handleSSOLogin = async (token: string, surveyData: Survey) => {
+    const res = await fetch(`/api/respondent/auth/sso?token=${token}&surveyId=${id}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      // Token inválido/expirado → fallback to manual login gate
+      await checkRespondentAuth(surveyData);
+      return;
+    }
+
+    // Clean sso_token from URL without reload
+    const url = new URL(window.location.href);
+    url.searchParams.delete("sso_token");
+    window.history.replaceState({}, "", url.toString());
+
+    setRespondent(data.respondent);
+    await proceedAfterAuth(data.respondent, surveyData);
+  };
+
   const checkRespondentAuth = async (surveyData: Survey) => {
-    // Verificar sessão ativa
     const meRes = await fetch("/api/respondent/me");
     const meData = await meRes.json();
 
@@ -102,7 +136,12 @@ export default function SurveyPage({
       return;
     }
 
-    // Verificar participação
+    setRespondent(meData.respondent);
+    await proceedAfterAuth(meData.respondent, surveyData);
+  };
+
+  const proceedAfterAuth = async (resp: RespondentInfo, surveyData: Survey) => {
+    // Check participation
     const statusRes = await fetch(`/api/respondent/survey/${id}/status`);
     const statusData = await statusRes.json();
 
@@ -111,28 +150,27 @@ export default function SurveyPage({
       return;
     }
 
-    setRespondent(meData.respondent);
+    // Check survey-level eligibility
+    if (surveyData.eligibilityRules && surveyData.eligibilityRules.length > 0) {
+      const eligRes = await fetch(`/api/respondent/survey/${id}/eligibility`);
+      const eligData = await eligRes.json();
+
+      if (!eligData.eligible) {
+        setIneligibleReason(eligData.failedRule?.label ?? null);
+        setAuthStatus("ineligible");
+        return;
+      }
+    }
+
     setAuthStatus("authenticated");
     startSurvey(surveyData);
   };
 
   const handleRespondentAuthenticated = async (info: RespondentInfo) => {
     setRespondent(info);
-
-    // Verificar se já participou após login
-    const statusRes = await fetch(`/api/respondent/survey/${id}/status`);
-    const statusData = await statusRes.json();
-
-    if (statusData.status === "completed") {
-      setAuthStatus("already_completed");
-      return;
-    }
-
-    // Recarregar pesquisa e iniciar
     const res = await fetch(`/api/public/surveys/${id}`);
     const data = await res.json();
-    setAuthStatus("authenticated");
-    startSurvey(data.survey as Survey);
+    await proceedAfterAuth(info, data.survey as Survey);
   };
 
   const handleExitSurvey = () => {
@@ -143,7 +181,6 @@ export default function SurveyPage({
     }
   };
 
-  // Redirecionar para resultados quando completar
   useEffect(() => {
     if (isCompleted) {
       router.push(`/survey/${id}/result${isEmbedMode ? "?embed=true" : ""}`);
@@ -161,7 +198,7 @@ export default function SurveyPage({
     );
   }
 
-  if (isLoading) {
+  if (isLoading || authStatus === "loading") {
     return (
       <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3">
@@ -188,7 +225,6 @@ export default function SurveyPage({
     );
   }
 
-  // Gate de login para respondentes
   if (authStatus === "unauthenticated") {
     return (
       <RespondentLoginGate
@@ -200,7 +236,6 @@ export default function SurveyPage({
     );
   }
 
-  // Já participou
   if (authStatus === "already_completed") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -217,15 +252,30 @@ export default function SurveyPage({
     );
   }
 
+  if (authStatus === "ineligible") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
+          <ShieldX className="w-10 h-10 text-amber-500 mx-auto" />
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-gray-900">Fora do perfil elegível</h2>
+            <p className="text-sm text-gray-500">
+              {ineligibleReason
+                ? ineligibleReason
+                : "Seu perfil não atende aos critérios de participação desta pesquisa."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!survey || !currentNodeId) {
     return (
       <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3">
           <p className="text-sm text-gray-500">Erro ao carregar pesquisa</p>
-          <button
-            onClick={() => window.close()}
-            className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
-          >
+          <button onClick={() => window.close()} className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors">
             Fechar
           </button>
         </div>
@@ -234,7 +284,6 @@ export default function SurveyPage({
   }
 
   const currentNode = getCurrentNode();
-
   if (!currentNode) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -250,11 +299,7 @@ export default function SurveyPage({
     respondentName?: string;
     respondentEmail?: string;
   }) => {
-    answerNode({
-      nodeId: currentNodeId,
-      ...answer,
-      answeredAt: new Date(),
-    });
+    answerNode({ nodeId: currentNodeId, ...answer, answeredAt: new Date() });
   };
 
   return (
@@ -276,13 +321,7 @@ export default function SurveyPage({
           {(brand.logoUrl || brand.displayName) && (
             <div className="flex items-center justify-center gap-2.5">
               {brand.logoUrl && (
-                <Image
-                  src={brand.logoUrl}
-                  alt={brand.displayName || "Logo"}
-                  width={28}
-                  height={28}
-                  className="rounded-lg object-contain"
-                />
+                <Image src={brand.logoUrl} alt={brand.displayName || "Logo"} width={28} height={28} className="rounded-lg object-contain" />
               )}
               {brand.displayName && (
                 <span className="text-sm font-semibold text-gray-700">{brand.displayName}</span>
