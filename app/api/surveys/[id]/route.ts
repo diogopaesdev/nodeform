@@ -70,7 +70,10 @@ export async function PATCH(
         body.enableScoring,
         body.description,
         body.timeLimit,
-        body.prize
+        body.prize,
+        body.requiresRespondentLogin,
+        body.maxResponses,
+        body.eligibilityRules
       );
     } else {
       // Atualizar outros campos

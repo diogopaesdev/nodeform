@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Trash2, GripVertical, User, Mail, Trophy, Play, CircleDot, CheckSquare, Star, FlagTriangleRight, FileText } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { EligibilityRuleBuilder } from "@/components/editor/eligibility-rule-builder";
+import type { EligibilityRule } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -96,8 +99,16 @@ const getTypeConfig = (type: string) => {
 
 export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
   const { updateNode, deleteNode, enableScoring, surveyId } = useEditorStore();
+  const { data: session } = useSession();
   const typeConfig = getTypeConfig(node.data.type);
   const Icon = typeConfig.icon;
+
+  const hasRespondentsAddon = session?.user?.addons?.respondents?.active === true;
+  const supportsEligibility = ["singleChoice", "multipleChoice", "rating"].includes(node.data.type);
+
+  const [nodeEligibilityRules, setNodeEligibilityRules] = useState<EligibilityRule[]>(
+    (node.data as { eligibilityRules?: EligibilityRule[] }).eligibilityRules ?? []
+  );
 
   const getDefaultValues = (): FormData => {
     const { type } = node.data;
@@ -199,11 +210,15 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
   useEffect(() => {
     if (isOpen) {
       form.reset(getDefaultValues());
+      setNodeEligibilityRules(
+        (node.data as { eligibilityRules?: EligibilityRule[] }).eligibilityRules ?? []
+      );
     }
   }, [isOpen, node]);
 
   const onSubmit = (data: FormData) => {
-    updateNode(node.id, data as Partial<NodeData>);
+    const extra = supportsEligibility ? { eligibilityRules: nodeEligibilityRules } : {};
+    updateNode(node.id, { ...(data as Partial<NodeData>), ...extra });
     onClose();
   };
 
@@ -687,6 +702,19 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                   )}
                 </div>
               )}
+              {/* Node-level eligibility rules — addon-gated, for question types only */}
+              {hasRespondentsAddon && supportsEligibility && (
+                <div className="pt-1 border-t border-gray-100">
+                  <EligibilityRuleBuilder
+                    workspaceUserId={session!.user.id}
+                    rules={nodeEligibilityRules}
+                    onChange={setNodeEligibilityRules}
+                    label="Visibilidade condicional"
+                    hint="Esta pergunta só será exibida para respondentes que atendam a TODAS as regras."
+                  />
+                </div>
+              )}
+
               {node.data.type === "endScreen" && (
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <FormField

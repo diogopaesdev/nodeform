@@ -85,7 +85,10 @@ export async function saveSurveyContent(
   enableScoring?: boolean,
   description?: string,
   timeLimit?: number | null,
-  prize?: string | null
+  prize?: string | null,
+  requiresRespondentLogin?: boolean,
+  maxResponses?: number | null,
+  eligibilityRules?: unknown[]
 ): Promise<void> {
   const { db } = getFirebaseAdmin();
 
@@ -100,6 +103,9 @@ export async function saveSurveyContent(
   if (description !== undefined) updateData.description = description;
   if (timeLimit !== undefined) updateData.timeLimit = timeLimit;
   if (prize !== undefined) updateData.prize = prize;
+  if (requiresRespondentLogin !== undefined) updateData.requiresRespondentLogin = requiresRespondentLogin;
+  if (maxResponses !== undefined) updateData.maxResponses = maxResponses;
+  if (eligibilityRules !== undefined) updateData.eligibilityRules = eligibilityRules;
 
   await db.collection("surveys").doc(surveyId).update(updateData);
 }

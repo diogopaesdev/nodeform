@@ -16,6 +16,7 @@ import {
   EyeOff,
   RefreshCw,
 } from "lucide-react";
+import { ProfileSchemaEditor } from "@/components/integrations/profile-schema-editor";
 
 interface ApiKey {
   id: string;
@@ -323,6 +324,11 @@ const { token } = await res.json();
 // 2. Redirecionar o usuário
 res.redirect(\`https://nodeform.app/survey/\${surveyId}?sso_token=\${token}\`);`}
             </pre>
+          </div>
+
+          {/* Profile Schema */}
+          <div className="border border-gray-200 rounded-xl p-5">
+            <ProfileSchemaEditor />
           </div>
 
           {/* Sync example */}
