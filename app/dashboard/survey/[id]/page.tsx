@@ -1139,17 +1139,15 @@ export default function SurveyDetailPage({
               {t.surveyDetail.tabs.crossAnalysis}
             </span>
           </button>
-          {hasRespondentsAddon && survey.requiresRespondentLogin && (
-            <button
-              onClick={() => setActiveTab("bonus")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "bonus" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Gift className="w-3.5 h-3.5" />
-                Bonificação
-              </span>
-            </button>
-          )}
+          <button
+            onClick={() => setActiveTab("bonus")}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "bonus" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Gift className="w-3.5 h-3.5" />
+              Bonificação
+            </span>
+          </button>
         </div>
       )}
 
@@ -1314,12 +1312,62 @@ export default function SurveyDetailPage({
       )}
 
       {/* ── Bonus Tab ───────────────────────────────────────────────────────── */}
-      {activeTab === "bonus" && hasRespondentsAddon && (
-        <BonusPanel
-          surveyId={id}
-          survey={survey}
-          onSurveyChange={setSurvey}
-        />
+      {activeTab === "bonus" && (
+        !hasRespondentsAddon || !survey.requiresRespondentLogin ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center space-y-6">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto">
+              <Gift className="w-6 h-6 text-gray-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Painel de Bonificação indisponível</h3>
+              <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                Para usar o painel de bonificação, as seguintes condições precisam estar ativas:
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 max-w-sm mx-auto text-left">
+              <div className={`flex items-start gap-3 p-3 rounded-lg border ${hasRespondentsAddon ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${hasRespondentsAddon ? "bg-green-500" : "bg-gray-300"}`}>
+                  {hasRespondentsAddon
+                    ? <Check className="w-3 h-3 text-white" />
+                    : <span className="w-1.5 h-1.5 bg-white rounded-full" />}
+                </div>
+                <div>
+                  <p className={`text-xs font-semibold ${hasRespondentsAddon ? "text-green-700" : "text-gray-700"}`}>
+                    Módulo Respondentes ativo
+                  </p>
+                  {!hasRespondentsAddon && (
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Ative o Módulo Respondentes em <span className="font-medium">Configurações → Integrações</span>.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className={`flex items-start gap-3 p-3 rounded-lg border ${survey.requiresRespondentLogin ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${survey.requiresRespondentLogin ? "bg-green-500" : "bg-gray-300"}`}>
+                  {survey.requiresRespondentLogin
+                    ? <Check className="w-3 h-3 text-white" />
+                    : <span className="w-1.5 h-1.5 bg-white rounded-full" />}
+                </div>
+                <div>
+                  <p className={`text-xs font-semibold ${survey.requiresRespondentLogin ? "text-green-700" : "text-gray-700"}`}>
+                    Login obrigatório para respondentes
+                  </p>
+                  {!survey.requiresRespondentLogin && (
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Ative nas configurações da pesquisa no editor.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <BonusPanel
+            surveyId={id}
+            survey={survey}
+            onSurveyChange={setSurvey}
+          />
+        )
       )}
 
       <DeleteConfirmModal
