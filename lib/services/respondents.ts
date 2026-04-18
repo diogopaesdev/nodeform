@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { getFirebaseAdmin } from "../firebase-admin";
-import { Respondent, RespondentSession, SurveyParticipation } from "@/types/respondent";
+import { Respondent, RespondentSession, SurveyParticipation, ParticipationWithRespondent } from "@/types/respondent";
 
 // ==================== RESPONDENTES ====================
 
@@ -230,6 +230,60 @@ export async function completeParticipation(
     responseId,
     completedAt: new Date().toISOString(),
   });
+}
+
+// ==================== PROGRESSO PARCIAL ====================
+
+export interface SurveyProgressData {
+  id: string;
+  respondentId: string;
+  surveyId: string;
+  currentNodeId: string;
+  answers: unknown[];
+  totalScore: number;
+  visitedNodeIds: string[];
+  savedAt: string;
+}
+
+export async function saveProgress(
+  respondentId: string,
+  surveyId: string,
+  data: {
+    currentNodeId: string;
+    answers: unknown[];
+    totalScore: number;
+    visitedNodeIds: string[];
+  }
+): Promise<void> {
+  const { db } = getFirebaseAdmin();
+  const docId = `${respondentId}_${surveyId}`;
+  await db.collection("surveyProgress").doc(docId).set({
+    id: docId,
+    respondentId,
+    surveyId,
+    ...data,
+    savedAt: new Date().toISOString(),
+  });
+}
+
+export async function getProgress(
+  respondentId: string,
+  surveyId: string
+): Promise<SurveyProgressData | null> {
+  const { db } = getFirebaseAdmin();
+  const docId = `${respondentId}_${surveyId}`;
+  const doc = await db.collection("surveyProgress").doc(docId).get();
+  if (!doc.exists) return null;
+  return doc.data() as SurveyProgressData;
+}
+
+export async function deleteProgress(
+  respondentId: string,
+  surveyId: string
+): Promise<void> {
+  const { db } = getFirebaseAdmin();
+  const docId = `${respondentId}_${surveyId}`;
+  await db.collection("surveyProgress").doc(docId).delete();
 }
 
 export async function getWorkspaceRespondents(workspaceId: string): Promise<Respondent[]> {

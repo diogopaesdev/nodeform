@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { X, ArrowLeft, Loader2, CheckCircle, ShieldX } from "lucide-react";
+import { X, ArrowLeft, Loader2, CheckCircle, ShieldX, RotateCcw, Play } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { RespondentLoginGate } from "@/components/survey/respondent-login-gate";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
@@ -46,7 +46,10 @@ export default function SurveyPage({
     currentNodeId,
     isCompleted,
     totalScore,
+    answers,
+    visitedNodeIds,
     startSurvey,
+    restoreSurvey,
     answerNode,
     getCurrentNode,
     resetSurvey,
@@ -65,6 +68,13 @@ export default function SurveyPage({
   const [respondent, setRespondent] = useState<RespondentInfo | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [ineligibleReason, setIneligibleReason] = useState<string | null>(null);
+  const [savedProgress, setSavedProgress] = useState<{
+    currentNodeId: string;
+    answers: import("@/types").NodeAnswer[];
+    totalScore: number;
+    visitedNodeIds: string[];
+    pendingSurvey: import("@/types").Survey;
+  } | null>(null);
 
   useEmbedResize(isEmbedMode);
 
@@ -162,6 +172,22 @@ export default function SurveyPage({
       }
     }
 
+    // Check for saved partial progress
+    const progressRes = await fetch(`/api/respondent/survey/${id}/progress`);
+    const progressData = await progressRes.json();
+
+    if (progressData.progress && progressData.progress.currentNodeId) {
+      setSavedProgress({
+        currentNodeId: progressData.progress.currentNodeId,
+        answers: progressData.progress.answers || [],
+        totalScore: progressData.progress.totalScore || 0,
+        visitedNodeIds: progressData.progress.visitedNodeIds || [],
+        pendingSurvey: surveyData,
+      });
+      setAuthStatus("authenticated");
+      return;
+    }
+
     setAuthStatus("authenticated");
     startSurvey(surveyData);
   };
@@ -181,11 +207,28 @@ export default function SurveyPage({
     }
   };
 
+  // Save progress after each answer (only for authenticated respondents)
+  useEffect(() => {
+    if (!survey || !currentNodeId || answers.length === 0 || !respondent) return;
+    const timeout = setTimeout(() => {
+      fetch(`/api/respondent/survey/${id}/progress`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentNodeId, answers, totalScore, visitedNodeIds }),
+      }).catch(() => {});
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [answers, currentNodeId, totalScore, visitedNodeIds, respondent, survey, id]);
+
   useEffect(() => {
     if (isCompleted) {
+      // Delete saved progress on completion
+      if (respondent) {
+        fetch(`/api/respondent/survey/${id}/progress`, { method: "DELETE" }).catch(() => {});
+      }
       router.push(`/survey/${id}/result${isEmbedMode ? "?embed=true" : ""}`);
     }
-  }, [isCompleted, router, id, isEmbedMode]);
+  }, [isCompleted, router, id, isEmbedMode, respondent]);
 
   if (isCompleted) {
     return (
@@ -270,6 +313,58 @@ export default function SurveyPage({
     );
   }
 
+  // Resume dialog: show when authenticated user has saved progress
+  if (authStatus === "authenticated" && savedProgress && !survey) {
+    const handleResume = () => {
+      restoreSurvey(savedProgress.pendingSurvey, {
+        currentNodeId: savedProgress.currentNodeId,
+        answers: savedProgress.answers,
+        totalScore: savedProgress.totalScore,
+        visitedNodeIds: savedProgress.visitedNodeIds,
+      });
+      setSavedProgress(null);
+    };
+
+    const handleStartOver = () => {
+      fetch(`/api/respondent/survey/${id}/progress`, { method: "DELETE" }).catch(() => {});
+      startSurvey(savedProgress.pendingSurvey);
+      setSavedProgress(null);
+    };
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-6">
+          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto">
+            <RotateCcw className="w-6 h-6 text-blue-600" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-base font-semibold text-gray-900">Progresso salvo encontrado</h2>
+            <p className="text-sm text-gray-500">
+              Você tem respostas salvas para esta pesquisa. Deseja retomar de onde parou?
+            </p>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleStartOver}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <Play className="w-3.5 h-3.5" />
+              Recomeçar
+            </button>
+            <button
+              onClick={handleResume}
+              style={brand.brandColor ? { backgroundColor: brand.brandColor } : undefined}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 rounded-lg transition-opacity"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Retomar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!survey || !currentNodeId) {
     return (
       <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
@@ -296,6 +391,7 @@ export default function SurveyPage({
     selectedOptionId?: string;
     selectedOptionIds?: string[];
     ratingValue?: number;
+    textValue?: string;
     respondentName?: string;
     respondentEmail?: string;
   }) => {

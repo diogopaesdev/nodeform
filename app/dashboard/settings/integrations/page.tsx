@@ -15,6 +15,7 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
+  BookmarkCheck,
 } from "lucide-react";
 import { ProfileSchemaEditor } from "@/components/integrations/profile-schema-editor";
 
@@ -41,6 +42,7 @@ function IntegrationsContent() {
   const addonSuccess = searchParams.get("addon_success") === "true";
 
   const hasAddon = session?.user?.addons?.respondents?.active === true;
+  const hasProgressAddon = session?.user?.addons?.surveyProgress?.active === true;
 
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,6 +50,7 @@ function IntegrationsContent() {
   const [newKeyName, setNewKeyName] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [activatingProgress, setActivatingProgress] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
 
@@ -80,6 +83,21 @@ function IntegrationsContent() {
       if (data.url) window.location.href = data.url;
     } finally {
       setActivating(false);
+    }
+  };
+
+  const handleActivateProgressAddon = async () => {
+    setActivatingProgress(true);
+    try {
+      const res = await fetch("/api/stripe/addon-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ addonId: "surveyProgress" }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } finally {
+      setActivatingProgress(false);
     }
   };
 
@@ -131,7 +149,7 @@ function IntegrationsContent() {
       {addonSuccess && (
         <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
           <Check className="w-4 h-4 shrink-0" />
-          Módulo Respondentes ativado com sucesso!
+          Módulo ativado com sucesso!
         </div>
       )}
 
@@ -152,7 +170,7 @@ function IntegrationsContent() {
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                Gerencie sua base de respondentes, autentique via SSO e controle elegibilidade por perfil.
+                Autenticação dedicada, controle de acesso e integração B2B para pesquisas enterprise.
               </p>
             </div>
           </div>
@@ -176,14 +194,92 @@ function IntegrationsContent() {
         {!hasAddon && (
           <div className="px-5 pb-5 space-y-2">
             {[
-              "SSO — seus usuários acessam pesquisas já autenticados",
-              "Sync de perfil — dados dos respondentes sempre atualizados",
-              "Elegibilidade por perfil — filtre por especialidade, setor, CRM",
-              "Participação única — bloqueio automático de duplicatas",
-              "Cota de respondentes com encerramento automático",
+              "Login obrigatório via OTP por e-mail ou SSO",
+              "SSO — usuários da sua plataforma chegam autenticados, sem tela de login",
+              "Sync de perfil em massa (até 500 respondentes por chamada)",
+              "Elegibilidade por perfil — filtre por especialidade, setor, CRM e mais",
+              "Critérios de visibilidade por questão — perguntas condicionais por perfil",
+              "Participação única — bloqueio automático de segunda tentativa",
+              "Cota máxima com encerramento automático da pesquisa",
+              "Workspace Profile Schema com rule builder tipado",
+              "API Keys seguras para integração server-to-server",
+              "Painel de liberação de bonificação pós-participação",
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-2 text-xs text-gray-500">
                 <Lock className="w-3 h-3 text-gray-300 shrink-0" />
+                {feature}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Survey Progress Addon card */}
+      <div className="border border-gray-200 rounded-xl overflow-hidden">
+        <div className="p-5 flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+              <BookmarkCheck className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-gray-900">Módulo Progresso</h2>
+                {hasProgressAddon ? (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">Ativo</span>
+                ) : (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded-full">Não ativo</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                Persistência de respostas entre sessões com retomada inteligente em qualquer dispositivo.
+              </p>
+            </div>
+          </div>
+
+          {!hasProgressAddon && (
+            <button
+              onClick={handleActivateProgressAddon}
+              disabled={activatingProgress}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {activatingProgress ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
+              Ativar módulo
+            </button>
+          )}
+        </div>
+
+        {!hasProgressAddon && (
+          <div className="px-5 pb-5 space-y-2">
+            {[
+              "Progresso salvo automaticamente após cada resposta",
+              "Respondente retoma de onde parou em qualquer device ou sessão",
+              "Dialog de escolha: retomar de onde parou ou recomeçar do início",
+              "Funciona com autenticação OTP e SSO",
+              "Progresso deletado automaticamente ao concluir — sem dados residuais",
+            ].map((feature) => (
+              <div key={feature} className="flex items-center gap-2 text-xs text-gray-500">
+                <Lock className="w-3 h-3 text-gray-300 shrink-0" />
+                {feature}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {hasProgressAddon && (
+          <div className="px-5 pb-5 space-y-2">
+            {[
+              "Progresso salvo automaticamente após cada resposta",
+              "Respondente retoma de onde parou em qualquer device ou sessão",
+              "Dialog de escolha: retomar de onde parou ou recomeçar do início",
+              "Funciona com autenticação OTP e SSO",
+              "Progresso deletado automaticamente ao concluir — sem dados residuais",
+            ].map((feature) => (
+              <div key={feature} className="flex items-center gap-2 text-xs text-gray-500">
+                <Check className="w-3 h-3 text-green-500 shrink-0" />
                 {feature}
               </div>
             ))}

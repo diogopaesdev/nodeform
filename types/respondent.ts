@@ -32,4 +32,21 @@ export interface SurveyParticipation {
   responseId?: string;
   createdAt: string;
   completedAt?: string;
+  bonusStatus?: "pending" | "released" | "ineligible";
+  bonusReleasedAt?: string;
+  bonusNotes?: string;
+}
+
+export interface ParticipationWithRespondent {
+  id: string;
+  respondentId: string;
+  responseId?: string;
+  name: string;
+  email: string;
+  profile: Record<string, unknown>;
+  totalScore?: number;
+  completedAt?: string;
+  bonusStatus: "pending" | "released" | "ineligible";
+  bonusReleasedAt?: string;
+  bonusNotes?: string;
 }

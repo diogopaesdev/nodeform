@@ -1,4 +1,4 @@
-export type AddonId = "respondents";
+export type AddonId = "respondents" | "surveyProgress";
 
 // A single field definition in the workspace respondent profile schema
 export interface ProfileField {
@@ -20,6 +20,7 @@ export interface WorkspaceAddon {
 
 export interface WorkspaceAddons {
   respondents?: WorkspaceAddon;
+  surveyProgress?: WorkspaceAddon;
 }
 
 // Eligibility rule evaluated against respondent profile fields

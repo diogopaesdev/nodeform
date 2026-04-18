@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { FlagTriangleRight } from "lucide-react";
+import { FlagTriangleRight, ExternalLink } from "lucide-react";
 import type { EndScreenData } from "@/types";
 
 interface Props {
@@ -45,6 +45,12 @@ export const EndScreenNode = memo(({ data, selected }: Props) => {
         {data.showScore && (
           <div className="flex items-center gap-1.5 px-2 py-1.5 bg-green-50 rounded-md text-xs text-green-600">
             Exibe pontuação
+          </div>
+        )}
+        {data.redirectUrl && (
+          <div className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 rounded-md text-xs text-blue-600 truncate">
+            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{data.redirectUrl}</span>
           </div>
         )}
       </div>

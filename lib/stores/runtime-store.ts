@@ -10,6 +10,7 @@ interface RuntimeStoreState extends RuntimeState {
   // Actions
   setRespondent: (respondent: Respondent | null) => void;
   startSurvey: (survey: Survey) => void;
+  restoreSurvey: (survey: Survey, state: { currentNodeId: string; answers: NodeAnswer[]; totalScore: number; visitedNodeIds: string[] }) => void;
   answerNode: (answer: NodeAnswer) => void;
   goToNode: (nodeId: string) => void;
   goBack: () => void;
@@ -33,6 +34,18 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
   isCompleted: false,
 
   setRespondent: (respondent) => set({ respondent }),
+
+  // Restaurar progresso salvo
+  restoreSurvey: (survey, state) => {
+    set({
+      survey,
+      currentNodeId: state.currentNodeId,
+      answers: state.answers,
+      totalScore: state.totalScore,
+      visitedNodeIds: state.visitedNodeIds,
+      isCompleted: false,
+    });
+  },
 
   // Iniciar pesquisa
   startSurvey: (survey) => {

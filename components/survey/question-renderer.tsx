@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Star, Check, ArrowRight, User, Mail, Trophy } from "lucide-react";
-import type { SurveyNode, PresentationData, EndScreenData } from "@/types";
+import { useState, useEffect } from "react";
+import { Star, Check, ArrowRight, User, Mail, Trophy, ExternalLink } from "lucide-react";
+import type { SurveyNode, PresentationData, EndScreenData, TextInputData } from "@/types";
 import DOMPurify from "dompurify";
 
 function HtmlDescription({ html, className }: { html: string; className?: string }) {
@@ -30,6 +30,7 @@ interface QuestionRendererProps {
     selectedOptionId?: string;
     selectedOptionIds?: string[];
     ratingValue?: number;
+    textValue?: string;
     respondentName?: string;
     respondentEmail?: string;
   }) => void;
@@ -48,9 +49,22 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [textValue, setTextValue] = useState<string>("");
   const [respondentName, setRespondentName] = useState<string>("");
   const [respondentEmail, setRespondentEmail] = useState<string>("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (redirectCountdown === null) return;
+    if (redirectCountdown === 0) {
+      const endData = node.data as EndScreenData;
+      if (endData.redirectUrl) window.location.href = endData.redirectUrl;
+      return;
+    }
+    const timer = setTimeout(() => setRedirectCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    return () => clearTimeout(timer);
+  }, [redirectCountdown, node.data]);
 
   const handleSubmit = () => {
     if (node.data.type === "presentation") {
@@ -74,6 +88,11 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
       onAnswer({ selectedOptionIds: selectedOptions });
     } else if (node.data.type === "rating" && selectedRating !== null) {
       onAnswer({ ratingValue: selectedRating });
+    } else if (node.data.type === "textInput") {
+      const textData = node.data as TextInputData;
+      if (!textData.required || textValue.trim()) {
+        onAnswer({ textValue: textValue.trim() });
+      }
     }
   };
 
@@ -111,11 +130,18 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
     return true;
   };
 
+  const isTextInputValid = () => {
+    if (node.data.type !== "textInput") return false;
+    const textData = node.data as TextInputData;
+    return !textData.required || textValue.trim().length > 0;
+  };
+
   const canSubmit =
     (node.data.type === "presentation" && isPresentationValid()) ||
     (node.data.type === "singleChoice" && selectedOption !== null) ||
     (node.data.type === "multipleChoice" && selectedOptions.length > 0) ||
-    (node.data.type === "rating" && selectedRating !== null);
+    (node.data.type === "rating" && selectedRating !== null) ||
+    (node.data.type === "textInput" && isTextInputValid());
 
   // Presentation
   if (node.data.type === "presentation") {
@@ -415,9 +441,73 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
     );
   }
 
+  // Text Input
+  if (node.data.type === "textInput") {
+    const textData = node.data as TextInputData;
+
+    return (
+      <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 p-8 space-y-5">
+        <div className="space-y-1.5">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {textData.title}
+            {textData.required && <span className="text-red-500 ml-1">*</span>}
+          </h2>
+          {textData.description && (
+            <HtmlDescription
+              html={textData.description}
+              className="text-sm text-gray-500 [&>p]:mb-2 [&>br]:block"
+            />
+          )}
+        </div>
+
+        <NodeImage src={(textData as { image?: string }).image} />
+
+        <div className="pt-2">
+          {textData.isLong ? (
+            <textarea
+              value={textValue}
+              onChange={(e) => setTextValue(e.target.value)}
+              placeholder={textData.placeholder || "Digite sua resposta aqui..."}
+              rows={5}
+              className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors resize-none"
+            />
+          ) : (
+            <input
+              type="text"
+              value={textValue}
+              onChange={(e) => setTextValue(e.target.value)}
+              placeholder={textData.placeholder || "Digite sua resposta aqui..."}
+              className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors"
+            />
+          )}
+        </div>
+
+        <div className="pt-2">
+          <button
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            style={canSubmit && brandColor ? { backgroundColor: brandColor } : undefined}
+            className="w-full py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-opacity"
+          >
+            Continuar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // End Screen
   if (node.data.type === "endScreen") {
     const endData = node.data as EndScreenData;
+    const hasRedirect = !!endData.redirectUrl;
+    const delay = endData.redirectDelay ?? 3;
+
+    const handleFinalize = () => {
+      onAnswer({});
+      if (hasRedirect) {
+        setRedirectCountdown(delay);
+      }
+    };
 
     return (
       <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 p-8 md:p-10 space-y-6 text-center">
@@ -442,15 +532,31 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           </div>
         )}
 
-        <div className="pt-4">
-          <button
-            onClick={() => onAnswer({})}
-            style={brandColor ? { backgroundColor: brandColor } : undefined}
-            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 rounded-lg transition-opacity"
-          >
-            Finalizar
-          </button>
-        </div>
+        {redirectCountdown !== null ? (
+          <div className="space-y-3 py-2">
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+              <ExternalLink className="w-4 h-4" />
+              <span>Redirecionando em {redirectCountdown}s...</span>
+            </div>
+            <a
+              href={endData.redirectUrl}
+              className="text-xs text-blue-600 underline hover:text-blue-700"
+            >
+              Clique aqui se não for redirecionado
+            </a>
+          </div>
+        ) : (
+          <div className="pt-4">
+            <button
+              onClick={handleFinalize}
+              style={brandColor ? { backgroundColor: brandColor } : undefined}
+              className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 rounded-lg transition-opacity"
+            >
+              Finalizar
+              {hasRedirect && <ExternalLink className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        )}
       </div>
     );
   }

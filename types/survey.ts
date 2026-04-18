@@ -4,7 +4,7 @@ import { EligibilityRule } from "./addon";
 /**
  * Tipos de nós suportados no editor
  */
-export type NodeType = "presentation" | "singleChoice" | "multipleChoice" | "rating" | "endScreen";
+export type NodeType = "presentation" | "singleChoice" | "multipleChoice" | "rating" | "endScreen" | "textInput";
 
 /**
  * Dados específicos para nó de apresentação (intro)
@@ -77,6 +77,20 @@ export interface RatingData {
 }
 
 /**
+ * Dados específicos para nó de texto livre (curto ou longo)
+ */
+export interface TextInputData {
+  type: "textInput";
+  title: string;
+  description?: string;
+  isLong?: boolean;
+  placeholder?: string;
+  required?: boolean;
+  eligibilityRules?: EligibilityRule[];
+  [key: string]: unknown;
+}
+
+/**
  * Dados específicos para nó de tela final
  */
 export interface EndScreenData {
@@ -84,13 +98,15 @@ export interface EndScreenData {
   title: string;
   description?: string;
   showScore?: boolean;
+  redirectUrl?: string;
+  redirectDelay?: number;
   [key: string]: unknown;
 }
 
 /**
  * União de todos os tipos de dados de nó
  */
-export type NodeData = PresentationData | SingleChoiceData | MultipleChoiceData | RatingData | EndScreenData;
+export type NodeData = PresentationData | SingleChoiceData | MultipleChoiceData | RatingData | EndScreenData | TextInputData;
 
 /**
  * Nó de pesquisa (extends Node do React Flow)
@@ -157,6 +173,8 @@ export interface NodeAnswer {
   selectedOptionIds?: string[];
   // Para rating
   ratingValue?: number;
+  // Para textInput
+  textValue?: string;
   // Para presentation (captura de dados)
   respondentName?: string;
   respondentEmail?: string;

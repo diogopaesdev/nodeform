@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      // Ativação de addon
+      // Ativação de addon standalone
       if (checkoutSession.metadata?.type === "addon" && checkoutSession.payment_status === "paid") {
         const userId = checkoutSession.metadata.userId;
         const addonId = checkoutSession.metadata.addonId as AddonId;
@@ -66,6 +66,17 @@ export async function POST(req: NextRequest) {
           await activateAddon(userId, addonId, subscriptionId);
         }
         break;
+      }
+
+      // Ativação de addons bundled com plano principal
+      if (checkoutSession.metadata?.type === "main" && checkoutSession.payment_status === "paid") {
+        const userId = checkoutSession.metadata.userId;
+        const addonsToActivate = checkoutSession.metadata.addonsToActivate;
+        if (userId && addonsToActivate) {
+          const subscriptionId = checkoutSession.subscription as string;
+          const addonIds = addonsToActivate.split(",") as AddonId[];
+          await Promise.all(addonIds.map((id) => activateAddon(userId, id, subscriptionId)));
+        }
       }
 
       if (checkoutSession.mode !== "subscription") break;
@@ -129,6 +140,7 @@ export async function POST(req: NextRequest) {
       const items = subscription.items.data;
       const addonPrices: Record<string, AddonId> = {
         [process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? ""]: "respondents",
+        [process.env.STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID ?? ""]: "surveyProgress",
       };
 
       for (const item of items) {

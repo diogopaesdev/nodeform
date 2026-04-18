@@ -6,11 +6,12 @@ import { stripe } from "@/lib/stripe";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 
 const Schema = z.object({
-  addonId: z.literal("respondents"),
+  addonId: z.enum(["respondents", "surveyProgress"]),
 });
 
 const ADDON_PRICES: Record<string, string> = {
   respondents: process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? "",
+  surveyProgress: process.env.STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID ?? "",
 };
 
 export async function POST(request: NextRequest) {

@@ -217,10 +217,10 @@ Os módulos opcionais são cobrados **além** da assinatura Pro (R$ 499/mês) e 
 1. **No momento da assinatura:** página de upgrade exibe ambos os módulos pré-selecionados — o cliente pode desmarcar o que não quiser. Tudo numa única assinatura Stripe consolidada.
 2. **Individualmente depois:** cada módulo tem seu próprio botão de ativação na página **Configurações → Integrações**, gerando um checkout Stripe separado.
 
-| Módulo               | Preço sugerido | O que ativa                                                        |
-| -------------------- | :------------: | ------------------------------------------------------------------ |
-| Módulo Respondentes  |  R$ 199/mês    | SSO, sync de perfil, elegibilidade, participação única, API Keys   |
-| Módulo Progresso     |  R$ 99/mês     | Salvar progresso parcial e retomar em outra sessão                 |
+| Módulo               | Preço           | O que ativa                                                                                                                                                    |
+| -------------------- | :-------------: | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Módulo Respondentes  | R$ 449,90/mês   | Login OTP e SSO, sync de perfil em massa (500/chamada), elegibilidade por pesquisa e por questão, participação única, cota com encerramento automático, Workspace Profile Schema, API Keys, painel de bonificação |
+| Módulo Progresso     | R$ 129,90/mês   | Progresso salvo automaticamente, retomada em qualquer device, dialog de escolha, compatível com OTP e SSO, limpeza automática ao concluir                      |
 
 > **Variável de ambiente necessária:** `STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID` — Price ID do produto no Stripe Dashboard.
 
