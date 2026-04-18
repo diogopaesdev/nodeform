@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles, KeyRound, ChevronRight } from "lucide-react";
+import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles, KeyRound, ChevronRight, BookmarkCheck } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 
@@ -45,6 +45,17 @@ function SettingsContent() {
   const { t } = useI18n();
   const searchParams = useSearchParams();
   const requirePlan = searchParams.get("require_plan") === "true";
+  const addonFromUrl = searchParams.get("addon");
+
+  const VALID_ADDONS = ["respondents", "surveyProgress"] as const;
+  const [selectedAddons, setSelectedAddons] = useState<string[]>(
+    addonFromUrl && VALID_ADDONS.includes(addonFromUrl as typeof VALID_ADDONS[number])
+      ? [addonFromUrl]
+      : []
+  );
+
+  const toggleAddon = (id: string) =>
+    setSelectedAddons((prev) => prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -123,10 +134,14 @@ function SettingsContent() {
     setError("");
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (addons: string[] = []) => {
     setBillingLoading(true);
     try {
-      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ addons }),
+      });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } catch {
@@ -194,11 +209,45 @@ function SettingsContent() {
       </div>
 
       {requirePlan && (
-        <div className="mb-4 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-          <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium">Assinatura necessária</p>
-            <p className="text-xs text-amber-700 mt-0.5">Os módulos de integração estão disponíveis apenas para assinantes. Ative seu plano abaixo para continuar.</p>
+        <div className="mb-4 border border-amber-200 rounded-xl overflow-hidden">
+          <div className="flex items-start gap-3 px-4 py-3.5 bg-amber-50 border-b border-amber-200">
+            <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">Assinatura necessária</p>
+              <p className="text-xs text-amber-700 mt-0.5">Os módulos abaixo podem ser adicionados junto com seu plano numa única compra.</p>
+            </div>
+          </div>
+          <div className="bg-white divide-y divide-gray-100">
+            {[
+              { id: "respondents", label: "Módulo Respondentes", description: "SSO, OTP, elegibilidade e API Keys para integração B2B", icon: <KeyRound className="w-4 h-4 text-gray-600" /> },
+              { id: "surveyProgress", label: "Módulo Progresso", description: "Persistência de respostas entre sessões com retomada inteligente", icon: <BookmarkCheck className="w-4 h-4 text-blue-500" /> },
+            ].map(({ id, label, description, icon }) => (
+              <label key={id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={selectedAddons.includes(id)}
+                  onChange={() => toggleAddon(id)}
+                  className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                />
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {icon}
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{label}</p>
+                    <p className="text-xs text-gray-400">{description}</p>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+            <button
+              onClick={() => handleCheckout(selectedAddons)}
+              disabled={billingLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
+            >
+              {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {selectedAddons.length > 0 ? `Assinar com ${selectedAddons.length} módulo${selectedAddons.length > 1 ? "s" : ""}` : "Assinar plano base"}
+            </button>
           </div>
         </div>
       )}
@@ -281,7 +330,7 @@ function SettingsContent() {
                     <p className="text-xs text-gray-400">
                       {trialDaysText}
                       {" · "}
-                      <button onClick={handleCheckout} className="text-gray-600 underline underline-offset-2">
+                      <button onClick={() => handleCheckout()} className="text-gray-600 underline underline-offset-2">
                         {t.settings.subscription.subscribeNow}
                       </button>
                     </p>
@@ -308,7 +357,7 @@ function SettingsContent() {
                   </button>
                 ) : (
                   <button
-                    onClick={handleCheckout}
+                    onClick={() => handleCheckout(selectedAddons)}
                     disabled={billingLoading}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
                   >
@@ -324,7 +373,7 @@ function SettingsContent() {
                   <p className="text-xs text-gray-400">{t.settings.subscription.trialExpiredDesc}</p>
                 </div>
                 <button
-                  onClick={handleCheckout}
+                  onClick={() => handleCheckout(selectedAddons)}
                   disabled={billingLoading}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
                 >

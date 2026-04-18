@@ -63,7 +63,9 @@ export async function POST(req: NextRequest) {
         const addonId = checkoutSession.metadata.addonId as AddonId;
         if (userId && addonId) {
           const subscriptionId = checkoutSession.subscription as string;
-          await activateAddon(userId, addonId, subscriptionId);
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const itemId = subscription.items.data[0]?.id;
+          await activateAddon(userId, addonId, itemId);
         }
         break;
       }
@@ -74,8 +76,16 @@ export async function POST(req: NextRequest) {
         const addonsToActivate = checkoutSession.metadata.addonsToActivate;
         if (userId && addonsToActivate) {
           const subscriptionId = checkoutSession.subscription as string;
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const addonPrices: Record<string, string> = {
+            respondents: process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? "",
+            surveyProgress: process.env.STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID ?? "",
+          };
           const addonIds = addonsToActivate.split(",") as AddonId[];
-          await Promise.all(addonIds.map((id) => activateAddon(userId, id, subscriptionId)));
+          await Promise.all(addonIds.map((addonId) => {
+            const item = subscription.items.data.find((i) => i.price.id === addonPrices[addonId]);
+            return activateAddon(userId, addonId, item?.id);
+          }));
         }
       }
 

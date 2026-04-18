@@ -203,7 +203,7 @@ function IntegrationsContent() {
               </button>
             ) : (
               <Link
-                href="/dashboard/settings?require_plan=true"
+                href="/dashboard/settings?require_plan=true&addon=respondents"
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -270,7 +270,7 @@ function IntegrationsContent() {
               </button>
             ) : (
               <Link
-                href="/dashboard/settings?require_plan=true"
+                href="/dashboard/settings?require_plan=true&addon=surveyProgress"
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" />
