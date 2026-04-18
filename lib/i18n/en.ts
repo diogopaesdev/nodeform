@@ -552,9 +552,9 @@ export const en: Translations = {
       requiresRespondentsAddon: "Requires active Respondents Module.",
       groups: {
         integration: "SSO & Respondents",
-        integrationDesc: "Auth via apiKey in request body",
+        integrationDesc: "Authorization: Bearer <your_api_key> + data in body",
         platform: "Platform",
-        platformDesc: "Auth via Authorization: Bearer <your_api_key>",
+        platformDesc: "Authorization: Bearer <your_api_key>",
       },
       endpoints: {
         sso: {

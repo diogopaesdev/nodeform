@@ -12,20 +12,16 @@ const RespondentSchema = z.object({
 });
 
 const Schema = z.object({
-  apiKey: z.string().min(1),
   respondents: z.array(RespondentSchema).min(1).max(500),
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const parsed = Schema.safeParse(await request.json());
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
+    const auth = request.headers.get("authorization");
+    if (!auth?.startsWith("Bearer nfk_")) {
+      return NextResponse.json({ error: "API key ausente ou inválida" }, { status: 401 });
     }
-
-    const { apiKey, respondents } = parsed.data;
-
-    const keyRecord = await validateApiKey(apiKey);
+    const keyRecord = await validateApiKey(auth.slice(7));
     if (!keyRecord) {
       return NextResponse.json({ error: "API key inválida" }, { status: 401 });
     }
@@ -33,6 +29,13 @@ export async function POST(request: NextRequest) {
     if (!(await hasAddon(keyRecord.workspaceId, "respondents"))) {
       return NextResponse.json({ error: "Módulo Respondentes não ativo" }, { status: 403 });
     }
+
+    const parsed = Schema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const { respondents } = parsed.data;
 
     const results = await Promise.allSettled(
       respondents.map((r) =>

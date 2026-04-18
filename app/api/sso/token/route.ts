@@ -9,11 +9,9 @@ import { upsertRespondent } from "@/lib/services/respondents";
 
 // Server-to-server endpoint: MOC backend calls this to get a one-time SSO token
 const Schema = z.object({
-  apiKey: z.string().min(1),
   surveyId: z.string().min(1).max(100),
   email: z.string().email(),
   name: z.string().min(1).max(200),
-  // Optional extended profile fields synced to respondent record
   profile: z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
     .optional(),
@@ -23,25 +21,25 @@ const TOKEN_TTL_MS = 5 * 60 * 1000; // 5 minutes, single-use
 
 export async function POST(request: NextRequest) {
   try {
-    const parsed = Schema.safeParse(await request.json());
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+    const auth = request.headers.get("authorization");
+    if (!auth?.startsWith("Bearer nfk_")) {
+      return NextResponse.json({ error: "API key ausente ou inválida" }, { status: 401 });
     }
-
-    const { apiKey, surveyId, email, name, profile } = parsed.data;
-
-    // Validate API key
-    const keyRecord = await validateApiKey(apiKey);
+    const keyRecord = await validateApiKey(auth.slice(7));
     if (!keyRecord) {
       return NextResponse.json({ error: "API key inválida" }, { status: 401 });
     }
 
-    // Check addon
     if (!(await hasAddon(keyRecord.workspaceId, "respondents"))) {
       return NextResponse.json({ error: "Módulo Respondentes não ativo" }, { status: 403 });
     }
 
-    // Validate survey belongs to workspace
+    const parsed = Schema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+    }
+    const { surveyId, email, name, profile } = parsed.data;
+
     const survey = await getSurvey(surveyId);
     if (!survey || survey.userId !== keyRecord.workspaceId) {
       return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });

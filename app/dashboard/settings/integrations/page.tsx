@@ -108,62 +108,68 @@ function CodeExample({
 // ─── Code Snippets ─────────────────────────────────────────────────────────────
 
 const SSO_SNIPPETS: Record<Lang, string> = {
-  node: `// 1. Gerar token SSO (backend da sua plataforma)
-const res = await fetch('https://surveyflowapp.com/api/sso/token', {
+  node: `const res = await fetch('https://surveyflowapp.com/api/sso/token', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Authorization': 'Bearer nfk_sua_chave_aqui',
+    'Content-Type': 'application/json',
+  },
   body: JSON.stringify({
-    apiKey: 'nfk_sua_chave_aqui',
     surveyId: 'id_da_pesquisa',
     email: usuario.email,
     name: usuario.nome,
     profile: {
-      specialty: usuario.especialidade, // ex: 'oncologia'
-      sector: usuario.setor,           // ex: 'privado'
+      specialty: usuario.especialidade,
+      sector: usuario.setor,
       crm: usuario.crm,
-    }
-  })
+    },
+  }),
 });
 const { token } = await res.json();
 
-// 2. Redirecionar o usuário
+// Redirecionar o usuário
 res.redirect(\`https://surveyflowapp.com/survey/\${surveyId}?sso_token=\${token}\`);`,
 
   python: `import requests
 
-# 1. Gerar token SSO (backend da sua plataforma)
-res = requests.post('https://surveyflowapp.com/api/sso/token', json={
-    'apiKey': 'nfk_sua_chave_aqui',
-    'surveyId': 'id_da_pesquisa',
-    'email': usuario['email'],
-    'name': usuario['nome'],
-    'profile': {
-        'specialty': usuario['especialidade'],  # ex: 'oncologia'
-        'sector': usuario['setor'],             # ex: 'privado'
-        'crm': usuario['crm'],
-    }
-})
+res = requests.post(
+    'https://surveyflowapp.com/api/sso/token',
+    headers={
+        'Authorization': 'Bearer nfk_sua_chave_aqui',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'surveyId': 'id_da_pesquisa',
+        'email': usuario['email'],
+        'name': usuario['nome'],
+        'profile': {
+            'specialty': usuario['especialidade'],
+            'sector': usuario['setor'],
+            'crm': usuario['crm'],
+        },
+    },
+)
 token = res.json()['token']
 
-# 2. Redirecionar o usuário
-redirect_url = f'https://surveyflowapp.com/survey/{survey_id}?sso_token={token}'
-return redirect(redirect_url)`,
+# Redirecionar o usuário
+redirect_url = f'https://surveyflowapp.com/survey/{survey_id}?sso_token={token}'`,
 
   php: `<?php
-// 1. Gerar token SSO (backend da sua plataforma)
 $ch = curl_init('https://surveyflowapp.com/api/sso/token');
 curl_setopt_array($ch, [
     CURLOPT_POST           => true,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+    CURLOPT_HTTPHEADER     => [
+        'Authorization: Bearer nfk_sua_chave_aqui',
+        'Content-Type: application/json',
+    ],
     CURLOPT_POSTFIELDS     => json_encode([
-        'apiKey'   => 'nfk_sua_chave_aqui',
         'surveyId' => 'id_da_pesquisa',
         'email'    => $usuario['email'],
         'name'     => $usuario['nome'],
         'profile'  => [
-            'specialty' => $usuario['especialidade'], // ex: 'oncologia'
-            'sector'    => $usuario['setor'],         // ex: 'privado'
+            'specialty' => $usuario['especialidade'],
+            'sector'    => $usuario['setor'],
             'crm'       => $usuario['crm'],
         ],
     ]),
@@ -171,65 +177,60 @@ curl_setopt_array($ch, [
 $token = json_decode(curl_exec($ch), true)['token'];
 curl_close($ch);
 
-// 2. Redirecionar o usuário
+// Redirecionar o usuário
 header("Location: https://surveyflowapp.com/survey/{$surveyId}?sso_token={$token}");`,
 
-  curl: `# 1. Gerar token SSO
-curl -X POST https://surveyflowapp.com/api/sso/token \\
+  curl: `curl -X POST 'https://surveyflowapp.com/api/sso/token' \\
+  -H 'Authorization: Bearer nfk_sua_chave_aqui' \\
   -H 'Content-Type: application/json' \\
   -d '{
-    "apiKey": "nfk_sua_chave_aqui",
     "surveyId": "id_da_pesquisa",
     "email": "usuario@email.com",
     "name": "Nome do Usuário",
-    "profile": {
-      "specialty": "oncologia",
-      "sector": "privado",
-      "crm": "12345"
-    }
-  }'
-
-# Resposta: { "token": "eyJ..." }
-
-# 2. Redirecionar para:
-# https://surveyflowapp.com/survey/{surveyId}?sso_token={token}`,
+    "profile": { "specialty": "oncologia", "sector": "privado", "crm": "12345" }
+  }'`,
 };
 
 const SYNC_SNIPPETS: Record<Lang, string> = {
-  node: `// Atualizar perfis sem exigir login dos usuários
-await fetch('https://surveyflowapp.com/api/workspace/respondents/sync', {
+  node: `await fetch('https://surveyflowapp.com/api/workspace/respondents/sync', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Authorization': 'Bearer nfk_sua_chave_aqui',
+    'Content-Type': 'application/json',
+  },
   body: JSON.stringify({
-    apiKey: 'nfk_sua_chave_aqui',
     respondents: [
       { email: 'dr@email.com', name: 'Dr. João',
         profile: { specialty: 'oncologia', sector: 'privado' } },
       // ... até 500 por requisição
-    ]
-  })
+    ],
+  }),
 });`,
 
   python: `import requests
 
-# Atualizar perfis sem exigir login dos usuários
-requests.post('https://surveyflowapp.com/api/workspace/respondents/sync', json={
-    'apiKey': 'nfk_sua_chave_aqui',
-    'respondents': [
-        { 'email': 'dr@email.com', 'name': 'Dr. João',
-          'profile': { 'specialty': 'oncologia', 'sector': 'privado' } },
-        # ... até 500 por requisição
-    ]
-})`,
+requests.post(
+    'https://surveyflowapp.com/api/workspace/respondents/sync',
+    headers={'Authorization': 'Bearer nfk_sua_chave_aqui'},
+    json={
+        'respondents': [
+            { 'email': 'dr@email.com', 'name': 'Dr. João',
+              'profile': { 'specialty': 'oncologia', 'sector': 'privado' } },
+            # ... até 500 por requisição
+        ],
+    },
+)`,
 
   php: `<?php
 $ch = curl_init('https://surveyflowapp.com/api/workspace/respondents/sync');
 curl_setopt_array($ch, [
     CURLOPT_POST           => true,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+    CURLOPT_HTTPHEADER     => [
+        'Authorization: Bearer nfk_sua_chave_aqui',
+        'Content-Type: application/json',
+    ],
     CURLOPT_POSTFIELDS     => json_encode([
-        'apiKey'      => 'nfk_sua_chave_aqui',
         'respondents' => [
             [ 'email'   => 'dr@email.com', 'name' => 'Dr. João',
               'profile' => [ 'specialty' => 'oncologia', 'sector' => 'privado' ] ],
@@ -240,16 +241,13 @@ curl_setopt_array($ch, [
 curl_exec($ch);
 curl_close($ch);`,
 
-  curl: `curl -X POST https://surveyflowapp.com/api/workspace/respondents/sync \\
+  curl: `curl -X POST 'https://surveyflowapp.com/api/workspace/respondents/sync' \\
+  -H 'Authorization: Bearer nfk_sua_chave_aqui' \\
   -H 'Content-Type: application/json' \\
   -d '{
-    "apiKey": "nfk_sua_chave_aqui",
     "respondents": [
-      {
-        "email": "dr@email.com",
-        "name": "Dr. João",
-        "profile": { "specialty": "oncologia", "sector": "privado" }
-      }
+      { "email": "dr@email.com", "name": "Dr. João",
+        "profile": { "specialty": "oncologia", "sector": "privado" } }
     ]
   }'`,
 };

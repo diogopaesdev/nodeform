@@ -550,9 +550,9 @@ export const pt = {
       requiresRespondentsAddon: "Requer Módulo Respondentes ativo.",
       groups: {
         integration: "SSO & Respondentes",
-        integrationDesc: "Auth via apiKey no body da requisição",
+        integrationDesc: "Authorization: Bearer <sua_api_key> + dados no body",
         platform: "Plataforma",
-        platformDesc: "Auth via Authorization: Bearer <sua_api_key>",
+        platformDesc: "Authorization: Bearer <sua_api_key>",
       },
       endpoints: {
         sso: {
