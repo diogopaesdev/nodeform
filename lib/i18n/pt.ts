@@ -219,7 +219,7 @@ export const pt = {
     preview: {
       label: "Preview — Lista de pesquisas",
       realtime: "Atualiza em tempo real conforme você edita",
-      surveyUrl: "nodeform.com.br/surveys/user/...",
+      surveyUrl: "surveyflowapp.com/surveys/user/...",
       companyPlaceholder: "Nome da Empresa",
       participate: "Participar",
     },
