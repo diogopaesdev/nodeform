@@ -221,7 +221,7 @@ export const en: Translations = {
     preview: {
       label: "Preview — Survey list",
       realtime: "Updates in real time as you edit",
-      surveyUrl: "nodeform.com.br/surveys/user/...",
+      surveyUrl: "surveyflowapp.com/surveys/user/...",
       companyPlaceholder: "Company Name",
       participate: "Participate",
     },
