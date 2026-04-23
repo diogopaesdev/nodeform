@@ -312,9 +312,10 @@ window.addEventListener("message", function(e) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveys, t]);
 
+  const nonDraftSurveys = surveys.filter((s) => s.status !== "draft");
   const avgResponses =
-    surveys.length > 0
-      ? (surveys.reduce((a, s) => a + s.responseCount, 0) / surveys.length).toFixed(1)
+    nonDraftSurveys.length > 0
+      ? (nonDraftSurveys.reduce((a, s) => a + s.responseCount, 0) / nonDraftSurveys.length).toFixed(1)
       : "0";
 
   const maxResponses = useMemo(

@@ -6,6 +6,7 @@ export type {
   MultipleChoiceData,
   RatingData,
   EndScreenData,
+  TextInputData,
   NodeData,
   SurveyNode,
   EdgeData,
@@ -16,3 +17,6 @@ export type {
   RuntimeState,
   SurveyResponse,
 } from "./survey";
+
+export type { Respondent, RespondentSession, SurveyParticipation } from "./respondent";
+export type { AddonId, WorkspaceAddon, WorkspaceAddons, EligibilityRule, ProfileField, ProfileSchema } from "./addon";

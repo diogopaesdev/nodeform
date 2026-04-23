@@ -16,7 +16,12 @@ import {
   Globe,
   FileEdit,
   Archive,
+  Users,
+  Hash,
 } from "lucide-react";
+import { EligibilityRuleBuilder } from "@/components/editor/eligibility-rule-builder";
+import { useSession } from "next-auth/react";
+import type { EligibilityRule } from "@/types";
 import { FlowCanvas } from "@/components/editor/flow-canvas";
 import { EditorSidebar } from "@/components/editor/editor-sidebar";
 import { Input } from "@/components/ui/input";
@@ -38,6 +43,7 @@ export default function EditorPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -61,6 +67,12 @@ export default function EditorPage({
     setPrize,
     setStatus,
     setIsConfigured,
+    requiresRespondentLogin,
+    maxResponses,
+    eligibilityRules,
+    setRequiresRespondentLogin,
+    setMaxResponses,
+    setEligibilityRules,
     loadSurvey,
     clearSurvey,
   } = useEditorStore();
@@ -70,6 +82,9 @@ export default function EditorPage({
   const [configDescription, setConfigDescription] = useState("");
   const [configTimeLimit, setConfigTimeLimit] = useState("");
   const [configPrize, setConfigPrize] = useState("");
+  const [configRequiresLogin, setConfigRequiresLogin] = useState(false);
+  const [configMaxResponses, setConfigMaxResponses] = useState("");
+  const [configEligibilityRules, setConfigEligibilityRules] = useState<EligibilityRule[]>([]);
 
   useEffect(() => {
     fetchSurvey();
@@ -107,6 +122,9 @@ export default function EditorPage({
           enableScoring,
           timeLimit: timeLimit || null,
           prize: prize || null,
+          requiresRespondentLogin,
+          maxResponses: maxResponses || null,
+          eligibilityRules,
         }),
       });
       setSaved(true);
@@ -119,11 +137,13 @@ export default function EditorPage({
   }, [id, surveyTitle, surveyDescription, nodes, edges, enableScoring, timeLimit, prize]);
 
   const handleOpenConfig = () => {
-    // Preencher os campos com os valores atuais
     setConfigTitle(surveyTitle);
     setConfigDescription(surveyDescription);
     setConfigTimeLimit(timeLimit ? String(timeLimit) : "");
     setConfigPrize(prize || "");
+    setConfigRequiresLogin(requiresRespondentLogin);
+    setConfigMaxResponses(maxResponses ? String(maxResponses) : "");
+    setConfigEligibilityRules(eligibilityRules);
     setShowConfigModal(true);
   };
 
@@ -136,10 +156,12 @@ export default function EditorPage({
     setSurveyDescription(configDescription.trim());
     setTimeLimit(configTimeLimit ? parseInt(configTimeLimit) : undefined);
     setPrize(configPrize.trim() || undefined);
+    setRequiresRespondentLogin(configRequiresLogin);
+    setMaxResponses(configMaxResponses ? parseInt(configMaxResponses) : undefined);
+    setEligibilityRules(configEligibilityRules);
     setIsConfigured(true);
     setShowConfigModal(false);
 
-    // Salvar configuração
     try {
       await fetch(`/api/surveys/${id}`, {
         method: "PATCH",
@@ -149,6 +171,9 @@ export default function EditorPage({
           description: configDescription.trim(),
           timeLimit: configTimeLimit ? parseInt(configTimeLimit) : null,
           prize: configPrize.trim() || null,
+          requiresRespondentLogin: configRequiresLogin,
+          maxResponses: configMaxResponses ? parseInt(configMaxResponses) : null,
+          eligibilityRules: configEligibilityRules,
         }),
       });
     } catch (error) {
@@ -307,6 +332,67 @@ export default function EditorPage({
                 />
               </div>
             </div>
+
+            {/* Respondent settings — addon-gated */}
+            {session?.user?.addons?.respondents?.active && (
+              <div className="space-y-3 pt-1 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-gray-400" />
+                  Controle de Respondentes
+                </p>
+
+                {/* requiresRespondentLogin toggle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700">Login obrigatório</p>
+                    <p className="text-xs text-gray-400">Apenas respondentes autenticados podem acessar</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfigRequiresLogin(!configRequiresLogin)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      configRequiresLogin ? "bg-gray-900" : "bg-gray-200"
+                    }`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      configRequiresLogin ? "translate-x-5" : "translate-x-1"
+                    }`} />
+                  </button>
+                </div>
+
+                {/* maxResponses */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                    <Hash className="w-3.5 h-3.5 text-gray-400" />
+                    Cota de respondentes
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      placeholder="Ilimitado"
+                      min="1"
+                      value={configMaxResponses}
+                      onChange={(e) => setConfigMaxResponses(e.target.value)}
+                      className="h-9 text-sm pr-28"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                      respostas máx.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Survey-level eligibility rules */}
+                {configRequiresLogin && (
+                  <EligibilityRuleBuilder
+                    workspaceUserId={session.user.id}
+                    rules={configEligibilityRules}
+                    onChange={setConfigEligibilityRules}
+                    label="Elegibilidade da pesquisa"
+                    hint="Regras AND — respondente deve atender a todas para acessar."
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           {/* Footer */}

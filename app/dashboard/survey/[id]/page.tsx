@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -26,6 +27,12 @@ import {
   Star,
   Hash,
   TrendingUp,
+  GitCompareArrows,
+  Gift,
+  XCircle,
+  RotateCcw,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import {
   BarChart,
@@ -35,6 +42,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  Legend,
 } from "recharts";
 import {
   Dialog,
@@ -47,7 +55,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Survey, SurveyResponse } from "@/types/survey";
+import { Survey, SurveyResponse, ChoiceOption } from "@/types/survey";
+import { ParticipationWithRespondent } from "@/types/respondent";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 
@@ -266,6 +275,451 @@ function QuestionAnalyticsCard({ item }: {
   );
 }
 
+// ─── Cross-analysis ───────────────────────────────────────────────────────────
+
+const CROSS_COLORS = ["#111827", "#374151", "#6b7280", "#9ca3af", "#d1d5db", "#e5e7eb", "#1d4ed8", "#7c3aed", "#065f46", "#92400e"];
+
+function getNodeOptions(node: Survey["nodes"][0]): ChoiceOption[] {
+  const d = node.data;
+  if (d.type === "singleChoice" || d.type === "multipleChoice") return d.options;
+  return [];
+}
+
+function useCrossAnalytics(
+  survey: Survey | null,
+  responses: SurveyResponse[],
+  segmentNodeId: string | null,
+  targetNodeId: string | null,
+) {
+  return useMemo(() => {
+    if (!survey || !segmentNodeId || !targetNodeId || segmentNodeId === targetNodeId || responses.length === 0) return null;
+
+    const segmentNode = survey.nodes.find((n) => n.id === segmentNodeId);
+    const targetNode = survey.nodes.find((n) => n.id === targetNodeId);
+    if (!segmentNode || !targetNode) return null;
+
+    const segOpts = getNodeOptions(segmentNode);
+    const tgtOpts = getNodeOptions(targetNode);
+    if (segOpts.length === 0 || tgtOpts.length === 0) return null;
+
+    const rows = segOpts.map((segOpt) => {
+      const segResponses = responses.filter((r) => {
+        const ans = r.answers.find((a) => a.nodeId === segmentNodeId);
+        if (!ans) return false;
+        if (segmentNode.data.type === "singleChoice") return ans.selectedOptionId === segOpt.id;
+        return ans.selectedOptionIds?.includes(segOpt.id) ?? false;
+      });
+
+      const counts: Record<string, number> = {};
+      tgtOpts.forEach((o) => { counts[o.id] = 0; });
+      segResponses.forEach((r) => {
+        const ans = r.answers.find((a) => a.nodeId === targetNodeId);
+        if (!ans) return;
+        if (targetNode.data.type === "singleChoice" && ans.selectedOptionId) {
+          counts[ans.selectedOptionId] = (counts[ans.selectedOptionId] || 0) + 1;
+        } else if (targetNode.data.type === "multipleChoice" && ans.selectedOptionIds) {
+          ans.selectedOptionIds.forEach((id) => { counts[id] = (counts[id] || 0) + 1; });
+        }
+      });
+
+      const row: Record<string, string | number> = {
+        name: segOpt.label.length > 22 ? segOpt.label.slice(0, 22) + "…" : segOpt.label,
+        _total: segResponses.length,
+      };
+      tgtOpts.forEach((o) => { row[o.id] = counts[o.id]; });
+      return row;
+    }).filter((r) => (r._total as number) > 0);
+
+    return { rows, segmentNode, targetNode, tgtOpts };
+  }, [survey, responses, segmentNodeId, targetNodeId]);
+}
+
+function CrossAnalysisPanel({
+  survey,
+  responses,
+}: {
+  survey: Survey;
+  responses: SurveyResponse[];
+}) {
+  const { t } = useI18n();
+  const choiceNodes = survey.nodes.filter((n) =>
+    n.data.type === "singleChoice" || n.data.type === "multipleChoice"
+  );
+
+  const [segmentId, setSegmentId] = useState<string>(choiceNodes[0]?.id ?? "");
+  const [targetId, setTargetId] = useState<string>(choiceNodes[1]?.id ?? "");
+
+  const result = useCrossAnalytics(survey, responses, segmentId, targetId);
+
+  if (choiceNodes.length < 2) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl text-center py-16">
+        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <GitCompareArrows className="w-6 h-6 text-gray-400" />
+        </div>
+        <p className="text-sm text-gray-500">{t.surveyDetail.crossAnalysis.needMoreQuestions}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Selects */}
+      <div className="bg-white border border-gray-200 rounded-xl px-5 py-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              {t.surveyDetail.crossAnalysis.segmentBy}
+            </label>
+            <select
+              value={segmentId}
+              onChange={(e) => setSegmentId(e.target.value)}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            >
+              {choiceNodes.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.data.title || t.surveyDetail.analytics.noTitle}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              {t.surveyDetail.crossAnalysis.analyzeQuestion}
+            </label>
+            <select
+              value={targetId}
+              onChange={(e) => setTargetId(e.target.value)}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            >
+              {choiceNodes
+                .filter((n) => n.id !== segmentId)
+                .map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.data.title || t.surveyDetail.analytics.noTitle}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Chart */}
+      {!result || result.rows.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-xl text-center py-16">
+          <p className="text-sm text-gray-500">{t.surveyDetail.crossAnalysis.noData}</p>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-5 pt-4 pb-2 border-b border-gray-100">
+            <p className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-800">
+                {result.targetNode.data.title || t.surveyDetail.analytics.noTitle}
+              </span>
+              {" · "}{t.surveyDetail.crossAnalysis.segmentBy.toLowerCase()}{": "}
+              <span className="font-semibold text-gray-800">
+                {result.segmentNode.data.title || t.surveyDetail.analytics.noTitle}
+              </span>
+            </p>
+          </div>
+          <div className="px-5 py-4">
+            <ResponsiveContainer width="100%" height={Math.max(280, result.rows.length * 60 + 60)}>
+              <BarChart
+                data={result.rows}
+                layout="vertical"
+                margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
+                barCategoryGap="30%"
+                barGap={2}
+              >
+                <XAxis type="number" hide />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={150}
+                  tick={{ fontSize: 12, fill: "#6b7280" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  formatter={(value: unknown, name: unknown) => {
+                    const opt = result.tgtOpts.find((o) => o.id === String(name));
+                    return [String(value) + " " + t.surveyDetail.crossAnalysis.respondents, opt?.label ?? String(name)];
+                  }}
+                  cursor={{ fill: "#f9fafb" }}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
+                />
+                <Legend
+                  formatter={(value: string) => {
+                    const opt = result.tgtOpts.find((o) => o.id === value);
+                    const label = opt?.label ?? value;
+                    return label.length > 30 ? label.slice(0, 30) + "…" : label;
+                  }}
+                  wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
+                />
+                {result.tgtOpts.map((opt, i) => (
+                  <Bar
+                    key={opt.id}
+                    dataKey={opt.id}
+                    radius={[0, 4, 4, 0]}
+                    fill={CROSS_COLORS[i % CROSS_COLORS.length]}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Bonus Panel ─────────────────────────────────────────────────────────────
+
+const BONUS_STATUS_META = {
+  pending:    { label: "Pendente",    badge: "bg-amber-100 text-amber-700" },
+  released:   { label: "Liberado",   badge: "bg-green-100 text-green-700" },
+  ineligible: { label: "Inelegível", badge: "bg-red-100 text-red-600" },
+};
+
+function BonusPanel({ surveyId, survey, onSurveyChange }: {
+  surveyId: string;
+  survey: Survey;
+  onSurveyChange: (s: Survey) => void;
+}) {
+  const [participations, setParticipations] = useState<ParticipationWithRespondent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchParticipations();
+  }, [surveyId]);
+
+  const fetchParticipations = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/surveys/${surveyId}/participations`);
+      if (res.ok) {
+        const data = await res.json();
+        setParticipations(data.participations ?? []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateBonus = async (
+    participationId: string,
+    bonusStatus: "pending" | "released" | "ineligible"
+  ) => {
+    setUpdating(participationId);
+    try {
+      const res = await fetch(
+        `/api/surveys/${surveyId}/participations/${participationId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bonusStatus }),
+        }
+      );
+      if (!res.ok) return;
+
+      setParticipations((prev) =>
+        prev.map((p) =>
+          p.id === participationId
+            ? {
+                ...p,
+                bonusStatus,
+                bonusReleasedAt: bonusStatus === "released" ? new Date().toISOString() : p.bonusReleasedAt,
+              }
+            : p
+        )
+      );
+
+      // Reflect quota changes on survey object
+      const prev = participations.find((p) => p.id === participationId);
+      if (prev) {
+        const wasIneligible = prev.bonusStatus === "ineligible";
+        const becomingIneligible = bonusStatus === "ineligible";
+        if (!wasIneligible && becomingIneligible) {
+          const newCount = survey.responseCount - 1;
+          const newStatus =
+            survey.status === "finished" && survey.maxResponses && newCount < survey.maxResponses
+              ? "published"
+              : survey.status;
+          onSurveyChange({ ...survey, responseCount: newCount, status: newStatus });
+        } else if (wasIneligible && !becomingIneligible) {
+          const newCount = survey.responseCount + 1;
+          const newStatus =
+            survey.maxResponses && newCount >= survey.maxResponses ? "finished" : survey.status;
+          onSurveyChange({ ...survey, responseCount: newCount, status: newStatus });
+        }
+      }
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const counts = useMemo(() => ({
+    total: participations.length,
+    pending: participations.filter((p) => p.bonusStatus === "pending").length,
+    released: participations.filter((p) => p.bonusStatus === "released").length,
+    ineligible: participations.filter((p) => p.bonusStatus === "ineligible").length,
+  }), [participations]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (participations.length === 0) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl">
+        <div className="text-center py-16">
+          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+            <Gift className="w-6 h-6 text-gray-400" />
+          </div>
+          <h3 className="text-sm font-medium text-gray-900 mb-1">Nenhum respondente concluiu ainda</h3>
+          <p className="text-xs text-gray-500">
+            As participações concluídas aparecerão aqui para revisão e liberação de bonificação.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Total", value: counts.total, color: "text-gray-900" },
+          { label: "Pendentes", value: counts.pending, color: "text-amber-600" },
+          { label: "Liberados", value: counts.released, color: "text-green-600" },
+          { label: "Inelegíveis", value: counts.ineligible, color: "text-red-500" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-center">
+            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* List */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-900">Respondentes</h2>
+        </div>
+
+        <div className="divide-y divide-gray-100">
+          {participations.map((p) => {
+            const meta = BONUS_STATUS_META[p.bonusStatus];
+            const isUpdating = updating === p.id;
+            const profileEntries = Object.entries(p.profile).filter(
+              ([, v]) => v !== undefined && v !== null && v !== ""
+            );
+
+            return (
+              <div key={p.id} className="px-5 py-4">
+                <div className="flex items-start gap-4">
+                  {/* Avatar */}
+                  <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold text-gray-600">
+                    {getInitials(p.name)}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-gray-900">{p.name}</span>
+                      <span className="flex items-center gap-1 text-xs text-gray-400">
+                        <Mail className="w-3 h-3" />{p.email}
+                      </span>
+                      <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${meta.badge}`}>
+                        {meta.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      {p.completedAt && (
+                        <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                          <Clock className="w-3 h-3" />{formatDate(p.completedAt)}
+                        </span>
+                      )}
+                      {p.totalScore !== undefined && survey.enableScoring && (
+                        <span className="text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                          {p.totalScore} pts
+                        </span>
+                      )}
+                      {p.bonusReleasedAt && (
+                        <span className="text-[11px] text-green-600">
+                          Liberado em {formatDate(p.bonusReleasedAt)}
+                        </span>
+                      )}
+                    </div>
+
+                    {profileEntries.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {profileEntries.map(([k, v]) => (
+                          <span key={k} className="text-[11px] bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5 text-gray-600">
+                            <span className="font-medium text-gray-400">{k}:</span> {String(v)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {p.bonusStatus !== "released" && (
+                      <button
+                        onClick={() => updateBonus(p.id, "released")}
+                        disabled={isUpdating}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors"
+                      >
+                        {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Gift className="w-3.5 h-3.5" />}
+                        Liberar
+                      </button>
+                    )}
+                    {p.bonusStatus !== "ineligible" && (
+                      <button
+                        onClick={() => updateBonus(p.id, "ineligible")}
+                        disabled={isUpdating}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 rounded-lg transition-colors"
+                      >
+                        {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                        Inelegível
+                      </button>
+                    )}
+                    {p.bonusStatus !== "pending" && (
+                      <button
+                        onClick={() => updateBonus(p.id, "pending")}
+                        disabled={isUpdating}
+                        title="Reverter para pendente"
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {!survey.requiresRespondentLogin && (
+        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          Esta pesquisa não exige login de respondente. Apenas participações autenticadas aparecem aqui.
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SurveyDetailPage({
@@ -276,6 +730,8 @@ export default function SurveyDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const { t } = useI18n();
+  const { data: session } = useSession();
+  const hasRespondentsAddon = session?.user?.addons?.respondents?.active === true;
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -284,7 +740,7 @@ export default function SurveyDetailPage({
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"analytics" | "responses">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis" | "bonus">("analytics");
   const [deleteResponseModal, setDeleteResponseModal] = useState<{ open: boolean; responseId: string; loading: boolean }>({
     open: false, responseId: "", loading: false,
   });
@@ -409,6 +865,9 @@ export default function SurveyDetailPage({
     if (data.type === "rating" && answer.ratingValue !== undefined) {
       return `${answer.ratingValue} ${t.surveyDetail.getAnswerLabel.ratingOf} ${data.maxValue}`;
     }
+    if (data.type === "textInput" && answer.textValue !== undefined) {
+      return answer.textValue;
+    }
     return t.surveyDetail.getAnswerLabel.noAnswer;
   };
 
@@ -435,6 +894,27 @@ export default function SurveyDetailPage({
     link.download = `${survey.title.replace(/[^a-zA-Z0-9]/g, "_")}_respostas.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportXLSX = async () => {
+    if (!survey || responses.length === 0) return;
+    const XLSX = await import("xlsx");
+    const questionNodes = survey.nodes.filter((n) => n.data.type !== "presentation" && n.data.type !== "endScreen");
+    const headers = [t.surveyDetail.csv.name, t.surveyDetail.csv.email, ...questionNodes.map((n) => n.data.title || t.surveyDetail.csv.question), ...(survey.enableScoring ? [t.surveyDetail.csv.score] : []), t.surveyDetail.csv.date];
+    const rows = responses.map((response) => [
+      response.respondentName || "",
+      response.respondentEmail || "",
+      ...questionNodes.map((node) => {
+        const answer = response.answers.find((a) => a.nodeId === node.id);
+        return answer ? getAnswerLabel(node, answer) : "";
+      }),
+      ...(survey.enableScoring ? [response.totalScore] : []),
+      formatDate(response.completedAt),
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Respostas");
+    XLSX.writeFile(wb, `${survey.title.replace(/[^a-zA-Z0-9]/g, "_")}_respostas.xlsx`);
   };
 
   const avgScore = useMemo(() => {
@@ -650,6 +1130,24 @@ export default function SurveyDetailPage({
               {t.surveyDetail.tabs.responses.replace("{n}", String(survey.responseCount))}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab("crossanalysis")}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "crossanalysis" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            <span className="flex items-center gap-1.5">
+              <GitCompareArrows className="w-3.5 h-3.5" />
+              {t.surveyDetail.tabs.crossAnalysis}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("bonus")}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "bonus" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Gift className="w-3.5 h-3.5" />
+              Bonificação
+            </span>
+          </button>
         </div>
       )}
 
@@ -694,13 +1192,22 @@ export default function SurveyDetailPage({
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">{t.surveyDetail.responses.title}</h2>
             {responses.length > 0 && (
-              <button
-                onClick={handleExportCSV}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {t.surveyDetail.responses.exportCsv}
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors">
+                    <Download className="w-3.5 h-3.5" />
+                    {t.surveyDetail.responses.exportCsv}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer">
+                    Exportar CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportXLSX} className="text-xs cursor-pointer">
+                    Exportar Excel (.xlsx)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
@@ -791,6 +1298,76 @@ export default function SurveyDetailPage({
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Cross-Analysis Tab ──────────────────────────────────────────────── */}
+      {activeTab === "crossanalysis" && survey.responseCount > 0 && (
+        loadingResponses ? (
+          <div className="grid md:grid-cols-2 gap-4">
+            {[1, 2].map((i) => <div key={i} className="h-48 bg-gray-100 rounded-xl animate-pulse" />)}
+          </div>
+        ) : (
+          <CrossAnalysisPanel survey={survey} responses={responses} />
+        )
+      )}
+
+      {/* ── Bonus Tab ───────────────────────────────────────────────────────── */}
+      {activeTab === "bonus" && (
+        !hasRespondentsAddon || !survey.requiresRespondentLogin ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center space-y-6">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto">
+              <Gift className="w-6 h-6 text-gray-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Painel de Bonificação indisponível</h3>
+              <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                Para usar o painel de bonificação, as seguintes condições precisam estar ativas:
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 max-w-sm mx-auto text-left">
+              <div className={`flex items-start gap-3 p-3 rounded-lg border ${hasRespondentsAddon ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${hasRespondentsAddon ? "bg-green-500" : "bg-gray-300"}`}>
+                  {hasRespondentsAddon
+                    ? <Check className="w-3 h-3 text-white" />
+                    : <span className="w-1.5 h-1.5 bg-white rounded-full" />}
+                </div>
+                <div>
+                  <p className={`text-xs font-semibold ${hasRespondentsAddon ? "text-green-700" : "text-gray-700"}`}>
+                    Módulo Respondentes ativo
+                  </p>
+                  {!hasRespondentsAddon && (
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Ative o Módulo Respondentes em <span className="font-medium">Configurações → Integrações</span>.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className={`flex items-start gap-3 p-3 rounded-lg border ${survey.requiresRespondentLogin ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${survey.requiresRespondentLogin ? "bg-green-500" : "bg-gray-300"}`}>
+                  {survey.requiresRespondentLogin
+                    ? <Check className="w-3 h-3 text-white" />
+                    : <span className="w-1.5 h-1.5 bg-white rounded-full" />}
+                </div>
+                <div>
+                  <p className={`text-xs font-semibold ${survey.requiresRespondentLogin ? "text-green-700" : "text-gray-700"}`}>
+                    Login obrigatório para respondentes
+                  </p>
+                  {!survey.requiresRespondentLogin && (
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Ative nas configurações da pesquisa no editor.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <BonusPanel
+            surveyId={id}
+            survey={survey}
+            onSurveyChange={setSurvey}
+          />
+        )
       )}
 
       <DeleteConfirmModal

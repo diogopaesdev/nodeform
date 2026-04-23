@@ -85,7 +85,10 @@ export async function saveSurveyContent(
   enableScoring?: boolean,
   description?: string,
   timeLimit?: number | null,
-  prize?: string | null
+  prize?: string | null,
+  requiresRespondentLogin?: boolean,
+  maxResponses?: number | null,
+  eligibilityRules?: unknown[]
 ): Promise<void> {
   const { db } = getFirebaseAdmin();
 
@@ -100,6 +103,9 @@ export async function saveSurveyContent(
   if (description !== undefined) updateData.description = description;
   if (timeLimit !== undefined) updateData.timeLimit = timeLimit;
   if (prize !== undefined) updateData.prize = prize;
+  if (requiresRespondentLogin !== undefined) updateData.requiresRespondentLogin = requiresRespondentLogin;
+  if (maxResponses !== undefined) updateData.maxResponses = maxResponses;
+  if (eligibilityRules !== undefined) updateData.eligibilityRules = eligibilityRules;
 
   await db.collection("surveys").doc(surveyId).update(updateData);
 }
@@ -139,14 +145,21 @@ export async function saveResponse(
     path: string[];
     respondentName?: string;
     respondentEmail?: string;
+    respondentId?: string;
   }
 ): Promise<SurveyResponse> {
   const { db, FieldValue } = getFirebaseAdmin();
+
+  // Verificar cota antes de salvar
+  const survey = await getSurvey(surveyId);
+  if (survey?.maxResponses && survey.responseCount >= survey.maxResponses) {
+    throw new Error("QUOTA_EXCEEDED");
+  }
+
   const responseRef = db.collection("surveys").doc(surveyId).collection("responses").doc();
 
   const now = new Date().toISOString();
 
-  // Remove undefined values to avoid Firestore errors
   const cleanAnswers = data.answers.map((a) =>
     Object.fromEntries(Object.entries(a).filter(([, v]) => v !== undefined))
   );
@@ -163,13 +176,20 @@ export async function saveResponse(
 
   if (data.respondentName) response.respondentName = data.respondentName;
   if (data.respondentEmail) response.respondentEmail = data.respondentEmail;
+  if (data.respondentId) response.respondentId = data.respondentId;
 
-  // Salvar resposta e incrementar contador em batch
   const batch = db.batch();
   batch.set(responseRef, response);
-  batch.update(db.collection("surveys").doc(surveyId), {
-    responseCount: FieldValue.increment(1),
-  });
+
+  const surveyRef = db.collection("surveys").doc(surveyId);
+  const updatePayload: Record<string, unknown> = { responseCount: FieldValue.increment(1) };
+
+  // Fechar automaticamente se atingiu a cota com esta resposta
+  if (survey?.maxResponses && survey.responseCount + 1 >= survey.maxResponses) {
+    updatePayload.status = "finished";
+  }
+
+  batch.update(surveyRef, updatePayload);
 
   await batch.commit();
 

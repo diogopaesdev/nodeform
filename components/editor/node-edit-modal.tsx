@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, GripVertical, User, Mail, Trophy, Play, CircleDot, CheckSquare, Star, FlagTriangleRight, FileText } from "lucide-react";
+import { Plus, Trash2, GripVertical, User, Mail, Trophy, Play, CircleDot, CheckSquare, Star, FlagTriangleRight, FileText, AlignLeft, ExternalLink } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { EligibilityRuleBuilder } from "@/components/editor/eligibility-rule-builder";
+import type { EligibilityRule } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -79,9 +82,19 @@ const ratingSchema = baseSchema.extend({
 const endScreenSchema = baseSchema.extend({
   type: z.literal("endScreen"),
   showScore: z.boolean().optional(),
+  redirectUrl: z.string().optional(),
+  redirectDelay: z.number().optional(),
 });
 
-type FormData = z.infer<typeof presentationSchema> | z.infer<typeof choiceSchema> | z.infer<typeof ratingSchema> | z.infer<typeof endScreenSchema>;
+// Schema para textInput
+const textInputSchema = baseSchema.extend({
+  type: z.literal("textInput"),
+  isLong: z.boolean().optional(),
+  placeholder: z.string().optional(),
+  required: z.boolean().optional(),
+});
+
+type FormData = z.infer<typeof presentationSchema> | z.infer<typeof choiceSchema> | z.infer<typeof ratingSchema> | z.infer<typeof endScreenSchema> | z.infer<typeof textInputSchema>;
 
 const getTypeConfig = (type: string) => {
   const configs: Record<string, { label: string; icon: typeof Play; color: string; bg: string }> = {
@@ -89,6 +102,7 @@ const getTypeConfig = (type: string) => {
     singleChoice: { label: "Escolha Simples", icon: CircleDot, color: "text-blue-600", bg: "bg-blue-100" },
     multipleChoice: { label: "Múltipla Escolha", icon: CheckSquare, color: "text-green-600", bg: "bg-green-100" },
     rating: { label: "Avaliação", icon: Star, color: "text-purple-600", bg: "bg-purple-100" },
+    textInput: { label: "Texto Livre", icon: AlignLeft, color: "text-violet-600", bg: "bg-violet-100" },
     endScreen: { label: "Tela Final", icon: FlagTriangleRight, color: "text-rose-600", bg: "bg-rose-100" },
   };
   return configs[type] || configs.presentation;
@@ -96,8 +110,16 @@ const getTypeConfig = (type: string) => {
 
 export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
   const { updateNode, deleteNode, enableScoring, surveyId } = useEditorStore();
+  const { data: session } = useSession();
   const typeConfig = getTypeConfig(node.data.type);
   const Icon = typeConfig.icon;
+
+  const hasRespondentsAddon = session?.user?.addons?.respondents?.active === true;
+  const supportsEligibility = ["singleChoice", "multipleChoice", "rating", "textInput"].includes(node.data.type);
+
+  const [nodeEligibilityRules, setNodeEligibilityRules] = useState<EligibilityRule[]>(
+    (node.data as { eligibilityRules?: EligibilityRule[] }).eligibilityRules ?? []
+  );
 
   const getDefaultValues = (): FormData => {
     const { type } = node.data;
@@ -160,13 +182,28 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
     }
 
     if (type === "endScreen") {
-      const endData = node.data as { showScore?: boolean };
+      const endData = node.data as { showScore?: boolean; redirectUrl?: string; redirectDelay?: number };
       return {
         type: "endScreen",
         title: node.data.title,
         description: node.data.description || "",
         image: (node.data as { image?: string }).image || "",
         showScore: endData.showScore || false,
+        redirectUrl: endData.redirectUrl || "",
+        redirectDelay: endData.redirectDelay ?? 3,
+      };
+    }
+
+    if (type === "textInput") {
+      const textData = node.data as { isLong?: boolean; placeholder?: string; required?: boolean };
+      return {
+        type: "textInput",
+        title: node.data.title,
+        description: node.data.description || "",
+        image: (node.data as { image?: string }).image || "",
+        isLong: textData.isLong || false,
+        placeholder: textData.placeholder || "",
+        required: textData.required || false,
       };
     }
 
@@ -186,6 +223,8 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
         ? ratingSchema
         : node.data.type === "endScreen"
         ? endScreenSchema
+        : node.data.type === "textInput"
+        ? textInputSchema
         : choiceSchema
     ),
     defaultValues: getDefaultValues(),
@@ -199,11 +238,15 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
   useEffect(() => {
     if (isOpen) {
       form.reset(getDefaultValues());
+      setNodeEligibilityRules(
+        (node.data as { eligibilityRules?: EligibilityRule[] }).eligibilityRules ?? []
+      );
     }
   }, [isOpen, node]);
 
   const onSubmit = (data: FormData) => {
-    updateNode(node.id, data as Partial<NodeData>);
+    const extra = supportsEligibility ? { eligibilityRules: nodeEligibilityRules } : {};
+    updateNode(node.id, { ...(data as Partial<NodeData>), ...extra });
     onClose();
   };
 
@@ -687,27 +730,152 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                   )}
                 </div>
               )}
-              {node.data.type === "endScreen" && (
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              {/* TextInput fields */}
+              {node.data.type === "textInput" && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <FormField
+                      control={form.control}
+                      name="isLong"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-medium text-gray-700">Resposta longa</span>
+                            <p className="text-xs text-gray-400 mt-0.5">Exibe área de texto multi-linha</p>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="scale-90"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={form.control}
-                    name="showScore"
+                    name="placeholder"
                     render={({ field }) => (
-                      <FormItem className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">Exibir Pontuação</span>
-                          <p className="text-xs text-gray-400 mt-0.5">Mostra o score total ao respondente</p>
-                        </div>
+                      <FormItem>
+                        <label className="text-xs font-medium text-gray-700">Placeholder</label>
                         <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="scale-90"
+                          <Input
+                            placeholder="Ex: Digite sua resposta aqui..."
+                            className="h-9 text-sm"
+                            {...field}
                           />
                         </FormControl>
                       </FormItem>
                     )}
                   />
+
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <FormField
+                      control={form.control}
+                      name="required"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-medium text-gray-700">Obrigatório</span>
+                            <p className="text-xs text-gray-400 mt-0.5">Respondente deve preencher para continuar</p>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="scale-90"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Node-level eligibility rules — addon-gated, for question types only */}
+              {hasRespondentsAddon && supportsEligibility && (
+                <div className="pt-1 border-t border-gray-100">
+                  <EligibilityRuleBuilder
+                    workspaceUserId={session!.user.id}
+                    rules={nodeEligibilityRules}
+                    onChange={setNodeEligibilityRules}
+                    label="Visibilidade condicional"
+                    hint="Esta pergunta só será exibida para respondentes que atendam a TODAS as regras."
+                  />
+                </div>
+              )}
+
+              {node.data.type === "endScreen" && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <FormField
+                      control={form.control}
+                      name="showScore"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-medium text-gray-700">Exibir Pontuação</span>
+                            <p className="text-xs text-gray-400 mt-0.5">Mostra o score total ao respondente</p>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="scale-90"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                      <label className="text-xs font-medium text-gray-700">Redirect ao concluir</label>
+                    </div>
+                    <p className="text-xs text-gray-400">Redireciona o respondente para uma URL externa após finalizar.</p>
+                    <FormField
+                      control={form.control}
+                      name="redirectUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              placeholder="https://exemplo.com/obrigado"
+                              className="h-9 text-sm"
+                              {...field}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    {form.watch("redirectUrl") && (
+                      <FormField
+                        control={form.control}
+                        name="redirectDelay"
+                        render={({ field }) => (
+                          <FormItem>
+                            <label className="text-xs text-gray-500">Aguardar (segundos)</label>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={30}
+                                className="h-8 text-sm w-24"
+                                {...field}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
             </div>

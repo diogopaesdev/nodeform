@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSurvey, getSurveyResponses, deleteResponse } from "@/lib/services/surveys";
+import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 
 // GET - Buscar respostas de uma pesquisa
 export async function GET(
@@ -9,27 +10,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const auth = await resolveWorkspace(request);
+    if (!auth) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const { id: surveyId } = await params;
 
-    // Verificar se a pesquisa pertence ao usuário
     const survey = await getSurvey(surveyId);
-    if (!survey) {
-      return NextResponse.json(
-        { error: "Pesquisa não encontrada" },
-        { status: 404 }
-      );
-    }
+    if (!survey) return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
+    if (survey.userId !== auth.workspaceId) return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
 
-    if (survey.userId !== session.user.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
-    }
-
-    // Buscar respostas
     const responses = await getSurveyResponses(surveyId);
 
     return NextResponse.json({ responses });

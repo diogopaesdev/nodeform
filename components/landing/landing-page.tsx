@@ -11,6 +11,7 @@ import {
   Play, CircleDot, CheckSquare, Star, FlagTriangleRight,
   GripVertical, Settings, Save, ArrowLeft, Trash2,
   Sparkles, Brain, FileSearch, Languages, FileBarChart2, MessageSquare,
+  AlignLeft,
 } from "lucide-react";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/lib/i18n";
@@ -181,34 +182,26 @@ function NodeSingleChoice({ x, y }: { x: number; y: number }) {
   );
 }
 
-// Avaliação — replica RatingNode (usa ícones Star como o real)
-function NodeRating({ x, y }: { x: number; y: number }) {
+// Texto Livre — replica TextInputNode (usa AlignLeft, cor violet)
+function NodeTextInput({ x, y }: { x: number; y: number }) {
   const { t } = useI18n();
   return (
     <motion.div {...ni(0.28)}
       className="absolute bg-white rounded-xl shadow-sm border border-gray-200 w-[260px]"
       style={{ left: x, top: y }}
     >
-      <div className="flex items-center gap-2.5 px-3 py-3 border-b border-gray-100">
-        <div className="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-          <Star className="w-3.5 h-3.5 text-purple-600" />
+      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-100">
+        <div className="w-7 h-7 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <AlignLeft className="w-3.5 h-3.5 text-violet-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-medium text-purple-600 uppercase tracking-wide">{t.landing.mockNodes.ratingType}</div>
-          <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.ratingTitle}</div>
+          <div className="text-[10px] font-medium text-violet-600 uppercase tracking-wide">{t.landing.mockNodes.textInputType}</div>
+          <div className="font-semibold text-gray-900 text-sm truncate">{t.landing.mockNodes.textInputTitle}</div>
         </div>
       </div>
-      <div className="p-4 space-y-2">
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-center gap-0.5 py-1.5">
-            {[1, 2, 3, 4, 5].map(n => (
-              <Star key={n} className="w-5 h-5 text-amber-400 fill-amber-400" strokeWidth={1.5} />
-            ))}
-          </div>
-          <div className="flex justify-between text-[10px] text-gray-400">
-            <span>1</span>
-            <span>5</span>
-          </div>
+      <div className="p-3 space-y-2">
+        <div className="w-full h-12 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-400 px-2 py-1.5">
+          {t.landing.mockNodes.textInputPlaceholder}
         </div>
       </div>
     </motion.div>
@@ -297,7 +290,7 @@ function FlowCanvas() {
       <div className="absolute inset-0" style={{ zIndex: 3 }}>
         <NodePresentation  x={16}  y={108} />
         <NodeSingleChoice  x={320} y={88}  />
-        <NodeRating        x={624} y={240} />
+        <NodeTextInput     x={624} y={240} />
         <NodeEndScreen     x={624} y={36}  />
       </div>
 
@@ -395,6 +388,7 @@ export function LandingPage() {
     { id: "singleChoice",   title: t.landing.editorMock.nodeSingleChoice,   Icon: CircleDot,         color: "text-blue-600",   bg: "bg-blue-100"   },
     { id: "multipleChoice", title: t.landing.editorMock.nodeMultipleChoice,  Icon: CheckSquare,       color: "text-green-600",  bg: "bg-green-100"  },
     { id: "rating",         title: t.landing.editorMock.nodeRating,          Icon: Star,              color: "text-purple-600", bg: "bg-purple-100" },
+    { id: "textInput",      title: t.landing.editorMock.nodeTextInput,       Icon: AlignLeft,         color: "text-violet-600", bg: "bg-violet-100" },
     { id: "endScreen",      title: t.landing.editorMock.nodeEndScreen,       Icon: FlagTriangleRight, color: "text-rose-600",   bg: "bg-rose-100"   },
   ];
 
@@ -428,10 +422,11 @@ export function LandingPage() {
           {/* Nav links */}
           <nav className="hidden md:flex items-center gap-0.5 px-1">
             {[
-              { href: "#features", label: t.landing.nav.features },
-              { href: "#ai",       label: t.landing.nav.ai },
-              { href: "#how",      label: t.landing.nav.how },
-              { href: "#pricing",  label: t.landing.nav.pricing },
+              { href: "#features",   label: t.landing.nav.features },
+              { href: "#ai",         label: t.landing.nav.ai },
+              { href: "#how",        label: t.landing.nav.how },
+              { href: "#enterprise", label: t.landing.nav.enterprise },
+              { href: "#pricing",    label: t.landing.nav.pricing },
             ].map(({ href, label }) => (
               <Link
                 key={href}
@@ -807,6 +802,71 @@ export function LandingPage() {
                 </div>
               </FadeUp>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─ Enterprise ─────────────────────────────────────────────────────── */}
+      <section id="enterprise" className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <FadeUp className="text-center mb-16">
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.enterprise.sectionLabel}</p>
+            <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
+              {t.landing.enterprise.title}
+            </h2>
+            <p className="text-[16px] text-gray-500 mt-3 max-w-xl mx-auto leading-relaxed">
+              {t.landing.enterprise.subtitle}
+            </p>
+          </FadeUp>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Módulo Respondentes */}
+            <FadeUp delay={0.06}>
+              <div className="p-6 rounded-2xl border border-gray-200 bg-white h-full">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide">{t.landing.enterprise.addonBadge}</p>
+                    <h3 className="text-[15px] font-semibold text-gray-900">{t.landing.enterprise.respondents.name}</h3>
+                  </div>
+                </div>
+                <p className="text-[13px] text-gray-500 leading-relaxed mt-3 mb-5">{t.landing.enterprise.respondents.desc}</p>
+                <ul className="space-y-2.5">
+                  {t.landing.enterprise.respondents.features.map((feat, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-[13px] text-gray-700">
+                      <Check className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </FadeUp>
+
+            {/* Módulo Progresso */}
+            <FadeUp delay={0.12}>
+              <div className="p-6 rounded-2xl border border-gray-200 bg-white h-full">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Save className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide">{t.landing.enterprise.addonBadge}</p>
+                    <h3 className="text-[15px] font-semibold text-gray-900">{t.landing.enterprise.progress.name}</h3>
+                  </div>
+                </div>
+                <p className="text-[13px] text-gray-500 leading-relaxed mt-3 mb-5">{t.landing.enterprise.progress.desc}</p>
+                <ul className="space-y-2.5">
+                  {t.landing.enterprise.progress.features.map((feat, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-[13px] text-gray-700">
+                      <Check className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </FadeUp>
           </div>
         </div>
       </section>

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(./node_modules/.bin/next build *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'docs: atualiza análise enterprise para v2.0 com Sprint 1 e 2 concluídas *)",
+      "Bash(node -e \"require\\('xlsx'\\)\")"
+    ]
+  }
+}

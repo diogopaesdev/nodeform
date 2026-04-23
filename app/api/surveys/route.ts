@@ -2,22 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createSurvey, getUserSurveys, getDashboardStats } from "@/lib/services/surveys";
+import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 
 // GET /api/surveys - Listar pesquisas do usuário
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const auth = await resolveWorkspace(req);
+    if (!auth) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const includeStats = searchParams.get("stats") === "true";
 
-    const surveys = await getUserSurveys(session.user.id);
+    const surveys = await getUserSurveys(auth.workspaceId);
 
-    if (includeStats) {
-      const stats = await getDashboardStats(session.user.id);
+    if (includeStats && auth.source === "session") {
+      const stats = await getDashboardStats(auth.workspaceId);
       return NextResponse.json({ surveys, stats });
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleDot, CheckSquare, Star, Play, FlagTriangleRight, GripVertical } from "lucide-react";
+import { CircleDot, CheckSquare, Star, Play, FlagTriangleRight, GripVertical, AlignLeft } from "lucide-react";
 
 const nodeTypes = [
   {
@@ -30,6 +30,13 @@ const nodeTypes = [
     icon: Star,
     color: "text-purple-600",
     bg: "bg-purple-100",
+  },
+  {
+    id: "textInput",
+    title: "Texto Livre",
+    icon: AlignLeft,
+    color: "text-violet-600",
+    bg: "bg-violet-100",
   },
   {
     id: "endScreen",
