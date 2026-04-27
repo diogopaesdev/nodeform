@@ -51,6 +51,8 @@ function SettingsContent() {
   const [selectedAddons, setSelectedAddons] = useState<string[]>(
     addonFromUrl && VALID_ADDONS.includes(addonFromUrl as typeof VALID_ADDONS[number])
       ? [addonFromUrl]
+      : requirePlan
+      ? ["respondents", "surveyProgress"]
       : []
   );
 
@@ -330,7 +332,7 @@ function SettingsContent() {
                     <p className="text-xs text-gray-400">
                       {trialDaysText}
                       {" · "}
-                      <button onClick={() => handleCheckout()} className="text-gray-600 underline underline-offset-2">
+                      <button onClick={() => handleCheckout(selectedAddons)} className="text-gray-600 underline underline-offset-2">
                         {t.settings.subscription.subscribeNow}
                       </button>
                     </p>
