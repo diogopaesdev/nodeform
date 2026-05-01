@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  ArrowLeft, Lock, Loader2, Search, ArrowRight,
+  Lock, Loader2, Search, ArrowRight,
   HeartPulse, Building2, BarChart2, TrendingUp, Activity,
   Calendar, Briefcase, Target, Building, LayoutTemplate,
-  Globe, Sparkles,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -166,35 +166,14 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="min-h-full bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Dashboard
-          </Link>
-          <div className="w-px h-4 bg-gray-200" />
-          <div className="flex items-center gap-2">
-            <LayoutTemplate className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-semibold text-gray-900">Biblioteca de Templates</span>
-          </div>
-        </div>
+    <div className="p-6">
+      {/* Hero */}
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-gray-900">Biblioteca de Templates</h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Escolha um template, edite os textos e publique — sem partir do zero.
+        </p>
       </div>
-
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Hero */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-extrabold text-gray-950 tracking-tight mb-1">
-            Pesquisas prontas para usar
-          </h1>
-          <p className="text-sm text-gray-500">
-            Escolha um template, edite os textos e publique — sem partir do zero.
-          </p>
-        </div>
 
         {/* Pro gate banner */}
         {!isPro && (
@@ -313,7 +292,6 @@ export default function TemplatesPage() {
             Gerar com IA <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-      </div>
     </div>
   );
 }

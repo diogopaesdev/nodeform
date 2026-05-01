@@ -237,31 +237,21 @@ function NodeEndScreen({ x, y }: { x: number; y: number }) {
 // ─── Flow Canvas ──────────────────────────────────────────────────────────────
 
 function FlowCanvas() {
-  // Posições dos nós (left, top) — largura fixa 240px
-  // N1 Pres:   left=16,  top=108  → source x=256,  y=179   (108 + 143/2)
-  // N2 Choice: left=286, top=92   → target x=286,  y=175   (92  + 167/2)
-  //   header=49px, p-3(12)+opt(26)+gap(8) per row:
-  //   opt0 center: 49+12+13=74  → y=92+74=166
-  //   opt1 center: 49+12+26+8+13=108 → y=92+108=200
-  //   opt2 center: 49+12+26+8+26+8+13=142 → y=92+142=234
-  // N4 End:    left=560, top=40   → target x=560,  y=92    (40  + 105/2)
-  // N3 Rating: left=560, top=252  → target x=560,  y=314   (252 + 124/2)
-  // Largura dos nós: 260px
-  // N1 Pres:    left=16,  right=276
-  // N2 Choice:  left=320, right=580  (gap=44px)
-  // N3/N4:      left=624             (gap=44px)
+  // Layout: Presentation (left, centered) → SingleChoice (middle, top-shifted)
+  // opt1 → TextInput (top-right, "tell us more" branch)
+  // opt2+3 → EndScreen (bottom-right, quick-exit branch)
+  // Nodes are 260px wide; right column partially fades out (intentional).
   const h = {
-    n1src:  { x: 276, y: 179 },
-    n2tgt:  { x: 320, y: 185 },
-    n2o1:   { x: 580, y: 196 },
-    n2o2:   { x: 580, y: 228 },
-    n2o3:   { x: 580, y: 260 },
-    n3tgt:  { x: 624, y: 322 },
-    n4tgt:  { x: 624, y: 90  },
+    n1src:  { x: 276, y: 211 }, // Presentation right center
+    n2tgt:  { x: 316, y: 138 }, // SingleChoice left center
+    n2o1:   { x: 576, y: 132 }, // opt1 right handle
+    n2o2:   { x: 576, y: 166 }, // opt2 right handle
+    n2o3:   { x: 576, y: 200 }, // opt3 right handle
+    n3tgt:  { x: 620, y: 78  }, // TextInput left center
+    n4tgt:  { x: 620, y: 322 }, // EndScreen left center
   };
 
   return (
-    // Fundo idêntico ao React Flow (BackgroundVariant.Dots)
     <div
       className="relative w-full h-[420px] overflow-hidden"
       style={{
@@ -274,9 +264,9 @@ function FlowCanvas() {
       {/* Edges SVG */}
       <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 2 }}>
         <AnimatedEdge from={h.n1src} to={h.n2tgt} delay={0.5}  />
-        <AnimatedEdge from={h.n2o1}  to={h.n4tgt} delay={0.82} />
-        <AnimatedEdge from={h.n2o2}  to={h.n3tgt} delay={1.02} />
-        <AnimatedEdge from={h.n2o3}  to={h.n3tgt} delay={1.22} />
+        <AnimatedEdge from={h.n2o1}  to={h.n3tgt} delay={0.82} />
+        <AnimatedEdge from={h.n2o2}  to={h.n4tgt} delay={1.02} />
+        <AnimatedEdge from={h.n2o3}  to={h.n4tgt} delay={1.22} />
 
         {/* Handles */}
         <SvgHandle cx={h.n1src.x} cy={h.n1src.y} fill="#f97316" delay={0.45} />
@@ -290,13 +280,13 @@ function FlowCanvas() {
 
       {/* Nodes */}
       <div className="absolute inset-0" style={{ zIndex: 3 }}>
-        <NodePresentation  x={16}  y={108} />
-        <NodeSingleChoice  x={320} y={88}  />
-        <NodeTextInput     x={624} y={240} />
-        <NodeEndScreen     x={624} y={36}  />
+        <NodePresentation  x={16}  y={136} />
+        <NodeSingleChoice  x={316} y={52}  />
+        <NodeTextInput     x={620} y={20}  />
+        <NodeEndScreen     x={620} y={270} />
       </div>
 
-      {/* Fade lateral (para o canvas "desaparecer" na borda direita) */}
+      {/* Fade (right bleed + top/bottom edges) */}
       <div className="absolute inset-0 pointer-events-none z-10"
         style={{ boxShadow: "inset -60px 0 40px -20px white, inset 0 -30px 30px -15px white, inset 0 8px 20px -12px white" }} />
     </div>
