@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createSurvey, getUserSurveys, getDashboardStats } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
+import { SURVEY_TEMPLATES, cloneTemplate } from "@/lib/templates";
 
 // GET /api/surveys - Listar pesquisas do usuário
 export async function GET(req: NextRequest) {
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/surveys - Criar nova pesquisa
+// POST /api/surveys - Criar nova pesquisa (em branco ou a partir de template)
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -39,10 +40,28 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const templateId: string | undefined = body.templateId;
+
+    if (templateId) {
+      if (session.user.subscriptionStatus !== "active") {
+        return NextResponse.json(
+          { error: "Templates disponíveis apenas no plano Pro" },
+          { status: 403 }
+        );
+      }
+
+      const template = SURVEY_TEMPLATES.find((t) => t.id === templateId);
+      if (!template) {
+        return NextResponse.json({ error: "Template não encontrado" }, { status: 404 });
+      }
+
+      const { nodes, edges, title } = cloneTemplate(template);
+      const survey = await createSurvey(session.user.id, title, nodes, edges);
+      return NextResponse.json({ survey }, { status: 201 });
+    }
+
     const title = body.title || "Nova Pesquisa";
-
     const survey = await createSurvey(session.user.id, title);
-
     return NextResponse.json({ survey }, { status: 201 });
   } catch (error) {
     console.error("Error creating survey:", error);

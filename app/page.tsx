@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import { LandingPage } from "@/components/landing/landing-page";
 
 export const metadata: Metadata = {
-  title: "SurveyFlow — Crie Pesquisas Interativas com Editor Visual Node-Based",
+  title: "SurveyFlow — Formulários Inteligentes e Automação de Leads",
   description:
-    "Crie pesquisas e formulários com editor visual de fluxo. Fluxos condicionais, pontuação automática e análise de respostas em tempo real. Comece grátis.",
+    "Crie formulários inteligentes, qualifique leads e automatize ações com WhatsApp — sem código. Pesquisa de mercado, qualificação de leads e coleta de dados com fluxo condicional.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "SurveyFlow — Crie Pesquisas Interativas com Editor Visual Node-Based",
+    title: "SurveyFlow — Formulários Inteligentes e Automação de Leads",
     description:
-      "Crie pesquisas e formulários com editor visual de fluxo. Fluxos condicionais, pontuação automática e análise de respostas em tempo real.",
+      "Crie formulários inteligentes, qualifique leads e automatize ações com WhatsApp — sem código.",
     url: "/",
   },
 };

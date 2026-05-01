@@ -11,8 +11,10 @@ import {
   Play, CircleDot, CheckSquare, Star, FlagTriangleRight,
   GripVertical, Settings, Save, ArrowLeft, Trash2,
   Sparkles, Brain, FileSearch, Languages, FileBarChart2, MessageSquare,
-  AlignLeft,
+  AlignLeft, HeartPulse, Building2, BookOpen, MessageCircle, Quote, Activity, CalendarDays,
 } from "lucide-react";
+
+const WHATSAPP_URL = "https://wa.me/"; // add your number, e.g. "https://wa.me/5511999999999"
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/lib/i18n";
 
@@ -354,11 +356,13 @@ export function LandingPage() {
     { icon: Languages,     title: t.landing.aiFeatures[5].title, desc: t.landing.aiFeatures[5].desc, available: false },
   ];
 
-  const USE_CASES = [
-    { icon: Users,      title: t.landing.useCases.items[0].title, desc: t.landing.useCases.items[0].desc },
-    { icon: Zap,        title: t.landing.useCases.items[1].title, desc: t.landing.useCases.items[1].desc },
-    { icon: TrendingUp, title: t.landing.useCases.items[2].title, desc: t.landing.useCases.items[2].desc },
-    { icon: GitBranch,  title: t.landing.useCases.items[3].title, desc: t.landing.useCases.items[3].desc },
+  const NICHES = [
+    { icon: HeartPulse,   niche: t.landing.useCases.items[0].niche, title: t.landing.useCases.items[0].title, desc: t.landing.useCases.items[0].desc, href: "/clinicas-esteticas" },
+    { icon: Building2,    niche: t.landing.useCases.items[1].niche, title: t.landing.useCases.items[1].title, desc: t.landing.useCases.items[1].desc, href: "/imobiliarias" },
+    { icon: BarChart2,    niche: t.landing.useCases.items[2].niche, title: t.landing.useCases.items[2].title, desc: t.landing.useCases.items[2].desc, href: "/pesquisa-de-mercado" },
+    { icon: BookOpen,     niche: t.landing.useCases.items[3].niche, title: t.landing.useCases.items[3].title, desc: t.landing.useCases.items[3].desc, href: "/infoprodutores" },
+    { icon: Activity,     niche: t.landing.useCases.items[4].niche, title: t.landing.useCases.items[4].title, desc: t.landing.useCases.items[4].desc, href: "/healthcare" },
+    { icon: CalendarDays, niche: t.landing.useCases.items[5].niche, title: t.landing.useCases.items[5].title, desc: t.landing.useCases.items[5].desc, href: "/eventos" },
   ];
 
   const PRICING_HIGHLIGHTS = [
@@ -425,6 +429,7 @@ export function LandingPage() {
               { href: "#features",   label: t.landing.nav.features },
               { href: "#ai",         label: t.landing.nav.ai },
               { href: "#how",        label: t.landing.nav.how },
+              { href: "#segments",   label: t.landing.nav.segments },
               { href: "#enterprise", label: t.landing.nav.enterprise },
               { href: "#pricing",    label: t.landing.nav.pricing },
             ].map(({ href, label }) => (
@@ -466,7 +471,7 @@ export function LandingPage() {
 
       {/* ─ Hero ───────────────────────────────────────────────────────────── */}
       <section className="pt-[96px] pb-12 px-6">
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-center">
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
@@ -482,7 +487,7 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="text-[44px] sm:text-[64px] font-extrabold tracking-[-0.03em] leading-[1.06] text-gray-950 mb-6"
+            className="text-[44px] sm:text-[58px] font-extrabold tracking-[-0.03em] leading-[1.06] text-gray-950 mb-6"
           >
             {t.landing.hero.title1}{" "}
             <span className="relative inline-block">
@@ -584,7 +589,7 @@ export function LandingPage() {
             <div className="flex" style={{ height: 354 }}>
 
               {/* Sidebar — replica do EditorSidebar (w-56 bg-white border-r border-gray-200) */}
-              <div className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden sm:flex">
+              <div className="w-56 bg-white border-r border-gray-200 flex-col flex-shrink-0 hidden sm:flex">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <h3 className="font-semibold text-gray-900 text-sm">{t.landing.editorMock.sidebarTitle}</h3>
                   <p className="text-xs text-gray-400 mt-0.5">{t.landing.editorMock.sidebarDrag}</p>
@@ -688,8 +693,9 @@ export function LandingPage() {
       <section id="ai" className="py-24 px-6 bg-gray-950 overflow-hidden">
         <div className="max-w-5xl mx-auto">
 
-          <FadeUp className="mb-16">
-            <div className="flex items-center gap-2 mb-4">
+          {/* Header */}
+          <FadeUp className="mb-12 text-center">
+            <div className="flex items-center gap-2 mb-4 justify-center">
               <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
@@ -698,88 +704,93 @@ export function LandingPage() {
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-white mb-4">
               {t.landing.ai.title}
             </h2>
-            <p className="text-[16px] text-gray-400 max-w-xl leading-relaxed">
+            <p className="text-[16px] text-gray-400 max-w-xl mx-auto leading-relaxed">
               {t.landing.ai.credits} <strong className="text-white">{t.landing.ai.creditsHighlight}</strong> {t.landing.ai.creditsEnd}
             </p>
           </FadeUp>
 
-          {/* Prompt mockup */}
-          <FadeUp delay={0.08} className="mb-14">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 max-w-2xl">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-7 h-7 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Users className="w-3.5 h-3.5 text-white/60" />
-                </div>
-                <div className="flex-1 bg-white/8 rounded-xl px-4 py-3 text-[14px] text-white/80 leading-relaxed border border-white/10">
-                  {t.landing.aiMock.prompt}
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Sparkles className="w-3.5 h-3.5 text-gray-900" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <span className="text-[12px] font-medium text-white/40">{t.landing.aiMock.generated}</span>
-                    <span className="text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">{t.landing.aiMock.creditUsed}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {AI_MOCK_NODES.map((node, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: -8 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.3 + i * 0.08, duration: 0.4 }}
-                        className="flex items-center gap-2.5 bg-white/8 border border-white/10 rounded-lg px-3 py-2"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full bg-white/30 flex-shrink-0" />
-                        <span className="text-[12px] text-white/70">{node}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </FadeUp>
+          {/* Two-column layout: mockup + features grid */}
+          <div className="grid lg:grid-cols-2 gap-6 items-start">
 
-          {/* AI Features grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {AI_FEATURES.map((feat, i) => (
-              <FadeUp key={feat.title} delay={i * 0.06}>
-                <div className={`relative p-5 rounded-2xl border transition-colors h-full ${
-                  feat.available
-                    ? "bg-white/8 border-white/20 hover:border-white/30"
-                    : "bg-white/3 border-white/8"
-                }`}>
-                  {feat.available ? (
-                    <span className="absolute top-4 right-4 text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
-                      {t.landing.featureBadgeAvailable}
-                    </span>
-                  ) : (
-                    <span className="absolute top-4 right-4 text-[10px] font-semibold bg-white/10 text-white/40 px-2 py-0.5 rounded-full">
-                      {t.landing.featureBadgeSoon}
-                    </span>
-                  )}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${feat.available ? "bg-white/15" : "bg-white/6"}`}>
-                    <feat.icon className={`w-4.5 h-4.5 ${feat.available ? "text-white" : "text-white/35"}`} />
+            {/* Prompt mockup */}
+            <FadeUp delay={0.08}>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-7 h-7 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Users className="w-3.5 h-3.5 text-white/60" />
                   </div>
-                  <h3 className={`text-[14px] font-semibold mb-1.5 ${feat.available ? "text-white" : "text-white/40"}`}>
-                    {feat.title}
-                  </h3>
-                  <p className={`text-[13px] leading-relaxed ${feat.available ? "text-white/60" : "text-white/30"}`}>
-                    {feat.desc}
-                  </p>
+                  <div className="flex-1 bg-white/8 rounded-xl px-4 py-3 text-[14px] text-white/80 leading-relaxed border border-white/10">
+                    {t.landing.aiMock.prompt}
+                  </div>
                 </div>
-              </FadeUp>
-            ))}
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Sparkles className="w-3.5 h-3.5 text-gray-900" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-[12px] font-medium text-white/40">{t.landing.aiMock.generated}</span>
+                      <span className="text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">{t.landing.aiMock.creditUsed}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {AI_MOCK_NODES.map((node, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -8 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.3 + i * 0.08, duration: 0.4 }}
+                          className="flex items-center gap-2.5 bg-white/8 border border-white/10 rounded-lg px-3 py-2"
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-white/30 flex-shrink-0" />
+                          <span className="text-[12px] text-white/70">{node}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* AI Features grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {AI_FEATURES.map((feat, i) => (
+                <FadeUp key={feat.title} delay={0.08 + i * 0.06}>
+                  <div className={`relative p-4 rounded-2xl border transition-colors h-full ${
+                    feat.available
+                      ? "bg-white/8 border-white/20 hover:border-white/30"
+                      : "bg-white/3 border-white/8"
+                  }`}>
+                    {feat.available ? (
+                      <span className="absolute top-3 right-3 text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
+                        {t.landing.featureBadgeAvailable}
+                      </span>
+                    ) : (
+                      <span className="absolute top-3 right-3 text-[10px] font-semibold bg-white/10 text-white/40 px-2 py-0.5 rounded-full">
+                        {t.landing.featureBadgeSoon}
+                      </span>
+                    )}
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${feat.available ? "bg-white/15" : "bg-white/6"}`}>
+                      <feat.icon className={`w-4 h-4 ${feat.available ? "text-white" : "text-white/35"}`} />
+                    </div>
+                    <h3 className={`text-[13px] font-semibold mb-1 ${feat.available ? "text-white" : "text-white/40"}`}>
+                      {feat.title}
+                    </h3>
+                    <p className={`text-[12px] leading-relaxed ${feat.available ? "text-white/60" : "text-white/30"}`}>
+                      {feat.desc}
+                    </p>
+                  </div>
+                </FadeUp>
+              ))}
+            </div>
+
           </div>
 
         </div>
       </section>
 
-      {/* ─ Use Cases ──────────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-gray-50">
+      {/* ─ Niche Segments ─────────────────────────────────────────────────── */}
+      <section id="segments" className="py-24 px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <FadeUp className="text-center mb-16">
             <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.useCases.sectionLabel}</p>
@@ -789,20 +800,57 @@ export function LandingPage() {
           </FadeUp>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            {USE_CASES.map((item, i) => (
-              <FadeUp key={item.title} delay={i * 0.08}>
-                <div className="flex gap-4 p-6 bg-white rounded-2xl border border-gray-200">
-                  <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-5 h-5 text-gray-600" />
+            {NICHES.map((item, i) => (
+              <FadeUp key={item.niche} delay={i * 0.08}>
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="flex flex-col gap-4 p-6 bg-white rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors h-full"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <span className="text-[11px] font-semibold text-orange-500 uppercase tracking-wider">{item.niche}</span>
                   </div>
-                  <div>
-                    <h3 className="text-[15px] font-semibold text-gray-900 mb-1">{item.title}</h3>
+                  <div className="flex-1">
+                    <h3 className="text-[16px] font-semibold text-gray-900 mb-2">{item.title}</h3>
                     <p className="text-[13px] text-gray-500 leading-relaxed">{item.desc}</p>
                   </div>
-                </div>
+                  <Link
+                    href={item.href}
+                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-700 hover:text-orange-600 transition-colors"
+                  >
+                    {t.landing.useCases.cta} <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </motion.div>
               </FadeUp>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─ Social Proof ───────────────────────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <FadeUp>
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-10">{t.landing.socialProof.sectionLabel}</p>
+            <div className="flex justify-center mb-6">
+              <Quote className="w-8 h-8 text-gray-200" />
+            </div>
+            <blockquote className="text-[18px] sm:text-[22px] font-medium text-gray-800 leading-relaxed mb-10">
+              {t.landing.socialProof.quote}
+            </blockquote>
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-[14px] font-bold text-gray-600">M</span>
+              </div>
+              <div className="text-left">
+                <p className="text-[14px] font-semibold text-gray-900">{t.landing.socialProof.company}</p>
+                <p className="text-[12px] text-gray-500">{t.landing.socialProof.companyDesc}</p>
+              </div>
+            </div>
+          </FadeUp>
         </div>
       </section>
 
@@ -998,12 +1046,29 @@ export function LandingPage() {
             <p className="text-[16px] text-gray-400 mb-10 max-w-sm mx-auto">
               {t.landing.ctaSection.subtitle}
             </p>
-            <button
-              onClick={() => router.push("/login")}
-              className="inline-flex items-center gap-2 h-12 px-8 bg-white hover:bg-gray-100 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors"
-            >
-              {t.landing.ctaSection.button}
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={() => router.push("/login")}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 bg-white hover:bg-gray-100 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors"
+              >
+                {t.landing.ctaSection.button}
+              </button>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 bg-white/10 hover:bg-white/20 text-white text-[15px] font-medium rounded-xl transition-colors border border-white/20"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {t.landing.ctaSection.whatsapp}
+              </a>
+              <Link
+                href="#segments"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 bg-transparent hover:bg-white/5 text-white/60 hover:text-white text-[15px] font-medium rounded-xl transition-colors"
+              >
+                {t.landing.ctaSection.solutions} <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </FadeUp>
       </section>

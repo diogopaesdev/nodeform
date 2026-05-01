@@ -23,7 +23,15 @@ import {
   Zap,
   ShoppingCart,
   AlertTriangle,
+  Lock,
+  HeartPulse,
+  Building2,
+  Activity,
+  Calendar,
+  LayoutTemplate,
 } from "lucide-react";
+import { SURVEY_TEMPLATES } from "@/lib/templates";
+import type { SurveyTemplate } from "@/lib/templates";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 import {
   BarChart,
@@ -100,6 +108,17 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: { name: s
   );
 }
 
+// ─── Template segment icons ───────────────────────────────────────────────────
+
+const TEMPLATE_ICONS: Record<string, React.ElementType> = {
+  "clinicas-esteticas": HeartPulse,
+  "imobiliarias": Building2,
+  "pesquisa-de-mercado": BarChart2,
+  "infoprodutores": TrendingUp,
+  "healthcare": Activity,
+  "eventos": Calendar,
+};
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -111,6 +130,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createTab, setCreateTab] = useState<"ai" | "templates">("ai");
   const [aiPrompt, setAiPrompt] = useState("");
   const [generatingAi, setGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -193,6 +213,30 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error("Error creating survey:", error);
+      setCreating(false);
+    }
+  };
+
+  const isPro = session?.user?.subscriptionStatus === "active";
+
+  const handleCreateFromTemplate = async (template: SurveyTemplate) => {
+    if (!isPro) {
+      router.push("/dashboard/settings");
+      return;
+    }
+    setCreating(true);
+    try {
+      const res = await fetch("/api/surveys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: template.id }),
+      });
+      const data = await res.json();
+      if (data.survey) {
+        router.push(`/editor/${data.survey.id}`);
+      }
+    } catch (error) {
+      console.error("Error creating survey from template:", error);
       setCreating(false);
     }
   };
@@ -490,113 +534,234 @@ window.addEventListener("message", function(e) {
       </Dialog>
 
       {/* ── Create Modal ────────────────────────────────────────────────────── */}
-      <Dialog open={createModalOpen} onOpenChange={(open) => { setCreateModalOpen(open); if (!open) { setAiPrompt(""); setAiError(""); } }}>
+      <Dialog open={createModalOpen} onOpenChange={(open) => { setCreateModalOpen(open); if (!open) { setAiPrompt(""); setAiError(""); setCreateTab("ai"); } }}>
         <DialogContent className="max-w-lg p-0 gap-0">
           <DialogTitle className="sr-only">{t.dashboard.createModal.title}</DialogTitle>
           <DialogDescription className="sr-only">{t.dashboard.createModal.subtitle}</DialogDescription>
+
+          {/* Header */}
           <div className="px-6 py-5 border-b border-gray-100">
             <h2 className="text-base font-semibold text-gray-900">{t.dashboard.createModal.title}</h2>
             <p className="text-xs text-gray-500 mt-0.5">{t.dashboard.createModal.subtitle}</p>
           </div>
 
-          <div className="p-6 space-y-4">
-            {/* AI option */}
-            <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{t.dashboard.createModal.aiTitle}</p>
-                    <p className="text-xs text-gray-500">{t.dashboard.createModal.aiSubtitle}</p>
-                  </div>
-                </div>
-                {credits !== null && (
-                  <button
-                    onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 ${
-                      credits === 0
-                        ? "bg-red-100 text-red-700"
-                        : credits <= 3
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    <Zap className="w-3 h-3" />
-                    {credits !== 1
-                      ? t.dashboard.credits.badgePlural.replace("{n}", String(credits))
-                      : t.dashboard.credits.badge.replace("{n}", String(credits))}
-                  </button>
-                )}
-              </div>
-
-              <textarea
-                value={aiPrompt}
-                onChange={(e) => { setAiPrompt(e.target.value); setAiError(""); }}
-                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerateWithAi(); }}
-                placeholder={t.dashboard.createModal.aiPlaceholder}
-                rows={4}
-                className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400 resize-none"
-              />
-
-              {aiError && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{aiError}</p>
-              )}
-
-              {credits === 0 && (
-                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                  {t.dashboard.createModal.aiNoCredits}{" "}
-                  <button onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }} className="underline font-medium">
-                    {t.dashboard.createModal.aiBuyCredits}
-                  </button>
-                </div>
-              )}
-
-              <button
-                onClick={handleGenerateWithAi}
-                disabled={!aiPrompt.trim() || generatingAi || credits === 0}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
-              >
-                {generatingAi ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" />{t.dashboard.createModal.aiGenerating}</>
-                ) : (
-                  <><Sparkles className="w-4 h-4" />{t.dashboard.createModal.aiGenerate}</>
-                )}
-              </button>
-              {!generatingAi && aiPrompt.trim() && (
-                <p className="text-[11px] text-gray-400 text-center">{t.dashboard.createModal.aiHint}</p>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs text-gray-400">{t.dashboard.createModal.or}</span>
-              <div className="flex-1 h-px bg-gray-100" />
-            </div>
-
-            {/* Manual option */}
+          {/* Tabs */}
+          <div className="flex gap-1 px-6 pt-4">
             <button
-              onClick={() => { setCreateModalOpen(false); handleCreateSurvey(); }}
-              disabled={creating || generatingAi}
-              className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
+              onClick={() => setCreateTab("ai")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                createTab === "ai"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <PenSquare className="w-4 h-4 text-gray-500" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">{t.dashboard.createModal.manualTitle}</p>
-                  <p className="text-xs text-gray-500">{t.dashboard.createModal.manualSubtitle}</p>
-                </div>
-              </div>
-              {creating
-                ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                : <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
-              }
+              <Sparkles className="w-3 h-3" />
+              Gerar com IA
             </button>
+            <button
+              onClick={() => setCreateTab("templates")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                createTab === "templates"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              <LayoutTemplate className="w-3 h-3" />
+              Templates
+              {!isPro && <Lock className="w-2.5 h-2.5 opacity-60" />}
+            </button>
+          </div>
+
+          <div className="p-6 space-y-4">
+
+            {/* ── AI tab ── */}
+            {createTab === "ai" && (
+              <>
+                <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{t.dashboard.createModal.aiTitle}</p>
+                        <p className="text-xs text-gray-500">{t.dashboard.createModal.aiSubtitle}</p>
+                      </div>
+                    </div>
+                    {credits !== null && (
+                      <button
+                        onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 ${
+                          credits === 0
+                            ? "bg-red-100 text-red-700"
+                            : credits <= 3
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        <Zap className="w-3 h-3" />
+                        {credits !== 1
+                          ? t.dashboard.credits.badgePlural.replace("{n}", String(credits))
+                          : t.dashboard.credits.badge.replace("{n}", String(credits))}
+                      </button>
+                    )}
+                  </div>
+
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(e) => { setAiPrompt(e.target.value); setAiError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerateWithAi(); }}
+                    placeholder={t.dashboard.createModal.aiPlaceholder}
+                    rows={4}
+                    className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400 resize-none"
+                  />
+
+                  {aiError && (
+                    <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{aiError}</p>
+                  )}
+
+                  {credits === 0 && (
+                    <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      {t.dashboard.createModal.aiNoCredits}{" "}
+                      <button onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }} className="underline font-medium">
+                        {t.dashboard.createModal.aiBuyCredits}
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleGenerateWithAi}
+                    disabled={!aiPrompt.trim() || generatingAi || credits === 0}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+                  >
+                    {generatingAi ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />{t.dashboard.createModal.aiGenerating}</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" />{t.dashboard.createModal.aiGenerate}</>
+                    )}
+                  </button>
+                  {!generatingAi && aiPrompt.trim() && (
+                    <p className="text-[11px] text-gray-400 text-center">{t.dashboard.createModal.aiHint}</p>
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-100" />
+                  <span className="text-xs text-gray-400">{t.dashboard.createModal.or}</span>
+                  <div className="flex-1 h-px bg-gray-100" />
+                </div>
+
+                {/* Manual */}
+                <button
+                  onClick={() => { setCreateModalOpen(false); handleCreateSurvey(); }}
+                  disabled={creating || generatingAi}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <PenSquare className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-900">{t.dashboard.createModal.manualTitle}</p>
+                      <p className="text-xs text-gray-500">{t.dashboard.createModal.manualSubtitle}</p>
+                    </div>
+                  </div>
+                  {creating
+                    ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                    : <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                  }
+                </button>
+              </>
+            )}
+
+            {/* ── Templates tab ── */}
+            {createTab === "templates" && (
+              <>
+                {!isPro && (
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                    <Lock className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
+                    <span>
+                      Templates fazem parte do <strong>Plano Pro</strong>.{" "}
+                      <button
+                        onClick={() => { setCreateModalOpen(false); router.push("/dashboard/settings"); }}
+                        className="underline font-medium"
+                      >
+                        Assinar agora
+                      </button>
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {SURVEY_TEMPLATES.filter((t) => t.complexity === "basic").map((tpl) => {
+                    const Icon = TEMPLATE_ICONS[tpl.segment] ?? LayoutTemplate;
+                    const locked = !isPro;
+                    return (
+                      <button
+                        key={tpl.id}
+                        onClick={() => handleCreateFromTemplate(tpl)}
+                        disabled={creating}
+                        className={`relative text-left p-3.5 rounded-xl border transition-all ${
+                          locked
+                            ? "border-gray-200 bg-gray-50 opacity-70 cursor-pointer"
+                            : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                        }`}
+                      >
+                        {locked && (
+                          <div className="absolute top-2.5 right-2.5">
+                            <Lock className="w-3 h-3 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center mb-2.5">
+                          <Icon className="w-3.5 h-3.5 text-gray-600" />
+                        </div>
+                        <p className="text-xs font-semibold text-gray-900 leading-snug mb-1">{tpl.title}</p>
+                        <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">{tpl.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Ver todos */}
+                <button
+                  onClick={() => { setCreateModalOpen(false); router.push("/dashboard/templates"); }}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-gray-500 hover:text-gray-900 transition-colors"
+                >
+                  <LayoutTemplate className="w-3 h-3" />
+                  Ver todos os templates ({SURVEY_TEMPLATES.length})
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-100" />
+                  <span className="text-xs text-gray-400">{t.dashboard.createModal.or}</span>
+                  <div className="flex-1 h-px bg-gray-100" />
+                </div>
+
+                <button
+                  onClick={() => { setCreateModalOpen(false); handleCreateSurvey(); }}
+                  disabled={creating}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <PenSquare className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-900">{t.dashboard.createModal.manualTitle}</p>
+                      <p className="text-xs text-gray-500">{t.dashboard.createModal.manualSubtitle}</p>
+                    </div>
+                  </div>
+                  {creating
+                    ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                    : <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                  }
+                </button>
+              </>
+            )}
+
           </div>
         </DialogContent>
       </Dialog>
@@ -655,6 +820,103 @@ window.addEventListener("message", function(e) {
           </div>
         ))}
       </div>
+
+      {/* ── Templates Block ─────────────────────────────────────────────────── */}
+      {(() => {
+        const featured = SURVEY_TEMPLATES.filter((t) =>
+          ["nps-condicional", "eventos-multilingue", "marketing-quiz-lead-scoring"].includes(t.id)
+        );
+        const BLOCK_ICONS: Record<string, React.ElementType> = {
+          "pesquisa-de-mercado": BarChart2,
+          "eventos": ArrowRight,
+          "marketing": Zap,
+        };
+        return (
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <LayoutTemplate className="w-3.5 h-3.5 text-gray-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Templates prontos para usar</p>
+                  <p className="text-xs text-gray-400">Pesquisas pré-montadas — edite e publique em minutos</p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push("/dashboard/templates")}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition-colors"
+              >
+                Ver todos ({SURVEY_TEMPLATES.length})
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Cards */}
+            <div className="grid sm:grid-cols-3 divide-x divide-gray-100">
+              {featured.map((tpl) => {
+                const Icon = BLOCK_ICONS[tpl.segment] ?? LayoutTemplate;
+                const locked = !isPro;
+                const complexityColors = {
+                  basic:        "bg-gray-100 text-gray-500",
+                  intermediate: "bg-blue-50 text-blue-600",
+                  advanced:     "bg-purple-50 text-purple-600",
+                };
+                const complexityLabel = { basic: "Básico", intermediate: "Intermediário", advanced: "Avançado" };
+                return (
+                  <div key={tpl.id} className="p-4 flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-gray-500" />
+                      </div>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${complexityColors[tpl.complexity]}`}>
+                        {complexityLabel[tpl.complexity]}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900 leading-snug mb-1">{tpl.title}</p>
+                      <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{tpl.description}</p>
+                    </div>
+                    {locked ? (
+                      <button
+                        onClick={() => router.push("/dashboard/settings")}
+                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <Lock className="w-3 h-3" />
+                        Disponível no Plano Pro
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleCreateFromTemplate(tpl)}
+                        disabled={creating}
+                        className="flex items-center gap-1 text-xs font-medium text-gray-900 hover:text-gray-600 transition-colors"
+                      >
+                        {creating ? <Loader2 className="w-3 h-3 animate-spin" /> : <>Usar template <ArrowRight className="w-3 h-3" /></>}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer CTA for trial */}
+            {!isPro && (
+              <div className="flex items-center justify-between px-5 py-3 bg-amber-50 border-t border-amber-100">
+                <p className="text-xs text-amber-700">
+                  Templates disponíveis no <strong>Plano Pro</strong> — veja todos os {SURVEY_TEMPLATES.length} templates.
+                </p>
+                <button
+                  onClick={() => router.push("/dashboard/settings")}
+                  className="flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-900 transition-colors"
+                >
+                  Assinar <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Charts Row ──────────────────────────────────────────────────────── */}
       {!loading && surveys.length > 0 && (

@@ -4,7 +4,9 @@ import { Survey, DashboardStats, SurveyNode, SurveyEdge, SurveyResponse, NodeAns
 // Criar nova pesquisa
 export async function createSurvey(
   userId: string,
-  title: string = "Nova Pesquisa"
+  title: string = "Nova Pesquisa",
+  nodes: SurveyNode[] = [],
+  edges: SurveyEdge[] = []
 ): Promise<Survey> {
   const { db } = getFirebaseAdmin();
   const surveyRef = db.collection("surveys").doc();
@@ -15,8 +17,8 @@ export async function createSurvey(
     userId,
     title,
     description: "",
-    nodes: [],
-    edges: [],
+    nodes,
+    edges,
     createdAt: now,
     updatedAt: now,
     enableScoring: false,

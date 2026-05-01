@@ -14,6 +14,8 @@ import {
   LogOut,
   ChevronDown,
   Sparkles,
+  LayoutTemplate,
+  Lock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -33,10 +35,11 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
   const isTrialing = subscriptionStatus === "trialing";
 
   const navItems = [
-    { label: t.sidebar.dashboard, href: "/dashboard",            icon: LayoutDashboard },
-    { label: t.sidebar.surveys,   href: "/dashboard/surveys",    icon: FileText },
-    { label: t.sidebar.appearance,href: "/dashboard/appearance", icon: Paintbrush },
-    { label: t.sidebar.themes,    href: "/dashboard/themes",     icon: Palette },
+    { label: t.sidebar.dashboard,  href: "/dashboard",             icon: LayoutDashboard, pro: false },
+    { label: t.sidebar.surveys,    href: "/dashboard/surveys",     icon: FileText,        pro: false },
+    { label: t.sidebar.templates,  href: "/dashboard/templates",   icon: LayoutTemplate,  pro: true  },
+    { label: t.sidebar.appearance, href: "/dashboard/appearance",  icon: Paintbrush,      pro: false },
+    { label: t.sidebar.themes,     href: "/dashboard/themes",      icon: Palette,         pro: false },
   ];
 
   const getInitials = (name: string) =>
@@ -66,7 +69,8 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const showLock = item.pro && !isPro;
           return (
             <Link
               key={item.href}
@@ -77,8 +81,16 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
                   : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <item.icon className="w-4 h-4" />
-              <span>{item.label}</span>
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{item.label}</span>
+              {showLock && (
+                <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
+              )}
+              {item.pro && isPro && (
+                <span className="text-[9px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded-full leading-none flex-shrink-0">
+                  PRO
+                </span>
+              )}
             </Link>
           );
         })}
