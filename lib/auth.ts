@@ -90,19 +90,25 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, trigger }) {
-      // No primeiro login ou ao forçar atualização, lê onboardingCompleted do Firestore
-      if (user || trigger === "update") {
+      // Refresh on first login, explicit update, or when planId is missing (stale token)
+      if (user || trigger === "update" || token.planId == null) {
         try {
           const { db } = getFirebaseAdmin();
           const userId = token.sub!;
           const userDoc = await db.collection("users").doc(userId).get();
           if (userDoc.exists) {
             const data = userDoc.data()!;
+            const subscriptionStatus = data.subscriptionStatus ?? null;
+            const activeStates = ["active", "trialing", "past_due"];
+            const effectivePlanId =
+              data.planId ??
+              (activeStates.includes(subscriptionStatus) ? "pro" : null);
+
             token.onboardingCompleted = data.onboardingCompleted ?? false;
             token.companyName = data.companyName ?? null;
             token.trialEnd = data.trialEnd ?? null;
-            token.subscriptionStatus = data.subscriptionStatus ?? null;
-            token.planId = data.planId ?? null;
+            token.subscriptionStatus = subscriptionStatus;
+            token.planId = effectivePlanId;
             token.addons = data.addons ?? {};
           }
         } catch {
