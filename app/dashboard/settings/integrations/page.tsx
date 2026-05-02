@@ -607,15 +607,16 @@ function IntegrationsContent() {
     setTimeout(poll, 1500);
   }, [addonSuccess]);
 
-  const hasAddon = session?.user?.addons?.respondents?.active === true;
-  const hasProgressAddon = session?.user?.addons?.surveyProgress?.active === true;
-
+  const planId = session?.user?.planId;
   const subscriptionStatus = session?.user?.subscriptionStatus;
-  const trialEnd = session?.user?.trialEnd;
-  const hasSubscription =
-    subscriptionStatus === "active" ||
-    subscriptionStatus === "trialing" ||
-    (!!trialEnd && new Date(trialEnd).getTime() > Date.now());
+  const isEnterprise = planId === "enterprise";
+
+  // Addons can only be purchased by active Pro subscribers (not trial, not growth)
+  const canBuyAddons = planId === "pro" && subscriptionStatus === "active";
+
+  // Enterprise includes all addons without explicit activation
+  const hasAddon = isEnterprise || session?.user?.addons?.respondents?.active === true;
+  const hasProgressAddon = isEnterprise || session?.user?.addons?.surveyProgress?.active === true;
 
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(false);
@@ -758,7 +759,7 @@ function IntegrationsContent() {
           </div>
 
           {!hasAddon && (
-            hasSubscription ? (
+            canBuyAddons ? (
               <button
                 onClick={handleActivateAddon}
                 disabled={activating}
@@ -772,7 +773,7 @@ function IntegrationsContent() {
                 href="/dashboard/settings?require_plan=true&addon=respondents"
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Lock className="w-3.5 h-3.5" />
                 {t.integrations.respondentsAddon.requiresSubscription}
               </Link>
             )
@@ -814,7 +815,7 @@ function IntegrationsContent() {
           </div>
 
           {!hasProgressAddon && (
-            hasSubscription ? (
+            canBuyAddons ? (
               <button
                 onClick={handleActivateProgressAddon}
                 disabled={activatingProgress}
@@ -828,7 +829,7 @@ function IntegrationsContent() {
                 href="/dashboard/settings?require_plan=true&addon=surveyProgress"
                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Lock className="w-3.5 h-3.5" />
                 {t.integrations.progressAddon.requiresSubscription}
               </Link>
             )

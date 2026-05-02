@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSurvey, updateSurvey, deleteSurvey, saveSurveyContent } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
+import { getActiveUserPlan } from "@/lib/services/plan";
 
 // GET /api/surveys/[id] - Buscar pesquisa específica
 export async function GET(
@@ -49,6 +50,16 @@ export async function PATCH(
     }
 
     const body = await req.json();
+
+    // Read plan from Firestore — never trust JWT for security decisions
+    const { planId, subscriptionStatus } = await getActiveUserPlan(session.user.id);
+    const isSubscriptionActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
+    const effectivePlanId = isSubscriptionActive ? planId : "growth";
+
+    // Growth plan (or inactive subscription) cannot enable scoring
+    if (effectivePlanId === "growth" && body.enableScoring === true) {
+      body.enableScoring = false;
+    }
 
     // Se tem nodes/edges, salvar conteúdo
     if (body.nodes !== undefined || body.edges !== undefined) {

@@ -3,7 +3,7 @@
 import { motion, useInView } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight, Check, GitBranch, BarChart2,
@@ -11,7 +11,7 @@ import {
   Play, CircleDot, CheckSquare, Star, FlagTriangleRight,
   GripVertical, Settings, Save, ArrowLeft, Trash2,
   Sparkles, Brain, FileSearch, Languages, FileBarChart2, MessageSquare,
-  AlignLeft, HeartPulse, Building2, BookOpen, MessageCircle, Quote, Activity, CalendarDays,
+  AlignLeft, HeartPulse, Building2, BookOpen, MessageCircle, Quote, Activity, CalendarDays, Lock,
 } from "lucide-react";
 
 const WHATSAPP_URL = "https://wa.me/5541995311160?text=Ol%C3%A1%2C%20vim%20pelo%20site%20do%20SurveyFlow%20e%20gostaria%20de%20saber%20mais!";
@@ -386,6 +386,20 @@ export function LandingPage() {
     { id: "endScreen",      title: t.landing.editorMock.nodeEndScreen,       Icon: FlagTriangleRight, color: "text-rose-600",   bg: "bg-rose-100"   },
   ];
 
+  const [activePlan, setActivePlan] = useState<"growth" | "pro" | "enterprise">("growth");
+
+  const TEMPLATES = [
+    { icon: Star,        ...t.landing.templates.items[0] },
+    { icon: CalendarDays, ...t.landing.templates.items[1] },
+    { icon: BarChart2,    ...t.landing.templates.items[2] },
+    { icon: TrendingUp,   ...t.landing.templates.items[3] },
+    { icon: HeartPulse,   ...t.landing.templates.items[4] },
+    { icon: BookOpen,     ...t.landing.templates.items[5] },
+    { icon: Shield,       ...t.landing.templates.items[6] },
+    { icon: Building2,    ...t.landing.templates.items[7] },
+    { icon: Brain,        ...t.landing.templates.items[8] },
+  ];
+
   useEffect(() => {
     if (session) router.push("/dashboard");
   }, [session, router]);
@@ -417,6 +431,7 @@ export function LandingPage() {
           <nav className="hidden md:flex items-center gap-0.5 px-1">
             {[
               { href: "#features",   label: t.landing.nav.features },
+              { href: "#templates",  label: t.landing.nav.templates },
               { href: "#ai",         label: t.landing.nav.ai },
               { href: "#how",        label: t.landing.nav.how },
               { href: "#segments",   label: t.landing.nav.segments },
@@ -676,6 +691,100 @@ export function LandingPage() {
               </FadeUp>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─ Templates ─────────────────────────────────────────────────────── */}
+      <section id="templates" className="py-24 px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+
+          <FadeUp className="text-center mb-10">
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.templates.sectionLabel}</p>
+            <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
+              {t.landing.templates.title}
+            </h2>
+            <p className="text-[16px] text-gray-500 mt-3 max-w-xl mx-auto">
+              {t.landing.templates.subtitle}
+            </p>
+          </FadeUp>
+
+          {/* Plan tabs */}
+          <FadeUp delay={0.06}>
+            <div className="flex items-center justify-center gap-2 mb-10">
+              {(["growth", "pro", "enterprise"] as const).map((plan) => (
+                <button
+                  key={plan}
+                  onClick={() => setActivePlan(plan)}
+                  className={`h-9 px-5 rounded-full text-[13px] font-semibold transition-colors ${
+                    activePlan === plan
+                      ? "bg-gray-900 text-white shadow-sm"
+                      : "bg-white border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  }`}
+                >
+                  {plan === "growth" ? t.landing.templates.tabGrowth
+                    : plan === "pro" ? t.landing.templates.tabPro
+                    : t.landing.templates.tabEnterprise}
+                </button>
+              ))}
+            </div>
+          </FadeUp>
+
+          {/* Templates grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TEMPLATES.map((tpl, i) => {
+              const isLocked =
+                (activePlan === "growth" && tpl.tier !== "basic") ||
+                (activePlan === "pro" && tpl.tier === "advanced");
+              const tierColor =
+                tpl.tier === "basic"
+                  ? "bg-blue-50 text-blue-600"
+                  : tpl.tier === "intermediate"
+                  ? "bg-purple-50 text-purple-600"
+                  : "bg-amber-50 text-amber-600";
+              return (
+                <FadeUp key={i} delay={i * 0.05}>
+                  <div className={`relative p-5 rounded-2xl border h-full flex flex-col transition-colors ${
+                    isLocked
+                      ? "bg-gray-100/60 border-gray-200/60"
+                      : "bg-white border-gray-200 hover:border-gray-300"
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${tierColor}`}>
+                        {tpl.tier === "basic"
+                          ? t.landing.templates.tierBasic
+                          : tpl.tier === "intermediate"
+                          ? t.landing.templates.tierIntermediate
+                          : t.landing.templates.tierAdvanced}
+                      </span>
+                    </div>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 flex-shrink-0 ${
+                      isLocked ? "bg-gray-200" : "bg-orange-50"
+                    }`}>
+                      <tpl.icon className={`w-[18px] h-[18px] ${isLocked ? "text-gray-400" : "text-orange-500"}`} />
+                    </div>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${isLocked ? "text-gray-400" : "text-gray-400"}`}>
+                      {tpl.category}
+                    </p>
+                    <h3 className={`text-[14px] font-semibold mb-1.5 ${isLocked ? "text-gray-400" : "text-gray-900"}`}>
+                      {tpl.title}
+                    </h3>
+                    <p className={`text-[12px] leading-relaxed flex-1 ${isLocked ? "text-gray-300" : "text-gray-500"}`}>
+                      {tpl.desc}
+                    </p>
+                    {isLocked && (
+                      <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-400">
+                        <Lock className="w-3 h-3 flex-shrink-0" />
+                        {tpl.tier === "intermediate"
+                          ? t.landing.templates.unlockPro
+                          : t.landing.templates.unlockEnterprise}
+                      </div>
+                    )}
+                  </div>
+                </FadeUp>
+              );
+            })}
+          </div>
+
         </div>
       </section>
 

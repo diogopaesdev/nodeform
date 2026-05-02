@@ -11,6 +11,7 @@ declare module "next-auth" {
       onboardingCompleted?: boolean;
       trialEnd?: string;
       subscriptionStatus?: string;
+      planId?: string;
       addons?: WorkspaceAddons;
     };
   }
@@ -21,6 +22,7 @@ declare module "next-auth/jwt" {
     onboardingCompleted?: boolean;
     trialEnd?: string;
     subscriptionStatus?: string;
+    planId?: string;
     addons?: WorkspaceAddons;
   }
 }

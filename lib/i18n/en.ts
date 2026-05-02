@@ -283,6 +283,7 @@ export const en: Translations = {
   landing: {
     nav: {
       features: "Features",
+      templates: "Templates",
       ai: "AI",
       how: "How it works",
       segments: "Solutions",
@@ -458,6 +459,30 @@ export const en: Translations = {
       3: { title: "Automatic report", desc: "Generate executive reports ready for presentation, with charts and conclusions.", available: false },
       4: { title: "Smart rewriting", desc: "Improve tone, clarity or adapt questions for different audiences with one click.", available: false },
       5: { title: "Automatic translation", desc: "Translate the entire survey to other languages while keeping context and flow intact.", available: false },
+    },
+    templates: {
+      sectionLabel: "Template Library",
+      title: "Start with ready-made templates",
+      subtitle: "Pre-configured surveys for the most common use cases. Edit, customize and publish in minutes.",
+      tabGrowth: "Growth",
+      tabPro: "Pro",
+      tabEnterprise: "Enterprise",
+      tierBasic: "Basic",
+      tierIntermediate: "Intermediate",
+      tierAdvanced: "Advanced",
+      unlockPro: "Available on Pro",
+      unlockEnterprise: "Available on Enterprise",
+      items: {
+        0: { tier: "basic",        category: "Satisfaction",       title: "NPS + Customer Satisfaction",         desc: "Measure loyalty with Net Promoter Score, support rating and open-ended suggestions." },
+        1: { tier: "basic",        category: "Events",             title: "Event survey",                        desc: "Registration, pre-event expectations and post-participation feedback in a single flow." },
+        2: { tier: "basic",        category: "Product",            title: "Product feedback",                    desc: "Collect opinions on usability, features and overall satisfaction with your product or service." },
+        3: { tier: "intermediate", category: "Sales",              title: "Lead qualification",                  desc: "Segment leads by profile, budget and urgency — and route each one to the right offer." },
+        4: { tier: "intermediate", category: "Health",             title: "Adaptive clinical intake",            desc: "Screening with conditional logic that adapts questions to the patient's history and complaints." },
+        5: { tier: "intermediate", category: "SaaS",               title: "Personalized onboarding",             desc: "Guide new users based on their profile, goal and experience level with the platform." },
+        6: { tier: "advanced",     category: "Clinical Research",  title: "Clinical study eligibility",          desc: "Inclusion/exclusion criteria with automatic blocking of ineligible participants." },
+        7: { tier: "advanced",     category: "Enterprise",         title: "Registration with SSO & quota",       desc: "Slot control with automatic closing, SSO authentication and synchronized profile data." },
+        8: { tier: "advanced",     category: "Diagnostics",        title: "Multi-dimension score",               desc: "Calculate scores per dimension and display personalized results per range for each respondent profile." },
+      },
     },
     enterprise: {
       sectionLabel: "Enterprise Modules",

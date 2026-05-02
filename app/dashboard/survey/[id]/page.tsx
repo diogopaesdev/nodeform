@@ -993,12 +993,21 @@ export default function SurveyDetailPage({
               ? <><Check className="w-3.5 h-3.5 text-green-600" />{t.common.copied}</>
               : <><LinkIcon className="w-3.5 h-3.5" />{t.common.share}</>}
           </button>
-          <button
-            onClick={() => setEmbedModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
-          >
-            <Code className="w-3.5 h-3.5" />{t.common.embed}
-          </button>
+          {session?.user?.planId === "growth" ? (
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-300 bg-white border border-gray-100 rounded-md cursor-not-allowed"
+              title="Embed disponível a partir do Plano Pro"
+            >
+              <Code className="w-3.5 h-3.5" />{t.common.embed}
+            </div>
+          ) : (
+            <button
+              onClick={() => setEmbedModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
+            >
+              <Code className="w-3.5 h-3.5" />{t.common.embed}
+            </button>
+          )}
           <button
             onClick={() => router.push(`/editor/${survey.id}`)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"

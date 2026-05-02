@@ -62,6 +62,13 @@ export async function POST(req: NextRequest) {
         const userId = checkoutSession.metadata.userId;
         const addonId = checkoutSession.metadata.addonId as AddonId;
         if (userId && addonId) {
+          // Re-verify plan from Firestore at activation time (defense-in-depth)
+          const userDocSnap = await db.collection("users").doc(userId).get();
+          const planId: string = userDocSnap.data()?.planId ?? "pro";
+          if (planId !== "pro") {
+            console.error(`[security] addon checkout completed for user ${userId} but planId=${planId} — skipping activation`);
+            break;
+          }
           const subscriptionId = checkoutSession.subscription as string;
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const itemId = subscription.items.data[0]?.id;
@@ -74,18 +81,24 @@ export async function POST(req: NextRequest) {
       if (checkoutSession.metadata?.type === "main" && checkoutSession.payment_status === "paid") {
         const userId = checkoutSession.metadata.userId;
         const addonsToActivate = checkoutSession.metadata.addonsToActivate;
+        const incomingPlanId = checkoutSession.metadata.planId ?? "pro";
         if (userId && addonsToActivate) {
-          const subscriptionId = checkoutSession.subscription as string;
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const addonPrices: Record<string, string> = {
-            respondents: process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? "",
-            surveyProgress: process.env.STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID ?? "",
-          };
-          const addonIds = addonsToActivate.split(",") as AddonId[];
-          await Promise.all(addonIds.map((addonId) => {
-            const item = subscription.items.data.find((i) => i.price.id === addonPrices[addonId]);
-            return activateAddon(userId, addonId, item?.id);
-          }));
+          // Addons can only be bundled with a Pro checkout
+          if (incomingPlanId !== "pro") {
+            console.error(`[security] bundled addons in non-pro checkout for user ${userId} (plan=${incomingPlanId}) — skipping activation`);
+          } else {
+            const subscriptionId = checkoutSession.subscription as string;
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const addonPrices: Record<string, string> = {
+              respondents: process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? "",
+              surveyProgress: process.env.STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID ?? "",
+            };
+            const addonIds = addonsToActivate.split(",") as AddonId[];
+            await Promise.all(addonIds.map((addonId) => {
+              const item = subscription.items.data.find((i) => i.price.id === addonPrices[addonId]);
+              return activateAddon(userId, addonId, item?.id);
+            }));
+          }
         }
       }
 
@@ -171,6 +184,7 @@ export async function POST(req: NextRequest) {
       if (isMainSub) {
         await userDoc.ref.update({
           subscriptionStatus: "inactive",
+          planId: "growth",
           stripeSubscriptionId: null,
           subscriptionCurrentPeriodEnd: null,
           trialEnd: null,

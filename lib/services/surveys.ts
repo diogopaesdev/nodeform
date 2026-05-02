@@ -136,6 +136,33 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   };
 }
 
+// Contar respostas do workspace no mês corrente (para limite do plano Growth)
+export async function countWorkspaceResponsesThisMonth(workspaceId: string): Promise<number> {
+  const { db } = getFirebaseAdmin();
+
+  const surveysSnapshot = await db.collection("surveys").where("userId", "==", workspaceId).get();
+  if (surveysSnapshot.empty) return 0;
+
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const startIso = startOfMonth.toISOString();
+
+  let total = 0;
+  await Promise.all(
+    surveysSnapshot.docs.map(async (surveyDoc) => {
+      const snap = await db
+        .collection("surveys")
+        .doc(surveyDoc.id)
+        .collection("responses")
+        .where("createdAt", ">=", startIso)
+        .get();
+      total += snap.size;
+    })
+  );
+  return total;
+}
+
 // ==================== RESPOSTAS ====================
 
 // Salvar resposta da pesquisa

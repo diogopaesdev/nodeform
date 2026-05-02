@@ -36,6 +36,18 @@ export async function POST(request: NextRequest) {
   const userDoc = await db.collection("users").doc(session.user.id).get();
   const userData = userDoc.data();
 
+  // Addons are exclusively for active Pro subscribers.
+  // Read from Firestore — never rely on JWT which can be stale.
+  const currentPlanId: string = userData?.planId ?? "pro";
+  const currentStatus: string = userData?.subscriptionStatus ?? "";
+
+  if (currentPlanId !== "pro" || currentStatus !== "active") {
+    return NextResponse.json(
+      { error: "Módulos adicionais estão disponíveis apenas para assinantes ativos do Plano Pro" },
+      { status: 403 }
+    );
+  }
+
   let customerId = userData?.stripeCustomerId as string | undefined;
 
   if (!customerId) {

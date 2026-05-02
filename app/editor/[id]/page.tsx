@@ -18,6 +18,7 @@ import {
   Archive,
   Users,
   Hash,
+  Lock,
 } from "lucide-react";
 import { EligibilityRuleBuilder } from "@/components/editor/eligibility-rule-builder";
 import { useSession } from "next-auth/react";
@@ -500,21 +501,28 @@ export default function EditorPage({
         {/* Right Section */}
         <div className="flex items-center gap-2">
           {/* Toggle de Pontuação */}
-          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gray-50 mr-1">
-            <span className="text-xs text-gray-500">Pontuação</span>
-            <button
-              onClick={() => setEnableScoring(!enableScoring)}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                enableScoring ? "bg-green-500" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
-                  enableScoring ? "translate-x-5" : "translate-x-1"
+          {session?.user?.planId === "growth" ? (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 mr-1 opacity-50 cursor-not-allowed" title="Pontuação disponível a partir do Plano Pro">
+              <span className="text-xs text-gray-500">Pontuação</span>
+              <Lock className="w-3 h-3 text-gray-400" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gray-50 mr-1">
+              <span className="text-xs text-gray-500">Pontuação</span>
+              <button
+                onClick={() => setEnableScoring(!enableScoring)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  enableScoring ? "bg-green-500" : "bg-gray-300"
                 }`}
-              />
-            </button>
-          </div>
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                    enableScoring ? "translate-x-5" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          )}
 
           <div className="h-5 w-px bg-gray-200" />
 

@@ -281,6 +281,7 @@ export const pt = {
   landing: {
     nav: {
       features: "Recursos",
+      templates: "Templates",
       ai: "IA",
       how: "Como funciona",
       segments: "Soluções",
@@ -456,6 +457,30 @@ export const pt = {
       3: { title: "Relatório automático", desc: "Geração de relatórios executivos prontos para apresentação, com gráficos e conclusões.", available: false },
       4: { title: "Reescrita inteligente", desc: "Aprimore o tom, a clareza ou adapte perguntas para diferentes públicos com um clique.", available: false },
       5: { title: "Tradução automática", desc: "Traduza toda a pesquisa para outros idiomas mantendo o contexto e o fluxo intactos.", available: false },
+    },
+    templates: {
+      sectionLabel: "Biblioteca de Templates",
+      title: "Comece com templates prontos",
+      subtitle: "Pesquisas pré-configuradas para os casos de uso mais comuns. Edite, personalize e publique em minutos.",
+      tabGrowth: "Growth",
+      tabPro: "Pro",
+      tabEnterprise: "Enterprise",
+      tierBasic: "Básico",
+      tierIntermediate: "Intermediário",
+      tierAdvanced: "Avançado",
+      unlockPro: "Disponível no Pro",
+      unlockEnterprise: "Disponível no Enterprise",
+      items: {
+        0: { tier: "basic",        category: "Satisfação",        title: "NPS + Satisfação do cliente",         desc: "Mede lealdade com Net Promoter Score, avaliação do atendimento e campo aberto para sugestões." },
+        1: { tier: "basic",        category: "Evento",            title: "Pesquisa de evento",                  desc: "Inscrição, expectativas pré-evento e feedback pós-participação em um único fluxo." },
+        2: { tier: "basic",        category: "Produto",           title: "Feedback de produto",                 desc: "Colete opiniões sobre usabilidade, features e satisfação geral do seu produto ou serviço." },
+        3: { tier: "intermediate", category: "Vendas",            title: "Qualificação de lead",                desc: "Segmente leads por perfil, orçamento e urgência — e direcione cada um para a oferta certa." },
+        4: { tier: "intermediate", category: "Saúde",             title: "Anamnese clínica adaptativa",         desc: "Triagem com lógica condicional que adapta as perguntas ao histórico e queixas do paciente." },
+        5: { tier: "intermediate", category: "SaaS",              title: "Onboarding personalizado",            desc: "Guie novos usuários com base no perfil, objetivo e nível de experiência com a plataforma." },
+        6: { tier: "advanced",     category: "Pesquisa Clínica",  title: "Elegibilidade de estudo clínico",     desc: "Critérios de inclusão/exclusão com bloqueio automático de participantes inelegíveis." },
+        7: { tier: "advanced",     category: "Enterprise",        title: "Inscrição com SSO e cota",            desc: "Controle de vagas com encerramento automático, autenticação SSO e dados de perfil sincronizados." },
+        8: { tier: "advanced",     category: "Diagnóstico",       title: "Diagnóstico multi-score",             desc: "Calcule scores por dimensão e exiba resultados personalizados por faixa para cada perfil respondente." },
+      },
     },
     enterprise: {
       sectionLabel: "Módulos Enterprise",

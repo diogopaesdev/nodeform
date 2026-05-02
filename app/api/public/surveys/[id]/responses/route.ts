@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { saveResponse, getSurvey } from "@/lib/services/surveys";
+import { getFirebaseAdmin } from "@/lib/firebase-admin";
+import { PLANS } from "@/lib/plans";
 import {
   getRespondentSession,
   checkParticipation,
@@ -43,6 +45,40 @@ export async function POST(
 
     if (survey.status === "finished") {
       return NextResponse.json({ error: "Esta pesquisa foi encerrada" }, { status: 410 });
+    }
+
+    // Enforce monthly response limit for Growth plan — atomic via Firestore transaction
+    const { db, FieldValue } = getFirebaseAdmin();
+    const ownerRef = db.collection("users").doc(survey.userId);
+    const ownerDoc = await ownerRef.get();
+    const ownerData = ownerDoc.data();
+    const ownerPlanId = (ownerData?.planId ?? "pro") as keyof typeof PLANS;
+    const planLimits = PLANS[ownerPlanId]?.limits;
+    if (planLimits?.responsesPerMonth !== null && planLimits?.responsesPerMonth !== undefined) {
+      const limit = planLimits.responsesPerMonth;
+      const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+      try {
+        await db.runTransaction(async (tx) => {
+          const doc = await tx.get(ownerRef);
+          const data = doc.data() ?? {};
+          const isSameMonth = (data.monthlyResponseMonth ?? "") === currentMonth;
+          const count: number = isSameMonth ? (data.monthlyResponseCount ?? 0) : 0;
+          if (count >= limit) throw new Error("MONTHLY_LIMIT_EXCEEDED");
+          if (isSameMonth) {
+            tx.update(ownerRef, { monthlyResponseCount: FieldValue.increment(1) });
+          } else {
+            tx.update(ownerRef, { monthlyResponseCount: 1, monthlyResponseMonth: currentMonth });
+          }
+        });
+      } catch (err) {
+        if (err instanceof Error && err.message === "MONTHLY_LIMIT_EXCEEDED") {
+          return NextResponse.json(
+            { error: "Limite mensal de respostas atingido para este workspace" },
+            { status: 429 }
+          );
+        }
+        throw err;
+      }
     }
 
     const parsed = ResponseSchema.safeParse(await request.json());
