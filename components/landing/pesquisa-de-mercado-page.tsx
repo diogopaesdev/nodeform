@@ -11,7 +11,7 @@ import {
   ChevronRight, Database, Users, FileSearch,
 } from "lucide-react";
 
-const WHATSAPP_URL = "https://wa.me/"; // adicione o número: "https://wa.me/5511999999999"
+const WHATSAPP_URL = "https://wa.me/5541995311160?text=Ol%C3%A1%2C%20vim%20pela%20p%C3%A1gina%20de%20Pesquisa%20de%20Mercado%20do%20SurveyFlow%20e%20gostaria%20de%20saber%20mais!";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 

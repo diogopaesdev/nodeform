@@ -1,5 +1,7 @@
 export type AddonId = "respondents" | "surveyProgress";
 
+export type PlanId = "growth" | "pro" | "enterprise";
+
 // A single field definition in the workspace respondent profile schema
 export interface ProfileField {
   key: string;       // machine name used in SSO/sync payload: "specialty"

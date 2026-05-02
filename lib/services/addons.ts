@@ -9,7 +9,15 @@ export async function getWorkspaceAddons(workspaceId: string): Promise<Workspace
 }
 
 export async function hasAddon(workspaceId: string, addonId: AddonId): Promise<boolean> {
-  const addons = await getWorkspaceAddons(workspaceId);
+  const { db } = getFirebaseAdmin();
+  const doc = await db.collection("users").doc(workspaceId).get();
+  if (!doc.exists) return false;
+  const data = doc.data()!;
+
+  // Enterprise plan includes all addons automatically
+  if (data.planId === "enterprise") return true;
+
+  const addons = (data.addons as WorkspaceAddons) ?? {};
   return addons[addonId]?.active === true;
 }
 

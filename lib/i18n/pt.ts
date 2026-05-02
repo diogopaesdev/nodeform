@@ -340,11 +340,11 @@ export const pt = {
         2: { title: "Cancele quando quiser", desc: "Sem fidelidade, sem taxa de cancelamento. Você controla." },
       },
       faq: {
-        0: { q: "Preciso de cartão para o teste?", a: "Não. Os 7 dias de teste são completamente grátis, sem cadastrar nenhuma forma de pagamento." },
-        1: { q: "O que acontece com meus dados se cancelar?", a: "Você tem 30 dias após o cancelamento para exportar tudo. Depois, os dados são removidos permanentemente." },
-        2: { q: "Posso usar em iframe em outros sites?", a: "Sim. Todas as pesquisas podem ser embutidas como iframe com redimensionamento automático." },
-        3: { q: "Quantas pesquisas posso criar?", a: "Ilimitadas. Não existe limite de pesquisas nem de respostas coletadas." },
-        4: { q: "Posso exportar as respostas coletadas?", a: "Sim. Você pode exportar todas as respostas diretamente pelo dashboard em formato estruturado, a qualquer momento." },
+        0: { q: "Preciso de cartão para o teste?", a: "Não. Os 7 dias de teste nos planos Growth e Pro são completamente grátis, sem cadastrar nenhuma forma de pagamento." },
+        1: { q: "Qual a diferença entre o Growth e o Pro?", a: "O Growth é ideal para quem está começando: até 5 pesquisas e 500 respostas por mês com 3 créditos de IA. O Pro oferece pesquisas e respostas ilimitadas, mais créditos de IA e acesso completo a todas as funcionalidades avançadas." },
+        2: { q: "O que são os módulos adicionais?", a: "Os módulos Respondentes e Progresso são add-ons disponíveis no plano Pro. Eles desbloqueiam gestão de respondentes, SSO, API, e salvamento de progresso parcial de pesquisas." },
+        3: { q: "Posso fazer upgrade ou downgrade de plano?", a: "Sim. Você pode mudar de plano a qualquer momento pelo dashboard. A cobrança é ajustada proporcionalmente ao período restante." },
+        4: { q: "O que acontece com meus dados se cancelar?", a: "Você tem 30 dias após o cancelamento para exportar tudo. Depois, os dados são removidos permanentemente." },
       },
     },
     footer: {

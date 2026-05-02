@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles, KeyRound, ChevronRight, BookmarkCheck } from "lucide-react";
+import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles, KeyRound, ChevronRight, BookmarkCheck, MessageCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 
@@ -30,6 +30,7 @@ interface UserData {
   trialEnd?: string;
   subscriptionCurrentPeriodEnd?: string;
   stripeCustomerId?: string;
+  planId?: string;
 }
 
 export default function SettingsPage() {
@@ -320,52 +321,79 @@ function SettingsContent() {
                 <div className="h-8 w-36 bg-gray-100 rounded" />
               </div>
             ) : hasActiveSubscription ? (
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">
-                      {userData?.subscriptionStatus === "active" ? t.settings.subscription.proPlan : t.settings.subscription.freeTrial}
-                    </p>
-                    {getSubscriptionBadge(userData?.subscriptionStatus as SubscriptionStatus ?? (isTrialing ? "trialing" : "inactive"))}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900">
+                        {userData?.subscriptionStatus === "active"
+                          ? userData.planId === "growth"
+                            ? "Plano Growth"
+                            : userData.planId === "enterprise"
+                            ? "Plano Enterprise"
+                            : t.settings.subscription.proPlan
+                          : t.settings.subscription.freeTrial}
+                      </p>
+                      {getSubscriptionBadge(userData?.subscriptionStatus as SubscriptionStatus ?? (isTrialing ? "trialing" : "inactive"))}
+                    </div>
+                    {isTrialing && trialDaysLeft !== null && (
+                      <p className="text-xs text-gray-400">
+                        {trialDaysText}
+                        {" · "}
+                        <button onClick={() => handleCheckout(selectedAddons)} className="text-gray-600 underline underline-offset-2">
+                          {t.settings.subscription.subscribeNow}
+                        </button>
+                      </p>
+                    )}
+                    {userData?.subscriptionStatus === "active" && userData.subscriptionCurrentPeriodEnd && (
+                      <p className="text-xs text-gray-400">
+                        {t.settings.subscription.renewsAt.replace("{date}", formatDate(userData.subscriptionCurrentPeriodEnd) ?? "")}
+                      </p>
+                    )}
+                    {userData?.subscriptionStatus === "past_due" && (
+                      <p className="text-xs text-amber-600">
+                        {t.settings.subscription.pastDueWarning}
+                      </p>
+                    )}
                   </div>
-                  {isTrialing && trialDaysLeft !== null && (
-                    <p className="text-xs text-gray-400">
-                      {trialDaysText}
-                      {" · "}
-                      <button onClick={() => handleCheckout(selectedAddons)} className="text-gray-600 underline underline-offset-2">
-                        {t.settings.subscription.subscribeNow}
-                      </button>
-                    </p>
-                  )}
-                  {userData?.subscriptionStatus === "active" && userData.subscriptionCurrentPeriodEnd && (
-                    <p className="text-xs text-gray-400">
-                      {t.settings.subscription.renewsAt.replace("{date}", formatDate(userData.subscriptionCurrentPeriodEnd) ?? "")}
-                    </p>
-                  )}
-                  {userData?.subscriptionStatus === "past_due" && (
-                    <p className="text-xs text-amber-600">
-                      {t.settings.subscription.pastDueWarning}
-                    </p>
+                  {userData?.subscriptionStatus === "active" || userData?.subscriptionStatus === "past_due" ? (
+                    <button
+                      onClick={handlePortal}
+                      disabled={billingLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-md transition-colors"
+                    >
+                      {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                      {t.settings.subscription.manage}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleCheckout(selectedAddons)}
+                      disabled={billingLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
+                    >
+                      {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      {t.settings.subscription.subscribe}
+                    </button>
                   )}
                 </div>
-                {userData?.subscriptionStatus === "active" || userData?.subscriptionStatus === "past_due" ? (
-                  <button
-                    onClick={handlePortal}
-                    disabled={billingLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-md transition-colors"
-                  >
-                    {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
-                    {t.settings.subscription.manage}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleCheckout(selectedAddons)}
-                    disabled={billingLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
-                  >
-                    {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                    {t.settings.subscription.subscribe}
-                  </button>
+
+                {/* Enterprise upsell — visible for Growth and Pro active subscribers */}
+                {userData?.subscriptionStatus === "active" && userData.planId !== "enterprise" && (
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 bg-violet-50 border border-violet-100 rounded-lg">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-violet-700">Quer recursos Enterprise?</p>
+                      <p className="text-xs text-violet-500 mt-0.5">White-label, módulos inclusos, onboarding e SLA dedicado.</p>
+                    </div>
+                    <a
+                      href="https://wa.me/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      Falar com especialista
+                    </a>
+                  </div>
                 )}
               </div>
             ) : (

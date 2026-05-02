@@ -41,10 +41,11 @@ export default async function DashboardLayout({
   }
 
   const subscriptionStatus = (userData?.subscriptionStatus as string | undefined) ?? null;
+  const planId = (userData?.planId as string | undefined) ?? null;
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar subscriptionStatus={subscriptionStatus} />
+      <Sidebar subscriptionStatus={subscriptionStatus} planId={planId} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );

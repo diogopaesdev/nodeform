@@ -342,11 +342,11 @@ export const en: Translations = {
         2: { title: "Cancel anytime", desc: "No commitment, no cancellation fee. You're in control." },
       },
       faq: {
-        0: { q: "Do I need a card for the trial?", a: "No. The 7-day trial is completely free, no payment method required." },
-        1: { q: "What happens to my data if I cancel?", a: "You have 30 days after cancellation to export everything. After that, data is permanently removed." },
-        2: { q: "Can I use it in an iframe on other sites?", a: "Yes. All surveys can be embedded as an iframe with automatic resizing." },
-        3: { q: "How many surveys can I create?", a: "Unlimited. There is no limit on surveys or collected responses." },
-        4: { q: "Can I export the collected responses?", a: "Yes. You can export all responses directly from the dashboard in structured format, at any time." },
+        0: { q: "Do I need a card for the trial?", a: "No. The 7-day trial on Growth and Pro plans is completely free, no payment method required." },
+        1: { q: "What's the difference between Growth and Pro?", a: "Growth is ideal for getting started: up to 5 surveys and 500 responses per month with 3 AI credits. Pro offers unlimited surveys and responses, more AI credits, and full access to all advanced features." },
+        2: { q: "What are the add-on modules?", a: "The Respondents and Progress modules are add-ons available on the Pro plan. They unlock respondent management, SSO, API access, and partial survey progress saving." },
+        3: { q: "Can I upgrade or downgrade my plan?", a: "Yes. You can change your plan at any time from the dashboard. Billing is adjusted proportionally to the remaining period." },
+        4: { q: "What happens to my data if I cancel?", a: "You have 30 days after cancellation to export everything. After that, data is permanently removed." },
       },
     },
     footer: {

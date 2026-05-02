@@ -11,7 +11,7 @@ import {
   ChevronRight, Smartphone, Filter, Sparkles,
 } from "lucide-react";
 
-const WHATSAPP_URL = "https://wa.me/"; // adicione o número: "https://wa.me/5511999999999"
+const WHATSAPP_URL = "https://wa.me/5541995311160?text=Ol%C3%A1%2C%20vim%20pela%20p%C3%A1gina%20de%20Imobili%C3%A1rias%20do%20SurveyFlow%20e%20gostaria%20de%20saber%20mais!";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
@@ -524,75 +524,98 @@ export function ImobiliariasPage() {
 
       {/* ─ Preço ──────────────────────────────────────────────────────────── */}
       <section id="preco" className="py-24 px-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <FadeUp className="text-center mb-14">
-            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">Plano único · Sem surpresas</p>
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">Plano recomendado para imobiliárias</p>
             <h2 className="text-[30px] sm:text-[38px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
-              Simples e transparente
+              Escale sua captação de leads com controle total
             </h2>
             <p className="text-[16px] text-gray-500 mt-3 max-w-md mx-auto">
-              Um plano com acesso completo. Sem tier de features escondidas, sem taxa de implantação.
+              7 dias grátis em qualquer plano. Sem cartão para começar.
             </p>
           </FadeUp>
 
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
-            <FadeUp className="space-y-5">
-              {[
-                { icon: Zap, color: "bg-orange-50 text-orange-500", title: "Comece em segundos", desc: "Login com Google, crie o formulário de triagem e publique — tudo em menos de 30 minutos." },
-                { icon: Shield, color: "bg-green-50 text-green-600", title: "7 dias grátis, sem cartão", desc: "Teste tudo sem precisar cadastrar forma de pagamento." },
-                { icon: TrendingUp, color: "bg-blue-50 text-blue-500", title: "Cancele quando quiser", desc: "Sem fidelidade, sem taxa de cancelamento. Você controla." },
-              ].map((item) => (
-                <div key={item.title} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-200">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${item.color}`}>
-                    <item.icon className="w-4 h-4" />
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {/* Growth — entrada */}
+            <FadeUp className="pt-5 flex flex-col">
+              <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col flex-1">
+                <div className="px-7 pt-7 pb-5 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="w-4 h-4 text-orange-400" />
+                    <span className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide">Growth</span>
                   </div>
-                  <div>
-                    <p className="text-[14px] font-semibold text-gray-900 mb-0.5">{item.title}</p>
-                    <p className="text-[13px] text-gray-500">{item.desc}</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[40px] font-extrabold text-gray-900 leading-none tracking-tight">R$&nbsp;97</span>
+                    <span className="text-[14px] text-gray-400">/mês</span>
                   </div>
+                  <p className="text-[13px] text-gray-400 mt-2">Para começar a qualificar leads com estrutura</p>
                 </div>
-              ))}
-            </FadeUp>
-
-            <FadeUp delay={0.12}>
-              <div className="rounded-2xl overflow-hidden border-2 border-gray-900 shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
-                <div className="px-7 pt-7 pb-6 bg-gray-950">
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-[16px] font-bold text-white">Plano Pro</span>
-                    <span className="h-6 px-2.5 bg-green-500/20 border border-green-500/30 text-green-400 text-[11px] font-semibold rounded-full flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      7 dias grátis
-                    </span>
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-[52px] font-extrabold text-white leading-none tracking-tight">R$&nbsp;499</span>
-                    <span className="text-[14px] text-gray-500 mb-2">/mês</span>
-                  </div>
-                  <p className="text-[13px] text-gray-500 mt-2">Sem cartão para começar o teste.</p>
-                </div>
-
-                <div className="px-7 pt-6 pb-2 bg-white">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-4">O que está incluso</p>
-                  <ul className="space-y-2.5">
-                    {PLAN_FEATURES.map((feat) => (
-                      <li key={feat} className="flex items-center gap-3 text-[14px]">
-                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-700">{feat}</span>
+                <div className="px-7 pt-5 pb-2 flex-1">
+                  <ul className="space-y-2">
+                    {[
+                      "Até 5 formulários de captação",
+                      "Até 500 leads/mês",
+                      "Fluxo condicional por perfil",
+                      "Redirecionamento para WhatsApp",
+                      "Dashboard e analytics",
+                      "Exportação CSV",
+                    ].map((feat) => (
+                      <li key={feat} className="flex items-center gap-2.5 text-[13px] text-gray-600">
+                        <Check className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+                        {feat}
                       </li>
                     ))}
                   </ul>
                 </div>
+                <div className="px-7 pt-5 pb-7">
+                  <button
+                    onClick={() => router.push("/login")}
+                    className="w-full h-11 bg-gray-100 hover:bg-gray-200 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    Começar agora <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <p className="text-center text-[12px] text-gray-400 mt-2">7 dias grátis · Sem cartão</p>
+                </div>
+              </div>
+            </FadeUp>
 
+            {/* Pro — destaque */}
+            <FadeUp delay={0.1} className="relative pt-5 flex flex-col">
+              <div className="absolute top-0 right-6 z-10">
+                <span className="bg-amber-400 text-gray-900 text-[11px] font-bold px-3 py-1 rounded-full shadow">
+                  Recomendado
+                </span>
+              </div>
+              <div className="rounded-2xl overflow-hidden border-2 border-gray-900 shadow-[0_8px_40px_rgba(0,0,0,0.12)] flex flex-col flex-1">
+                <div className="px-7 pt-6 pb-5 bg-gray-950">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span className="text-[13px] font-semibold text-gray-400 uppercase tracking-wide">Pro</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[40px] font-extrabold text-white leading-none tracking-tight">R$&nbsp;499</span>
+                    <span className="text-[14px] text-gray-500">/mês</span>
+                  </div>
+                  <p className="text-[13px] text-gray-500 mt-2">Automatize e escale seus fluxos com mais controle</p>
+                </div>
+                <div className="px-7 pt-5 pb-2 bg-white flex-1">
+                  <ul className="space-y-2">
+                    {PLAN_FEATURES.map((feat) => (
+                      <li key={feat} className="flex items-center gap-2.5 text-[13px] text-gray-700">
+                        <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
                 <div className="px-7 pt-5 pb-7 bg-white">
                   <button
                     onClick={() => router.push("/login")}
                     className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                   >
-                    Começar 7 dias grátis <ArrowRight className="w-4 h-4" />
+                    Assinar <ArrowRight className="w-4 h-4" />
                   </button>
-                  <p className="text-center text-[12px] text-gray-400 mt-3">
-                    Cancele a qualquer momento. Sem fidelidade.
-                  </p>
+                  <p className="text-center text-[12px] text-gray-400 mt-2">7 dias grátis · Cancele quando quiser</p>
                 </div>
               </div>
             </FadeUp>

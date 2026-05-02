@@ -14,7 +14,7 @@ import {
   AlignLeft, HeartPulse, Building2, BookOpen, MessageCircle, Quote, Activity, CalendarDays,
 } from "lucide-react";
 
-const WHATSAPP_URL = "https://wa.me/"; // add your number, e.g. "https://wa.me/5511999999999"
+const WHATSAPP_URL = "https://wa.me/5541995311160?text=Ol%C3%A1%2C%20vim%20pelo%20site%20do%20SurveyFlow%20e%20gostaria%20de%20saber%20mais!";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/lib/i18n";
 
@@ -913,116 +913,185 @@ export function LandingPage() {
       <section id="pricing" className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
 
-          <FadeUp className="mb-14">
+          <FadeUp className="text-center mb-14">
             <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.pricing.badge}</p>
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
               {t.landing.pricing.title}
             </h2>
+            <p className="text-[16px] text-gray-500 mt-3 max-w-md mx-auto">
+              7 dias grátis nos planos Growth e Pro. Sem cartão para começar.
+            </p>
           </FadeUp>
 
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+          {/* ── 3 plan cards ── */}
+          <div className="grid md:grid-cols-3 gap-5 mb-16">
 
-            {/* ── Coluna esquerda ── */}
-            <FadeUp className="space-y-8">
-              <p className="text-[17px] text-gray-500 leading-relaxed">
-                {t.landing.pricing.planDesc}
-              </p>
-
-              {/* Destaques */}
-              <div className="space-y-4">
-                {PRICING_HIGHLIGHTS.map((item) => (
-                  <div key={item.title} className="flex gap-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${item.color}`}>
-                      <item.icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-semibold text-gray-900 mb-0.5">{item.title}</p>
-                      <p className="text-[13px] text-gray-500 leading-relaxed">{item.desc}</p>
-                    </div>
+            {/* Growth */}
+            <FadeUp className="pt-5 flex flex-col">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col flex-1">
+                <div className="px-6 pt-6 pb-5 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="w-4 h-4 text-blue-500" />
+                    <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">Growth</span>
                   </div>
-                ))}
-              </div>
-
-              {/* FAQ */}
-              <div className="space-y-3">
-                <p className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider">{t.landing.pricing.faqTitle}</p>
-                {FAQ.map((faq) => (
-                  <details key={faq.q} className="group bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200 overflow-hidden">
-                    <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none text-[14px] font-medium text-gray-800 hover:text-gray-900 transition-colors">
-                      {faq.q}
-                      <span className="text-gray-400 group-open:rotate-45 transition-transform duration-200 flex-shrink-0 text-lg leading-none">+</span>
-                    </summary>
-                    <p className="px-4 pb-4 text-[13px] text-gray-500 leading-relaxed border-t border-gray-100 pt-3">
-                      {faq.a}
-                    </p>
-                  </details>
-                ))}
-              </div>
-            </FadeUp>
-
-            {/* ── Coluna direita: card ── */}
-            <FadeUp delay={0.12}>
-              <div className="rounded-2xl overflow-hidden border-2 border-gray-900 shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
-
-                {/* Header dark */}
-                <div className="px-7 pt-7 pb-6 bg-gray-950">
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-[16px] font-bold text-white">{t.landing.pricing.planName}</span>
-                    <span className="h-6 px-2.5 bg-green-500/20 border border-green-500/30 text-green-400 text-[11px] font-semibold rounded-full flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      {t.landing.pricing.planTrial}
-                    </span>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-[36px] font-extrabold text-gray-900 leading-none tracking-tight">R$&nbsp;97</span>
+                    <span className="text-[13px] text-gray-400">/mês</span>
                   </div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-[52px] font-extrabold text-white leading-none tracking-tight">{t.landing.pricing.planPrice}</span>
-                    <span className="text-[14px] text-gray-500 mb-2">{t.landing.pricing.planPriceUnit}</span>
-                  </div>
-                  <p className="text-[13px] text-gray-500 mt-2">{t.landing.pricing.planNoCard}</p>
+                  <p className="text-[12px] text-gray-400 mt-1.5 leading-snug">
+                    Comece a capturar e organizar dados rapidamente
+                  </p>
                 </div>
-
-                {/* Features */}
-                <div className="px-7 pt-6 pb-2 bg-white">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-4">{t.landing.pricing.planIncluded}</p>
-                  <ul className="space-y-2.5">
-                    {PLAN_FEATURES.filter(f => !f.soon).map((feat) => (
-                      <li key={feat.label} className="flex items-center gap-3 text-[14px]">
-                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-700">{feat.label}</span>
+                <div className="px-6 py-4 flex-1">
+                  <ul className="space-y-2">
+                    {[
+                      "Até 5 pesquisas",
+                      "Até 500 respostas/mês",
+                      "Editor visual node-based",
+                      "Fluxo condicional",
+                      "Analytics e dashboard",
+                      "Exportação CSV",
+                      "3 créditos IA por mês",
+                    ].map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 text-[13px] text-gray-600">
+                        <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                        {feat}
                       </li>
                     ))}
                   </ul>
-
-                  {PLAN_FEATURES.some(f => f.soon) && (
-                    <>
-                      <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider mt-5 mb-3">{t.landing.pricing.planSoon}</p>
-                      <ul className="space-y-2.5">
-                        {PLAN_FEATURES.filter(f => f.soon).map((feat) => (
-                          <li key={feat.label} className="flex items-center gap-3 text-[14px]">
-                            <Sparkles className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                            <span className="text-gray-400">{feat.label}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
                 </div>
-
-                {/* CTA */}
-                <div className="px-7 pt-5 pb-7 bg-white">
+                <div className="px-6 pb-6">
                   <button
                     onClick={() => router.push("/login")}
-                    className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    className="w-full h-10 bg-gray-100 hover:bg-gray-200 text-gray-900 text-[14px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
                   >
-                    {t.landing.pricing.trialCta} <ArrowRight className="w-4 h-4" />
+                    Começar agora <ArrowRight className="w-3.5 h-3.5" />
                   </button>
-                  <p className="text-center text-[12px] text-gray-400 mt-3">
-                    {t.landing.pricing.cancelNote}
+                  <p className="text-center text-[11px] text-gray-400 mt-2">7 dias grátis · Sem cartão</p>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* Pro — destaque */}
+            <FadeUp delay={0.08} className="relative pt-5 flex flex-col">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
+                <span className="flex items-center gap-1 bg-amber-400 text-gray-900 text-[11px] font-bold px-3 py-1 rounded-full shadow whitespace-nowrap">
+                  <Star className="w-3 h-3" /> Mais utilizado
+                </span>
+              </div>
+              <div className="bg-gray-900 rounded-2xl overflow-hidden shadow-xl ring-2 ring-gray-900 flex flex-col flex-1">
+                <div className="px-6 pt-6 pb-5 border-b border-white/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">Pro</span>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-[36px] font-extrabold text-white leading-none tracking-tight">R$&nbsp;499</span>
+                    <span className="text-[13px] text-gray-500">/mês</span>
+                  </div>
+                  <p className="text-[12px] text-gray-500 mt-1.5 leading-snug">
+                    Automatize e escale seus fluxos com mais controle
                   </p>
+                </div>
+                <div className="px-6 py-4 flex-1">
+                  <ul className="space-y-2">
+                    {PLAN_FEATURES.filter(f => !f.soon).map((feat) => (
+                      <li key={feat.label} className="flex items-center gap-2 text-[13px] text-gray-300">
+                        <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                        {feat.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="px-6 pb-6">
+                  <button
+                    onClick={() => router.push("/login")}
+                    className="w-full h-10 bg-white hover:bg-gray-100 text-gray-900 text-[14px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" /> Assinar
+                  </button>
+                  <p className="text-center text-[11px] text-gray-500 mt-2">7 dias grátis · Cancele quando quiser</p>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* Enterprise */}
+            <FadeUp delay={0.16} className="pt-5 flex flex-col">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col flex-1">
+                <div className="px-6 pt-6 pb-5 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Shield className="w-4 h-4 text-violet-500" />
+                    <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">Enterprise</span>
+                  </div>
+                  <div className="mb-1">
+                    <span className="text-[20px] font-bold text-gray-900">Consulte</span>
+                  </div>
+                  <p className="text-[12px] text-gray-400 mt-1.5 leading-snug">
+                    Estruture operações críticas com segurança, escala e suporte dedicado
+                  </p>
+                </div>
+                <div className="px-6 py-4 flex-1">
+                  <ul className="space-y-2">
+                    {[
+                      "Tudo do Pro incluso",
+                      "Todos os módulos inclusos",
+                      "White-label completo",
+                      "Onboarding assistido",
+                      "SLA e estabilidade",
+                      "Suporte dedicado",
+                      "Créditos IA customizados",
+                      "Customizações sob demanda",
+                    ].map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 text-[13px] text-gray-600">
+                        <Check className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="px-6 pb-6">
+                  <a
+                    href={WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full h-10 bg-violet-600 hover:bg-violet-700 text-white text-[14px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" /> Falar com especialista
+                  </a>
+                  <p className="text-center text-[11px] text-gray-400 mt-2">Proposta personalizada · Sem compromisso</p>
                 </div>
               </div>
             </FadeUp>
 
           </div>
+
+          {/* ── FAQ ── */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+            <FadeUp className="space-y-4">
+              <p className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider">{t.landing.pricing.faqTitle}</p>
+              {FAQ.slice(0, Math.ceil(FAQ.length / 2)).map((faq) => (
+                <details key={faq.q} className="group bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none text-[14px] font-medium text-gray-800 hover:text-gray-900 transition-colors">
+                    {faq.q}
+                    <span className="text-gray-400 group-open:rotate-45 transition-transform duration-200 flex-shrink-0 text-lg leading-none">+</span>
+                  </summary>
+                  <p className="px-4 pb-4 text-[13px] text-gray-500 leading-relaxed border-t border-gray-100 pt-3">{faq.a}</p>
+                </details>
+              ))}
+            </FadeUp>
+            <FadeUp delay={0.08} className="space-y-4 lg:pt-9">
+              {FAQ.slice(Math.ceil(FAQ.length / 2)).map((faq) => (
+                <details key={faq.q} className="group bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none text-[14px] font-medium text-gray-800 hover:text-gray-900 transition-colors">
+                    {faq.q}
+                    <span className="text-gray-400 group-open:rotate-45 transition-transform duration-200 flex-shrink-0 text-lg leading-none">+</span>
+                  </summary>
+                  <p className="px-4 pb-4 text-[13px] text-gray-500 leading-relaxed border-t border-gray-100 pt-3">{faq.a}</p>
+                </details>
+              ))}
+            </FadeUp>
+          </div>
+
         </div>
       </section>
 

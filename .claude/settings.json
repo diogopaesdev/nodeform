@@ -10,7 +10,13 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git commit -m 'docs: atualiza análise enterprise para v2.0 com Sprint 1 e 2 concluídas *)",
-      "Bash(node -e \"require\\('xlsx'\\)\")"
+      "Bash(node -e \"require\\('xlsx'\\)\")",
+      "Bash(xargs ls *)",
+      "Bash(npx eslint *)",
+      "Bash(grep -n \"pricing\\\\|price\\\\|plano\\\\|plan\\\\|R\\\\$\\\\|BRL\\\\|\\\\$\\\\|euro\\\\|ticket\\\\|Growth\\\\|Pro\\\\|Enterprise\" /Users/jhowpaes/development/rocketapps/nodeform/components/landing/landing-page.tsx)",
+      "Bash(grep -n \"price\\\\|R\\\\$\\\\|BRL\\\\|\\\\$\\\\|Growth\\\\|Pro\\\\|Enterprise\\\\|plano\\\\|plan\\\\|ticket\\\\|pricing\\\\|mensais\\\\|mês\\\\|month\\\\|97\\\\|197\\\\|297\\\\|147\\\\|247\\\\|347\\\\|99\\\\|199\\\\|299\" /Users/jhowpaes/development/rocketapps/nodeform/components/landing/eventos-page.tsx)",
+      "Bash(grep -n \"price\\\\|R\\\\$\\\\|BRL\\\\|\\\\$\\\\|Growth\\\\|Pro\\\\|Enterprise\\\\|plano\\\\|plan\\\\|ticket\\\\|pricing\\\\|mensais\\\\|mês\\\\|month\\\\|97\\\\|197\\\\|297\\\\|147\\\\|247\\\\|347\\\\|99\\\\|199\\\\|299\" /Users/jhowpaes/development/rocketapps/nodeform/components/landing/infoprodutores-page.tsx)",
+      "Bash(grep -n \"price\\\\|R\\\\$\\\\|BRL\\\\|\\\\$\\\\|Growth\\\\|Pro\\\\|Enterprise\\\\|plano\\\\|plan\\\\|ticket\\\\|pricing\\\\|mensais\\\\|mês\\\\|month\\\\|97\\\\|197\\\\|297\\\\|147\\\\|247\\\\|347\\\\|99\\\\|199\\\\|299\" /Users/jhowpaes/development/rocketapps/nodeform/components/landing/pesquisa-de-mercado-page.tsx)"
     ]
   }
 }

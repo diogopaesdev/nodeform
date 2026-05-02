@@ -11,7 +11,7 @@ import {
   ChevronRight, Users, ClipboardList, Activity, FileCheck, GitBranch,
 } from "lucide-react";
 
-const WHATSAPP_URL = "https://wa.me/";
+const WHATSAPP_URL = "https://wa.me/5541995311160?text=Ol%C3%A1%2C%20vim%20pela%20p%C3%A1gina%20de%20Healthcare%20do%20SurveyFlow%20e%20gostaria%20de%20saber%20mais!";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
@@ -516,81 +516,87 @@ export function HealthcarePage() {
         </div>
       </section>
 
-      {/* ─ Preço ──────────────────────────────────────────────────────────── */}
+      {/* ─ Plano Enterprise ───────────────────────────────────────────────── */}
       <section id="preco" className="py-24 px-6">
         <div className="max-w-4xl mx-auto">
           <FadeUp className="text-center mb-14">
-            <p className="text-[12px] font-semibold text-teal-600 uppercase tracking-widest mb-3">Plano único · Sem surpresas</p>
+            <p className="text-[12px] font-semibold text-teal-600 uppercase tracking-widest mb-3">Para operações clínicas e de pesquisa em saúde</p>
             <h2 className="text-[30px] sm:text-[38px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
-              Simples e transparente
+              Infraestrutura de nível Enterprise
             </h2>
             <p className="text-[16px] text-gray-500 mt-3 max-w-md mx-auto">
-              Um plano com acesso completo. Sem tier de features escondidas, sem taxa de implantação.
+              Estruture operações críticas com segurança, escala e suporte dedicado. Proposta personalizada para cada instituição.
             </p>
           </FadeUp>
 
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
-            <FadeUp className="space-y-5">
-              {[
-                { icon: Zap, color: "bg-teal-50 text-teal-600", title: "Comece em segundos", desc: "Login com Google, monte o fluxo e publique — tudo em menos de 30 minutos." },
-                { icon: Shield, color: "bg-green-50 text-green-600", title: "7 dias grátis, sem cartão", desc: "Teste tudo sem precisar cadastrar forma de pagamento." },
-                { icon: TrendingUp, color: "bg-blue-50 text-blue-600", title: "Cancele quando quiser", desc: "Sem fidelidade, sem taxa de cancelamento. Você controla." },
-              ].map((item) => (
-                <div key={item.title} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-200">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${item.color}`}>
-                    <item.icon className="w-4 h-4" />
+          <FadeUp delay={0.08}>
+            <div className="max-w-2xl mx-auto rounded-2xl overflow-hidden border-2 border-gray-900 shadow-[0_12px_60px_rgba(0,0,0,0.15)]">
+              {/* Header */}
+              <div className="px-8 pt-8 pb-6 bg-gray-950">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-violet-400" />
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-gray-900 mb-0.5">{item.title}</p>
-                    <p className="text-[13px] text-gray-500">{item.desc}</p>
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Plano</p>
+                    <p className="text-[18px] font-bold text-white leading-none">Enterprise</p>
                   </div>
+                  <span className="ml-auto h-6 px-2.5 bg-violet-500/20 border border-violet-500/30 text-violet-300 text-[11px] font-semibold rounded-full flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                    Proposta sob medida
+                  </span>
                 </div>
-              ))}
-            </FadeUp>
+                <p className="text-[14px] text-gray-400 leading-relaxed">
+                  Para hospitais, clínicas de pesquisa, CROs e operações de saúde que exigem controle rigoroso de dados, SLA e suporte dedicado.
+                </p>
+              </div>
 
-            <FadeUp delay={0.12}>
-              <div className="rounded-2xl overflow-hidden border-2 border-gray-900 shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
-                <div className="px-7 pt-7 pb-6 bg-gray-950">
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-[16px] font-bold text-white">Plano Pro</span>
-                    <span className="h-6 px-2.5 bg-green-500/20 border border-green-500/30 text-green-400 text-[11px] font-semibold rounded-full flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      7 dias grátis
-                    </span>
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-[52px] font-extrabold text-white leading-none tracking-tight">R$&nbsp;499</span>
-                    <span className="text-[14px] text-gray-500 mb-2">/mês</span>
-                  </div>
-                  <p className="text-[13px] text-gray-500 mt-2">Sem cartão para começar o teste.</p>
-                </div>
-
-                <div className="px-7 pt-6 pb-2 bg-white">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-4">O que está incluso</p>
-                  <ul className="space-y-2.5">
-                    {PLAN_FEATURES.map((feat) => (
-                      <li key={feat} className="flex items-center gap-3 text-[14px]">
-                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-700">{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="px-7 pt-5 pb-7 bg-white">
-                  <button
-                    onClick={() => router.push("/login")}
-                    className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
-                  >
-                    Começar 7 dias grátis <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <p className="text-center text-[12px] text-gray-400 mt-3">
-                    Cancele a qualquer momento. Sem fidelidade.
-                  </p>
+              {/* Features em 2 colunas */}
+              <div className="px-8 pt-6 pb-4 bg-white">
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-4">O que está incluso</p>
+                <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
+                  {[
+                    ...PLAN_FEATURES,
+                    "White-label completo",
+                    "Todos os módulos inclusos",
+                    "Onboarding assistido",
+                    "SLA e estabilidade garantida",
+                    "Suporte dedicado",
+                    "Customizações sob demanda",
+                  ].map((feat) => (
+                    <div key={feat} className="flex items-center gap-2.5 text-[13px] text-gray-700">
+                      <Check className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
+                      {feat}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </FadeUp>
-          </div>
+
+              {/* CTA */}
+              <div className="px-8 pt-4 pb-8 bg-white">
+                <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                  <a
+                    href={WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 h-12 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Falar com especialista
+                  </a>
+                  <a
+                    href={`mailto:contato@surveyflow.com.br?subject=Enterprise%20%E2%80%94%20Healthcare`}
+                    className="flex-1 h-12 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 text-[15px] font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    Enviar e-mail
+                  </a>
+                </div>
+                <p className="text-center text-[12px] text-gray-400 mt-3">
+                  Sem compromisso · Proposta em até 24h úteis
+                </p>
+              </div>
+            </div>
+          </FadeUp>
         </div>
       </section>
 

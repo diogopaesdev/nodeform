@@ -3,13 +3,20 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
+import { PlanId } from "@/lib/plans";
 
 const ADDON_PRICES: Record<string, string> = {
   respondents: process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? "",
   surveyProgress: process.env.STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID ?? "",
 };
 
+const PLAN_PRICES: Record<string, string> = {
+  growth: process.env.STRIPE_GROWTH_PRICE_ID ?? "",
+  pro: process.env.STRIPE_PRICE_ID ?? "",
+};
+
 const VALID_ADDON_IDS = ["respondents", "surveyProgress"] as const;
+const VALID_PLAN_IDS: PlanId[] = ["growth", "pro"];
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -18,15 +25,27 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const requestedAddons: string[] = Array.isArray(body.addons)
-    ? body.addons.filter((id: string) => VALID_ADDON_IDS.includes(id as typeof VALID_ADDON_IDS[number]))
-    : [];
+
+  // Determine plan — defaults to "pro" for backward compatibility
+  const requestedPlanId: PlanId = VALID_PLAN_IDS.includes(body.planId)
+    ? body.planId
+    : "pro";
+
+  // Addons only available on Pro plan
+  const requestedAddons: string[] =
+    requestedPlanId === "pro" && Array.isArray(body.addons)
+      ? body.addons.filter((id: string) => VALID_ADDON_IDS.includes(id as typeof VALID_ADDON_IDS[number]))
+      : [];
+
+  const mainPriceId = PLAN_PRICES[requestedPlanId];
+  if (!mainPriceId) {
+    return NextResponse.json({ error: "Price ID not configured for this plan" }, { status: 500 });
+  }
 
   const { db } = getFirebaseAdmin();
   const userDoc = await db.collection("users").doc(session.user.id).get();
   const userData = userDoc.data();
 
-  // Reutilizar customer existente ou criar um novo
   let customerId = userData?.stripeCustomerId as string | undefined;
 
   if (!customerId) {
@@ -43,10 +62,8 @@ export async function POST(request: NextRequest) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  // Só oferece trial se o usuário nunca teve um antes
   const alreadyHadTrial = !!userData?.trialEnd;
 
-  // Build line items: main plan + any selected addons with valid price IDs
   const addonLineItems = requestedAddons
     .map((id) => ADDON_PRICES[id])
     .filter(Boolean)
@@ -55,6 +72,7 @@ export async function POST(request: NextRequest) {
   const metadata: Record<string, string> = {
     userId: session.user.id,
     type: "main",
+    planId: requestedPlanId,
   };
   if (requestedAddons.length > 0) {
     metadata.addonsToActivate = requestedAddons.join(",");
@@ -65,7 +83,7 @@ export async function POST(request: NextRequest) {
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: [
-      { price: process.env.STRIPE_PRICE_ID!, quantity: 1 },
+      { price: mainPriceId, quantity: 1 },
       ...addonLineItems,
     ],
     ...(alreadyHadTrial ? {} : {

@@ -16,6 +16,7 @@ import {
   Sparkles,
   LayoutTemplate,
   Lock,
+  Zap,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,13 +27,25 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/language-toggle";
 
-export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | null }) {
+export function Sidebar({
+  subscriptionStatus,
+  planId,
+}: {
+  subscriptionStatus?: string | null;
+  planId?: string | null;
+}) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { t } = useI18n();
 
-  const isPro = subscriptionStatus === "active";
+  const isActive = subscriptionStatus === "active";
   const isTrialing = subscriptionStatus === "trialing";
+  const effectivePlan = isActive ? (planId ?? "pro") : null;
+
+  // Templates and other "pro+" features are unlocked for Pro, Enterprise, or trialing users
+  const hasProAccess = isTrialing || effectivePlan === "pro" || effectivePlan === "enterprise";
+  // Backward compat: isPro used below for badge
+  const isPro = isActive;
 
   const navItems = [
     { label: t.sidebar.dashboard,  href: "/dashboard",             icon: LayoutDashboard, pro: false },
@@ -72,7 +85,7 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
           const isActive = item.href === "/dashboard"
             ? pathname === "/dashboard"
             : pathname === item.href || pathname.startsWith(item.href + "/");
-          const showLock = item.pro && !isPro;
+          const showLock = item.pro && !hasProAccess;
           return (
             <Link
               key={item.href}
@@ -88,7 +101,7 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
               {showLock && (
                 <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
               )}
-              {item.pro && isPro && (
+              {item.pro && hasProAccess && (
                 <span className="text-[9px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded-full leading-none flex-shrink-0">
                   PRO
                 </span>
@@ -134,13 +147,25 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
             <div className="flex-1 text-left min-w-0">
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name || "Usuário"}</p>
-                {isPro && (
+                {isActive && effectivePlan === "growth" && (
+                  <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full leading-none">
+                    <Zap className="w-2.5 h-2.5" />
+                    GROWTH
+                  </span>
+                )}
+                {isActive && effectivePlan === "enterprise" && (
+                  <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-full leading-none">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    ENTERPRISE
+                  </span>
+                )}
+                {isActive && (effectivePlan === "pro" || !effectivePlan) && (
                   <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded-full leading-none">
                     <Sparkles className="w-2.5 h-2.5" />
                     PRO
                   </span>
                 )}
-                {isTrialing && !isPro && (
+                {isTrialing && (
                   <span className="flex-shrink-0 text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100 px-1.5 py-0.5 rounded-full leading-none">
                     Trial
                   </span>

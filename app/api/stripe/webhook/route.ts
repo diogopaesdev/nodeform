@@ -102,6 +102,8 @@ export async function POST(req: NextRequest) {
         subscription.items.data[0]?.current_period_end ??
         (subscription as unknown as Record<string, number>).current_period_end;
 
+      const planId = checkoutSession.metadata?.planId ?? "pro";
+
       await userDoc.ref.update({
         stripeSubscriptionId: subscriptionId,
         subscriptionStatus: getSubscriptionStatus(subscription),
@@ -111,6 +113,7 @@ export async function POST(req: NextRequest) {
         trialEnd: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
           : null,
+        planId,
       });
       break;
     }
