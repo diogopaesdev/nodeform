@@ -6,6 +6,8 @@ import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { SURVEY_TEMPLATES, cloneTemplate } from "@/lib/templates";
 import { PLANS } from "@/lib/plans";
 import { getActiveUserPlan } from "@/lib/services/plan";
+import { getFirebaseAdmin } from "@/lib/firebase-admin";
+import type { UserTemplate } from "@/lib/services/user-templates";
 
 // GET /api/surveys - Listar pesquisas do usuário
 export async function GET(req: NextRequest) {
@@ -43,6 +45,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const templateId: string | undefined = body.templateId;
+    const userTemplateId: string | undefined = body.userTemplateId;
 
     // Read plan from Firestore — never trust JWT for security decisions
     const { planId, subscriptionStatus } = await getActiveUserPlan(session.user.id);
@@ -89,6 +92,38 @@ export async function POST(req: NextRequest) {
 
       const { nodes, edges, title } = cloneTemplate(template);
       const survey = await createSurvey(session.user.id, title, nodes, edges);
+      return NextResponse.json({ survey }, { status: 201 });
+    }
+
+    if (userTemplateId) {
+      const { db } = getFirebaseAdmin();
+      const doc = await db
+        .collection("users")
+        .doc(session.user.id)
+        .collection("userTemplates")
+        .doc(userTemplateId)
+        .get();
+
+      if (!doc.exists) {
+        return NextResponse.json({ error: "Template não encontrado" }, { status: 404 });
+      }
+
+      const userTpl = doc.data() as UserTemplate;
+      const ts = Date.now();
+      const idMap = new Map<string, string>();
+      const nodes = userTpl.nodes.map((n, i) => {
+        const newId = `node_${ts}_${i}`;
+        idMap.set(n.id, newId);
+        return { ...n, id: newId };
+      });
+      const edges = userTpl.edges.map((e, i) => ({
+        ...e,
+        id: `edge_${ts}_${i}`,
+        source: idMap.get(e.source) ?? e.source,
+        target: idMap.get(e.target) ?? e.target,
+      }));
+
+      const survey = await createSurvey(session.user.id, userTpl.title, nodes, edges);
       return NextResponse.json({ survey }, { status: 201 });
     }
 
