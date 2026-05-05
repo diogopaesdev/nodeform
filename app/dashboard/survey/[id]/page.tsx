@@ -743,6 +743,7 @@ export default function SurveyDetailPage({
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis" | "bonus" | "collaborators">("analytics");
   const [isOwner, setIsOwner] = useState(true);
+  const [collaboratorRole, setCollaboratorRole] = useState<"editor" | "viewer" | null>(null);
   const [deleteResponseModal, setDeleteResponseModal] = useState<{ open: boolean; responseId: string; loading: boolean }>({
     open: false, responseId: "", loading: false,
   });
@@ -771,7 +772,10 @@ export default function SurveyDetailPage({
       if (!res.ok) { router.push("/dashboard"); return; }
       const data = await res.json();
       setSurvey(data.survey);
-      if (data.isCollaborator) setIsOwner(false);
+      if (data.isCollaborator) {
+        setIsOwner(false);
+        setCollaboratorRole(data.collaboratorRole ?? null);
+      }
     } catch {
       router.push("/dashboard");
     } finally {
@@ -1011,12 +1015,14 @@ export default function SurveyDetailPage({
               <Code className="w-3.5 h-3.5" />{t.common.embed}
             </button>
           )}
-          <button
-            onClick={() => router.push(`/editor/${survey.id}`)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" />{t.surveyDetail.edit}
-          </button>
+          {(isOwner || collaboratorRole === "editor") && (
+            <button
+              onClick={() => router.push(`/editor/${survey.id}`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />{t.surveyDetail.edit}
+            </button>
+          )}
         </div>
       </div>
 

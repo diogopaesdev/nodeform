@@ -104,6 +104,13 @@ export default function EditorPage({
         return;
       }
       const data = await res.json();
+
+      // Viewers cannot access the editor
+      if (data.isCollaborator && data.collaboratorRole === "viewer") {
+        router.push(`/dashboard/survey/${id}`);
+        return;
+      }
+
       loadSurvey(data.survey as Survey);
     } catch (error) {
       console.error("Error fetching survey:", error);

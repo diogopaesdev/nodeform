@@ -356,15 +356,18 @@ window.addEventListener("message", function(e) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveys, t]);
 
-  const nonDraftSurveys = surveys.filter((s) => s.status !== "draft");
+  const ownedSurveys = useMemo(() => surveys.filter((s) => !s.isCollaborator), [surveys]);
+  const sharedSurveys = useMemo(() => surveys.filter((s) => s.isCollaborator), [surveys]);
+
+  const nonDraftSurveys = ownedSurveys.filter((s) => s.status !== "draft");
   const avgResponses =
     nonDraftSurveys.length > 0
       ? (nonDraftSurveys.reduce((a, s) => a + s.responseCount, 0) / nonDraftSurveys.length).toFixed(1)
       : "0";
 
   const maxResponses = useMemo(
-    () => Math.max(...surveys.map((s) => s.responseCount), 1),
-    [surveys]
+    () => Math.max(...ownedSurveys.map((s) => s.responseCount), 1),
+    [ownedSurveys]
   );
 
   // ── Stat cards config ───────────────────────────────────────────────────────
@@ -921,16 +924,94 @@ window.addEventListener("message", function(e) {
         </div>
       )}
 
-      {/* ── Surveys Table ───────────────────────────────────────────────────── */}
+      {/* ── Shared surveys section ─────────────────────────────────────────── */}
+      {!loading && sharedSurveys.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+            <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+              <Users className="w-3.5 h-3.5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Compartilhadas comigo</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {sharedSurveys.length === 1
+                  ? "1 pesquisa compartilhada com você"
+                  : `${sharedSurveys.length} pesquisas compartilhadas com você`}
+              </p>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {[...sharedSurveys]
+              .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+              .map((survey) => (
+                <div
+                  key={survey.id}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/dashboard/survey/${survey.id}`)}
+                >
+                  {/* Icon */}
+                  <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-blue-500" />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-900 truncate">{survey.title}</p>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${STATUS_BADGE[survey.status]}`}>
+                        {STATUS_META[survey.status].label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                      <span className="text-xs text-gray-400">
+                        Por <span className="font-medium text-gray-600">{survey.inviterName}</span>
+                      </span>
+                      <span className="text-gray-200">·</span>
+                      <span className="text-xs text-gray-400">{survey.responseCount} respostas</span>
+                      <span className="text-gray-200">·</span>
+                      <span className="text-xs text-gray-400">Atualizado {formatDate(survey.updatedAt)}</span>
+                    </div>
+                  </div>
+
+                  {/* Role badge */}
+                  <span className={`flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                    survey.collaboratorRole === "editor"
+                      ? "bg-purple-50 text-purple-700 border-purple-100"
+                      : "bg-gray-50 text-gray-600 border-gray-200"
+                  }`}>
+                    {survey.collaboratorRole === "editor"
+                      ? <><Pencil className="w-3 h-3" />Editor</>
+                      : <><Eye className="w-3 h-3" />Visualizador</>}
+                  </span>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {survey.collaboratorRole === "editor" && (
+                      <button
+                        onClick={() => router.push(`/editor/${survey.id}`)}
+                        className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                        title={t.common.edit}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── My surveys table ────────────────────────────────────────────────── */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">{t.dashboard.table.title}</h2>
-            {!loading && surveys.length > 0 && (
+            {!loading && ownedSurveys.length > 0 && (
               <p className="text-xs text-gray-400 mt-0.5">
-                {surveys.length !== 1
-                  ? t.dashboard.table.subtitlePlural.replace("{n}", String(surveys.length))
-                  : t.dashboard.table.subtitle.replace("{n}", String(surveys.length))}
+                {ownedSurveys.length !== 1
+                  ? t.dashboard.table.subtitlePlural.replace("{n}", String(ownedSurveys.length))
+                  : t.dashboard.table.subtitle.replace("{n}", String(ownedSurveys.length))}
               </p>
             )}
           </div>
@@ -948,7 +1029,7 @@ window.addEventListener("message", function(e) {
               </div>
             ))}
           </div>
-        ) : surveys.length === 0 ? (
+        ) : ownedSurveys.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
               <PenSquare className="w-6 h-6 text-gray-400" />
@@ -974,7 +1055,7 @@ window.addEventListener("message", function(e) {
               <span className="w-20" />
             </div>
 
-            {[...surveys]
+            {[...ownedSurveys]
               .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
               .map((survey) => {
                 const pct = maxResponses > 0 ? (survey.responseCount / maxResponses) * 100 : 0;
@@ -985,14 +1066,7 @@ window.addEventListener("message", function(e) {
                   >
                     {/* Title + status */}
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-900 truncate">{survey.title}</p>
-                        {survey.isCollaborator && (
-                          <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100">
-                            {survey.collaboratorRole === "editor" ? "Editor" : "Visualizador"}
-                          </span>
-                        )}
-                      </div>
+                      <p className="text-sm font-medium text-gray-900 truncate">{survey.title}</p>
                       <span className={`mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${STATUS_BADGE[survey.status]}`}>
                         {STATUS_META[survey.status].label}
                       </span>
@@ -1028,33 +1102,29 @@ window.addEventListener("message", function(e) {
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
-                      {(!survey.isCollaborator || survey.collaboratorRole === "editor") && (
-                        <button
-                          onClick={() => router.push(`/editor/${survey.id}`)}
-                          className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                          title={t.common.edit}
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {!survey.isCollaborator && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                              <MoreVertical className="w-3.5 h-3.5" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="min-w-[120px]">
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteSurvey(survey.id, survey.title)}
-                              className="text-red-600 text-xs"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 mr-2" />
-                              {t.common.delete}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                      <button
+                        onClick={() => router.push(`/editor/${survey.id}`)}
+                        className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                        title={t.common.edit}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[120px]">
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteSurvey(survey.id, survey.title)}
+                            className="text-red-600 text-xs"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-2" />
+                            {t.common.delete}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 );
