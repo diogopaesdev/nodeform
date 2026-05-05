@@ -132,6 +132,14 @@ export async function acceptInvitation(
   return { ...collaborator, status: "accepted", userId };
 }
 
+export async function updateCollaboratorRole(
+  collaboratorId: string,
+  role: CollaboratorRole
+): Promise<void> {
+  const { db } = getFirebaseAdmin();
+  await db.collection("surveyCollaborators").doc(collaboratorId).update({ role });
+}
+
 export async function deleteCollaborator(collaboratorId: string): Promise<void> {
   const { db } = getFirebaseAdmin();
   await db.collection("surveyCollaborators").doc(collaboratorId).delete();

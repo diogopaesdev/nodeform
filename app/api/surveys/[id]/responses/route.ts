@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSurvey, getSurveyResponses, deleteResponse } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
+import { getCollaboratorAccessForUser } from "@/lib/services/collaborators";
 
 // GET - Buscar respostas de uma pesquisa
 export async function GET(
@@ -17,7 +18,12 @@ export async function GET(
 
     const survey = await getSurvey(surveyId);
     if (!survey) return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
-    if (survey.userId !== auth.workspaceId) return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+
+    const isOwner = survey.userId === auth.workspaceId;
+    if (!isOwner) {
+      const collaboratorRole = await getCollaboratorAccessForUser(surveyId, auth.workspaceId);
+      if (!collaboratorRole) return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+    }
 
     const responses = await getSurveyResponses(surveyId);
 

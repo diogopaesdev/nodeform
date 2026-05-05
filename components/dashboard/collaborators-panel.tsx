@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { Mail, Trash2, Loader2, UserPlus, Users, Eye, Clock, CheckCircle } from "lucide-react";
 import { SurveyCollaborator, CollaboratorRole } from "@/types/collaborator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ROLE_OPTIONS: { value: CollaboratorRole; label: string; desc: string }[] = [
   { value: "editor", label: "Editor", desc: "Pode editar a pesquisa" },
@@ -34,6 +41,7 @@ export function CollaboratorsPanel({ surveyId }: { surveyId: string }) {
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCollaborators();
@@ -84,6 +92,27 @@ export function CollaboratorsPanel({ surveyId }: { surveyId: string }) {
     }
   };
 
+  const handleChangeRole = async (collaboratorId: string, newRole: CollaboratorRole) => {
+    setUpdatingRoleId(collaboratorId);
+    try {
+      const res = await fetch(
+        `/api/surveys/${surveyId}/collaborators/${collaboratorId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: newRole }),
+        }
+      );
+      if (res.ok) {
+        setCollaborators((prev) =>
+          prev.map((c) => (c.id === collaboratorId ? { ...c, role: newRole } : c))
+        );
+      }
+    } finally {
+      setUpdatingRoleId(null);
+    }
+  };
+
   const handleRemove = async (collaboratorId: string) => {
     setRemovingId(collaboratorId);
     try {
@@ -126,18 +155,22 @@ export function CollaboratorsPanel({ surveyId }: { surveyId: string }) {
                 required
               />
             </div>
-            <select
+            <Select
               value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value as CollaboratorRole)}
+              onValueChange={(v) => setInviteRole(v as CollaboratorRole)}
               disabled={inviting}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-900/10 disabled:opacity-50"
             >
-              {ROLE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-[140px] h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <button
               type="submit"
               disabled={inviting || !inviteEmail.trim()}
@@ -148,7 +181,6 @@ export function CollaboratorsPanel({ surveyId }: { surveyId: string }) {
             </button>
           </div>
 
-          {/* Role description */}
           <p className="text-xs text-gray-400">
             {ROLE_OPTIONS.find((r) => r.value === inviteRole)?.desc}
           </p>
@@ -205,21 +237,36 @@ export function CollaboratorsPanel({ surveyId }: { surveyId: string }) {
                       {STATUS_LABEL[c.status]}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400">
-                    <span className="inline-flex items-center gap-1">
-                      <RoleIcon role={c.role} />
-                      {c.role === "editor" ? "Editor" : "Visualizador"}
+                  {c.status === "pending" && (
+                    <span className="flex items-center gap-1 mt-0.5 text-[11px] text-gray-400">
+                      <Clock className="w-3 h-3" />
+                      Expira em {new Date(c.expiresAt).toLocaleDateString("pt-BR")}
                     </span>
-                    {c.status === "pending" && (
-                      <>
-                        <span>·</span>
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          Expira em {new Date(c.expiresAt).toLocaleDateString("pt-BR")}
-                        </span>
-                      </>
-                    )}
-                  </div>
+                  )}
+                </div>
+
+                {/* Role selector */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <RoleIcon role={c.role} />
+                  <Select
+                    value={c.role}
+                    onValueChange={(v) => handleChangeRole(c.id, v as CollaboratorRole)}
+                    disabled={updatingRoleId === c.id}
+                  >
+                    <SelectTrigger className="w-[130px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {updatingRoleId === c.id && (
+                    <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin" />
+                  )}
                 </div>
 
                 {/* Remove */}
