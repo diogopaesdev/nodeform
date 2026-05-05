@@ -26,10 +26,10 @@ export async function GET(req: NextRequest) {
     if (auth.source === "session") {
       const collaborations = await getCollaboratedSurveyIds(auth.workspaceId);
       const fetched = await Promise.all(
-        collaborations.map(async ({ surveyId, role }) => {
+        collaborations.map(async ({ surveyId, role, inviterName, invitedBy }) => {
           const survey = await getSurvey(surveyId);
           if (!survey) return null;
-          return { ...survey, isCollaborator: true, collaboratorRole: role };
+          return { ...survey, isCollaborator: true, collaboratorRole: role, inviterName, invitedBy };
         })
       );
       collaboratedSurveys = fetched.filter(Boolean) as typeof ownedSurveys;

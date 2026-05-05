@@ -154,6 +154,8 @@ export interface Survey {
   // Collaboration metadata (populated at API response time, not stored in Firestore)
   isCollaborator?: boolean;
   collaboratorRole?: "editor" | "viewer";
+  inviterName?: string;
+  invitedBy?: string;
 }
 
 /**

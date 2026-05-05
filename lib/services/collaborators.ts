@@ -99,7 +99,7 @@ export async function getCollaboratorAccessForUser(
 
 export async function getCollaboratedSurveyIds(
   userId: string
-): Promise<{ surveyId: string; role: CollaboratorRole }[]> {
+): Promise<{ surveyId: string; role: CollaboratorRole; inviterName: string; invitedBy: string }[]> {
   const { db } = getFirebaseAdmin();
   const snap = await db
     .collection("surveyCollaborators")
@@ -109,7 +109,7 @@ export async function getCollaboratedSurveyIds(
 
   return snap.docs.map((d) => {
     const c = d.data() as SurveyCollaborator;
-    return { surveyId: c.surveyId, role: c.role };
+    return { surveyId: c.surveyId, role: c.role, inviterName: c.inviterName, invitedBy: c.invitedBy };
   });
 }
 
