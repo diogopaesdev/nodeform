@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createSurvey, getUserSurveys, getDashboardStats } from "@/lib/services/surveys";
+import { createSurvey, getUserSurveys, getDashboardStats, getSurvey } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { SURVEY_TEMPLATES, cloneTemplate } from "@/lib/templates";
 import { PLANS } from "@/lib/plans";
 import { getActiveUserPlan } from "@/lib/services/plan";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import type { UserTemplate } from "@/lib/services/user-templates";
+import { getCollaboratedSurveyIds } from "@/lib/services/collaborators";
 
 // GET /api/surveys - Listar pesquisas do usuário
 export async function GET(req: NextRequest) {
@@ -18,7 +19,26 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const includeStats = searchParams.get("stats") === "true";
 
-    const surveys = await getUserSurveys(auth.workspaceId);
+    const ownedSurveys = await getUserSurveys(auth.workspaceId);
+
+    // Include surveys the user is a collaborator on (session only, not API key)
+    let collaboratedSurveys: typeof ownedSurveys = [];
+    if (auth.source === "session") {
+      const collaborations = await getCollaboratedSurveyIds(auth.workspaceId);
+      const fetched = await Promise.all(
+        collaborations.map(async ({ surveyId, role }) => {
+          const survey = await getSurvey(surveyId);
+          if (!survey) return null;
+          return { ...survey, isCollaborator: true, collaboratorRole: role };
+        })
+      );
+      collaboratedSurveys = fetched.filter(Boolean) as typeof ownedSurveys;
+    }
+
+    const surveys = [
+      ...ownedSurveys,
+      ...collaboratedSurveys,
+    ];
 
     if (includeStats && auth.source === "session") {
       const stats = await getDashboardStats(auth.workspaceId);

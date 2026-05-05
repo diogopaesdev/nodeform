@@ -985,7 +985,14 @@ window.addEventListener("message", function(e) {
                   >
                     {/* Title + status */}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{survey.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900 truncate">{survey.title}</p>
+                        {survey.isCollaborator && (
+                          <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100">
+                            {survey.collaboratorRole === "editor" ? "Editor" : "Visualizador"}
+                          </span>
+                        )}
+                      </div>
                       <span className={`mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${STATUS_BADGE[survey.status]}`}>
                         {STATUS_META[survey.status].label}
                       </span>
@@ -1021,29 +1028,33 @@ window.addEventListener("message", function(e) {
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => router.push(`/editor/${survey.id}`)}
-                        className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                        title={t.common.edit}
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                            <MoreVertical className="w-3.5 h-3.5" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-[120px]">
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteSurvey(survey.id, survey.title)}
-                            className="text-red-600 text-xs"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-2" />
-                            {t.common.delete}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {(!survey.isCollaborator || survey.collaboratorRole === "editor") && (
+                        <button
+                          onClick={() => router.push(`/editor/${survey.id}`)}
+                          className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                          title={t.common.edit}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {!survey.isCollaborator && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                              <MoreVertical className="w-3.5 h-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[120px]">
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteSurvey(survey.id, survey.title)}
+                              className="text-red-600 text-xs"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-2" />
+                              {t.common.delete}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </div>
                 );
