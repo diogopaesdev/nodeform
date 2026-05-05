@@ -59,6 +59,7 @@ import { Survey, SurveyResponse, ChoiceOption } from "@/types/survey";
 import { ParticipationWithRespondent } from "@/types/respondent";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
+import { CollaboratorsPanel } from "@/components/dashboard/collaborators-panel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -740,7 +741,8 @@ export default function SurveyDetailPage({
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis" | "bonus">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis" | "bonus" | "collaborators">("analytics");
+  const [isOwner, setIsOwner] = useState(true);
   const [deleteResponseModal, setDeleteResponseModal] = useState<{ open: boolean; responseId: string; loading: boolean }>({
     open: false, responseId: "", loading: false,
   });
@@ -769,6 +771,7 @@ export default function SurveyDetailPage({
       if (!res.ok) { router.push("/dashboard"); return; }
       const data = await res.json();
       setSurvey(data.survey);
+      if (data.isCollaborator) setIsOwner(false);
     } catch {
       router.push("/dashboard");
     } finally {
@@ -1119,8 +1122,9 @@ export default function SurveyDetailPage({
       </div>
 
       {/* ── Tabs ────────────────────────────────────────────────────────────── */}
-      {survey.responseCount > 0 && (
+      {(survey.responseCount > 0 || isOwner) && (
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+          {survey.responseCount > 0 && (<>
           <button
             onClick={() => setActiveTab("analytics")}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "analytics" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
@@ -1157,11 +1161,23 @@ export default function SurveyDetailPage({
               Bonificação
             </span>
           </button>
+          </>)}
+          {isOwner && (
+            <button
+              onClick={() => setActiveTab("collaborators")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "collaborators" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                Colaboradores
+              </span>
+            </button>
+          )}
         </div>
       )}
 
       {/* ── Analytics Tab ───────────────────────────────────────────────────── */}
-      {(activeTab === "analytics" || survey.responseCount === 0) && (
+      {(activeTab === "analytics" || survey.responseCount === 0) && activeTab !== "collaborators" && (
         <>
           {survey.responseCount === 0 ? (
             <div className="bg-white border border-gray-200 rounded-xl">
@@ -1377,6 +1393,11 @@ export default function SurveyDetailPage({
             onSurveyChange={setSurvey}
           />
         )
+      )}
+
+      {/* ── Collaborators Tab ───────────────────────────────────────────────── */}
+      {activeTab === "collaborators" && isOwner && (
+        <CollaboratorsPanel surveyId={id} />
       )}
 
       <DeleteConfirmModal
