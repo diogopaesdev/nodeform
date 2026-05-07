@@ -73,8 +73,7 @@ export async function POST(
     const limit = PLANS[planId].limits.collaborators;
     if (limit !== null) {
       const existing = await getCollaboratorsBySurvey(id);
-      const accepted = existing.filter((c) => c.status === "accepted").length;
-      if (accepted >= limit) {
+      if (existing.length >= limit) {
         return NextResponse.json(
           {
             error: `Seu plano ${PLANS[planId].name} permite até ${limit} colaborador${limit === 1 ? "" : "es"} por pesquisa. Faça upgrade para adicionar mais.`,
