@@ -330,11 +330,12 @@ export function LandingPage() {
     { label: t.landing.planFeatures[9].label },
     { label: t.landing.planFeatures[10].label },
     { label: t.landing.planFeatures[11].label },
-    { label: t.landing.planFeatures[12].label, soon: true },
+    { label: t.landing.planFeatures[12].label },
     { label: t.landing.planFeatures[13].label, soon: true },
     { label: t.landing.planFeatures[14].label, soon: true },
     { label: t.landing.planFeatures[15].label, soon: true },
     { label: t.landing.planFeatures[16].label, soon: true },
+    { label: t.landing.planFeatures[17].label, soon: true },
   ];
 
   const AI_FEATURES: { icon: React.ElementType; title: string; desc: string; available: boolean }[] = [
@@ -1061,6 +1062,7 @@ export function LandingPage() {
                       "Analytics e dashboard",
                       "Exportação CSV",
                       "3 créditos IA por mês",
+                      "Até 2 colaboradores por pesquisa",
                     ].map((feat) => (
                       <li key={feat} className="flex items-center gap-2 text-[13px] text-gray-600">
                         <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
@@ -1143,6 +1145,7 @@ export function LandingPage() {
                   <ul className="space-y-2">
                     {[
                       "Tudo do Pro incluso",
+                      "Colaboradores ilimitados",
                       "Todos os módulos inclusos",
                       "White-label completo",
                       "Onboarding assistido",

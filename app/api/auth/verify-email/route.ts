@@ -3,9 +3,17 @@ import { getFirebaseAdmin } from "@/lib/firebase-admin";
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
+  const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+
+  const loginRedirect = (params: string) => {
+    const suffix = callbackUrl
+      ? `${params}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+      : params;
+    return NextResponse.redirect(new URL(`/login?${suffix}`, request.url));
+  };
 
   if (!token) {
-    return NextResponse.redirect(new URL("/login?error=invalid-token", request.url));
+    return loginRedirect("error=invalid-token");
   }
 
   try {
@@ -18,14 +26,14 @@ export async function GET(request: NextRequest) {
       .get();
 
     if (snapshot.empty) {
-      return NextResponse.redirect(new URL("/login?error=invalid-token", request.url));
+      return loginRedirect("error=invalid-token");
     }
 
     const userDoc = snapshot.docs[0];
     const user = userDoc.data();
 
     if (new Date(user.emailVerificationTokenExpiresAt) < new Date()) {
-      return NextResponse.redirect(new URL("/login?error=token-expired", request.url));
+      return loginRedirect("error=token-expired");
     }
 
     await userDoc.ref.update({
@@ -35,9 +43,9 @@ export async function GET(request: NextRequest) {
       updatedAt: new Date().toISOString(),
     });
 
-    return NextResponse.redirect(new URL("/login?verified=true", request.url));
+    return loginRedirect("verified=true");
   } catch (error) {
     console.error("Verify email error:", error);
-    return NextResponse.redirect(new URL("/login?error=server-error", request.url));
+    return loginRedirect("error=server-error");
   }
 }

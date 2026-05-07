@@ -17,6 +17,7 @@ const RegisterSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.string().email(),
   password: PasswordSchema,
+  callbackUrl: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, password } = parsed.data;
+    const { name, email, password, callbackUrl } = parsed.data;
     const { db } = getFirebaseAdmin();
 
     const existing = await db.collection("users").where("email", "==", email).limit(1).get();
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date().toISOString(),
     });
 
-    await sendVerificationEmail(email, name, token);
+    await sendVerificationEmail(email, name, token, callbackUrl);
 
     return NextResponse.json(
       { message: "Cadastro realizado. Verifique seu e-mail para ativar a conta." },
