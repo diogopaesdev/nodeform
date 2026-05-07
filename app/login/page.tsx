@@ -81,9 +81,11 @@ function LoginContent() {
 
   const passwordValid = PASSWORD_RULES.every((r) => r.test(registerPassword));
 
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
   useEffect(() => {
-    if (session) router.push("/dashboard");
-  }, [session, router]);
+    if (session) router.push(callbackUrl);
+  }, [session, router, callbackUrl]);
 
   useEffect(() => {
     const verified = searchParams.get("verified");
@@ -142,7 +144,7 @@ function LoginContent() {
     if (result?.error) {
       setFeedback({ type: "error", message: "Código inválido ou expirado." });
     } else {
-      router.push("/dashboard");
+      router.push(callbackUrl);
     }
   }
 
@@ -193,7 +195,7 @@ function LoginContent() {
             <p>{feedback.message}</p>
             {feedback.code === "google-account" && (
               <button
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                onClick={() => signIn("google", { callbackUrl })}
                 className="mt-2 flex items-center gap-2 text-xs font-medium underline underline-offset-2"
               >
                 {GOOGLE_ICON} Entrar com Google
@@ -278,7 +280,7 @@ function LoginContent() {
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
                   <div className="relative flex justify-center text-xs text-gray-400 bg-gray-50 px-3">ou</div>
                 </div>
-                <button onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                <button onClick={() => signIn("google", { callbackUrl })}
                   className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors">
                   {GOOGLE_ICON} Entrar com Google
                 </button>
@@ -343,7 +345,7 @@ function LoginContent() {
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
                   <div className="relative flex justify-center text-xs text-gray-400 bg-gray-50 px-3">ou</div>
                 </div>
-                <button onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                <button onClick={() => signIn("google", { callbackUrl })}
                   className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors">
                   {GOOGLE_ICON} Cadastrar com Google
                 </button>
