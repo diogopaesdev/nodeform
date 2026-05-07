@@ -102,9 +102,13 @@ export async function sendCollaboratorInvite(
 export async function sendVerificationEmail(
   email: string,
   name: string,
-  token: string
+  token: string,
+  callbackUrl?: string
 ) {
-  const verifyUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}`;
+  const base = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}`;
+  const verifyUrl = callbackUrl
+    ? `${base}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : base;
 
   await resend.emails.send({
     from: FROM,

@@ -160,7 +160,7 @@ function LoginContent() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: registerName, email: registerEmail, password: registerPassword }),
+        body: JSON.stringify({ name: registerName, email: registerEmail, password: registerPassword, callbackUrl }),
       });
       const data = await res.json();
       if (!res.ok) {
