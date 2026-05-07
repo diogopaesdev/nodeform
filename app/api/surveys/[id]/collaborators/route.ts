@@ -8,6 +8,8 @@ import {
 } from "@/lib/services/collaborators";
 import { sendCollaboratorInvite } from "@/lib/email";
 import { CollaboratorRole } from "@/types/collaborator";
+import { getActiveUserPlan } from "@/lib/services/plan";
+import { PLANS } from "@/lib/plans";
 
 // GET /api/surveys/[id]/collaborators — list collaborators (owner only)
 export async function GET(
@@ -64,6 +66,23 @@ export async function POST(
     // Cannot invite yourself
     if (email === session.user.email?.toLowerCase()) {
       return NextResponse.json({ error: "Você não pode convidar a si mesmo" }, { status: 400 });
+    }
+
+    // Check plan collaborator limit
+    const { planId } = await getActiveUserPlan(session.user.id);
+    const limit = PLANS[planId].limits.collaborators;
+    if (limit !== null) {
+      const existing = await getCollaboratorsBySurvey(id);
+      const accepted = existing.filter((c) => c.status === "accepted").length;
+      if (accepted >= limit) {
+        return NextResponse.json(
+          {
+            error: `Seu plano ${PLANS[planId].name} permite até ${limit} colaborador${limit === 1 ? "" : "es"} por pesquisa. Faça upgrade para adicionar mais.`,
+            code: "collaborator-limit-reached",
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const collaborator = await createCollaboratorInvite(

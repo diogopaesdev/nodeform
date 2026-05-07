@@ -29,6 +29,7 @@ const GROWTH_FEATURES = [
   "Analytics e dashboard",
   "Exportação CSV",
   "3 créditos IA por mês",
+  "Até 2 colaboradores por pesquisa",
   "Suporte padrão",
 ];
 
@@ -42,12 +43,14 @@ const PRO_FEATURES = [
   "Exportação CSV",
   "Identidade visual personalizada",
   "10 créditos IA por mês",
+  "Até 10 colaboradores por pesquisa",
   "Módulos avançados disponíveis",
   "Suporte prioritário",
 ];
 
 const ENTERPRISE_FEATURES = [
   "Tudo do plano Pro incluso",
+  "Colaboradores ilimitados",
   "Módulo Respondentes incluso",
   "Módulo Progresso incluso",
   "White-label completo",

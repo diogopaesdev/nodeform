@@ -5,6 +5,7 @@ export interface PlanLimits {
   responsesPerMonth: number | null; // null = unlimited
   aiCreditsPerMonth: number;
   userTemplates: number | null;     // null = unlimited
+  collaborators: number | null;     // null = unlimited
   canPurchaseAddons: boolean;
   includesAllAddons: boolean;
   hasWhiteLabel: boolean;
@@ -27,6 +28,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
       responsesPerMonth: 500,
       aiCreditsPerMonth: 3,
       userTemplates: 5,
+      collaborators: 2,
       canPurchaseAddons: false,
       includesAllAddons: false,
       hasWhiteLabel: false,
@@ -41,6 +43,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
       responsesPerMonth: null,
       aiCreditsPerMonth: 10,
       userTemplates: 10,
+      collaborators: 10,
       canPurchaseAddons: true,
       includesAllAddons: false,
       hasWhiteLabel: true,
@@ -55,6 +58,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
       responsesPerMonth: null,
       aiCreditsPerMonth: 50,
       userTemplates: null,
+      collaborators: null,
       canPurchaseAddons: false,
       includesAllAddons: true,
       hasWhiteLabel: true,
