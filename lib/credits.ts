@@ -1,8 +1,15 @@
 import { getFirebaseAdmin } from "./firebase-admin";
+import { PLANS, PlanId } from "./plans";
 
-export const MONTHLY_FREE_CREDITS = 10;
 export const CREDIT_PRICE_BRL = 5; // R$ por crédito
 export const CREDIT_PACKAGE_SIZE = 10; // créditos no pacote inicial
+
+function monthlyCreditsForPlan(userData: Record<string, unknown>): number {
+  const subscriptionStatus = userData.subscriptionStatus as string | undefined;
+  const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
+  const planId = (isActive ? (userData.planId as PlanId | undefined) : undefined) ?? "growth";
+  return PLANS[planId]?.limits.aiCreditsPerMonth ?? PLANS.growth.limits.aiCreditsPerMonth;
+}
 
 // ─── Check monthly reset and return current credits ───────────────────────────
 
@@ -71,6 +78,7 @@ function resolveCredits(userData: Record<string, unknown>): {
 } {
   const now = new Date();
   const storedReset = userData.creditsResetAt as string | undefined;
+  const monthlyLimit = monthlyCreditsForPlan(userData);
 
   const shouldReset =
     !storedReset ||
@@ -81,14 +89,14 @@ function resolveCredits(userData: Record<string, unknown>): {
 
   if (shouldReset) {
     return {
-      credits: MONTHLY_FREE_CREDITS,
+      credits: monthlyLimit,
       resetAt: now.toISOString(),
       didReset: true,
     };
   }
 
   return {
-    credits: typeof userData.aiCredits === "number" ? userData.aiCredits : MONTHLY_FREE_CREDITS,
+    credits: typeof userData.aiCredits === "number" ? userData.aiCredits : monthlyLimit,
     resetAt: storedReset!,
     didReset: false,
   };
