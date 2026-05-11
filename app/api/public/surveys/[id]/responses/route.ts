@@ -47,12 +47,14 @@ export async function POST(
       return NextResponse.json({ error: "Esta pesquisa foi encerrada" }, { status: 410 });
     }
 
-    // Enforce monthly response limit for Growth plan — atomic via Firestore transaction
+    // Enforce monthly response limit — atomic via Firestore transaction
     const { db, FieldValue } = getFirebaseAdmin();
     const ownerRef = db.collection("users").doc(survey.userId);
     const ownerDoc = await ownerRef.get();
     const ownerData = ownerDoc.data();
-    const ownerPlanId = (ownerData?.planId ?? "pro") as keyof typeof PLANS;
+    const ownerSubscriptionStatus = ownerData?.subscriptionStatus as string | undefined;
+    const isOwnerActive = ownerSubscriptionStatus === "active" || ownerSubscriptionStatus === "trialing";
+    const ownerPlanId = (isOwnerActive ? (ownerData?.planId ?? "growth") : "growth") as keyof typeof PLANS;
     const planLimits = PLANS[ownerPlanId]?.limits;
     if (planLimits?.responsesPerMonth !== null && planLimits?.responsesPerMonth !== undefined) {
       const limit = planLimits.responsesPerMonth;

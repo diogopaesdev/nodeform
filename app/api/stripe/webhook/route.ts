@@ -4,7 +4,10 @@ import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { addCredits } from "@/lib/credits";
 import { activateAddon, deactivateAddon } from "@/lib/services/addons";
 import { AddonId } from "@/types/addon";
+import { PLANS, PlanId } from "@/lib/plans";
 import Stripe from "stripe";
+
+const ALL_ADDON_IDS: AddonId[] = ["respondents", "surveyProgress"];
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -115,7 +118,7 @@ export async function POST(req: NextRequest) {
         subscription.items.data[0]?.current_period_end ??
         (subscription as unknown as Record<string, number>).current_period_end;
 
-      const planId = checkoutSession.metadata?.planId ?? "pro";
+      const planId = (checkoutSession.metadata?.planId ?? "pro") as PlanId;
 
       await userDoc.ref.update({
         stripeSubscriptionId: subscriptionId,
@@ -128,6 +131,12 @@ export async function POST(req: NextRequest) {
           : null,
         planId,
       });
+
+      // Auto-activate all addons for plans that include them (e.g. Enterprise)
+      if (PLANS[planId]?.limits.includesAllAddons) {
+        await Promise.all(ALL_ADDON_IDS.map((addonId) => activateAddon(userDoc.id, addonId)));
+      }
+
       break;
     }
 
@@ -142,16 +151,26 @@ export async function POST(req: NextRequest) {
         subscription.items.data[0]?.current_period_end ??
         (subscription as unknown as Record<string, number>).current_period_end;
 
-      await userDoc.ref.update({
+      // Derive planId from which price is in the subscription
+      const planPrices: Record<string, string> = {
+        [process.env.STRIPE_GROWTH_PRICE_ID ?? ""]: "growth",
+        [process.env.STRIPE_PRICE_ID ?? ""]: "pro",
+      };
+      const matchedPlanId = subscription.items.data
+        .map((item) => planPrices[item.price.id])
+        .find(Boolean);
+
+      const updatePayload: Record<string, unknown> = {
         stripeSubscriptionId: subscription.id,
         subscriptionStatus: getSubscriptionStatus(subscription),
-        subscriptionCurrentPeriodEnd: new Date(
-          periodEnd * 1000
-        ).toISOString(),
+        subscriptionCurrentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
         trialEnd: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
           : null,
-      });
+      };
+      if (matchedPlanId) updatePayload.planId = matchedPlanId;
+
+      await userDoc.ref.update(updatePayload);
       break;
     }
 

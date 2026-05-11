@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
+import { PLANS, PlanId } from "@/lib/plans";
 
 const Schema = z.object({
   addonId: z.enum(["respondents", "surveyProgress"]),
@@ -36,14 +37,15 @@ export async function POST(request: NextRequest) {
   const userDoc = await db.collection("users").doc(session.user.id).get();
   const userData = userDoc.data();
 
-  // Addons are exclusively for active Pro subscribers.
-  // Read from Firestore — never rely on JWT which can be stale.
-  const currentPlanId: string = userData?.planId ?? "pro";
+  // Read plan from Firestore — never rely on JWT which can be stale.
+  const currentPlanId = (userData?.planId ?? "growth") as PlanId;
   const currentStatus: string = userData?.subscriptionStatus ?? "";
+  const isActive = currentStatus === "active" || currentStatus === "trialing";
+  const effectivePlanId = isActive ? currentPlanId : "growth";
 
-  if (currentPlanId !== "pro" || currentStatus !== "active") {
+  if (!PLANS[effectivePlanId]?.limits.canPurchaseAddons) {
     return NextResponse.json(
-      { error: "Módulos adicionais estão disponíveis apenas para assinantes ativos do Plano Pro" },
+      { error: "Módulos adicionais não estão disponíveis no seu plano atual" },
       { status: 403 }
     );
   }
