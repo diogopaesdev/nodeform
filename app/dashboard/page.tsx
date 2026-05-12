@@ -129,6 +129,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createTab, setCreateTab] = useState<"ai" | "templates">("ai");
   const [aiPrompt, setAiPrompt] = useState("");
@@ -201,6 +202,7 @@ export default function DashboardPage() {
 
   const handleCreateSurvey = async () => {
     setCreating(true);
+    setCreateError("");
     try {
       const res = await fetch("/api/surveys", {
         method: "POST",
@@ -208,11 +210,18 @@ export default function DashboardPage() {
         body: JSON.stringify({ title: "Nova Pesquisa" }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error || "Erro ao criar pesquisa");
+        setCreating(false);
+        return;
+      }
       if (data.survey) {
+        setCreateModalOpen(false);
         router.push(`/editor/${data.survey.id}`);
       }
     } catch (error) {
       console.error("Error creating survey:", error);
+      setCreateError("Erro ao criar pesquisa. Tente novamente.");
       setCreating(false);
     }
   };
@@ -225,6 +234,7 @@ export default function DashboardPage() {
       return;
     }
     setCreating(true);
+    setCreateError("");
     try {
       const res = await fetch("/api/surveys", {
         method: "POST",
@@ -232,11 +242,18 @@ export default function DashboardPage() {
         body: JSON.stringify({ templateId: template.id }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error || "Erro ao criar pesquisa");
+        setCreating(false);
+        return;
+      }
       if (data.survey) {
+        setCreateModalOpen(false);
         router.push(`/editor/${data.survey.id}`);
       }
     } catch (error) {
       console.error("Error creating survey from template:", error);
+      setCreateError("Erro ao criar pesquisa. Tente novamente.");
       setCreating(false);
     }
   };
@@ -537,7 +554,7 @@ window.addEventListener("message", function(e) {
       </Dialog>
 
       {/* ── Create Modal ────────────────────────────────────────────────────── */}
-      <Dialog open={createModalOpen} onOpenChange={(open) => { setCreateModalOpen(open); if (!open) { setAiPrompt(""); setAiError(""); setCreateTab("ai"); } }}>
+      <Dialog open={createModalOpen} onOpenChange={(open) => { setCreateModalOpen(open); if (!open) { setAiPrompt(""); setAiError(""); setCreateError(""); setCreateTab("ai"); } }}>
         <DialogContent className="max-w-lg p-0 gap-0">
           <DialogTitle className="sr-only">{t.dashboard.createModal.title}</DialogTitle>
           <DialogDescription className="sr-only">{t.dashboard.createModal.subtitle}</DialogDescription>
@@ -656,9 +673,13 @@ window.addEventListener("message", function(e) {
                   <div className="flex-1 h-px bg-gray-100" />
                 </div>
 
+                {createError && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{createError}</p>
+                )}
+
                 {/* Manual */}
                 <button
-                  onClick={() => { setCreateModalOpen(false); handleCreateSurvey(); }}
+                  onClick={handleCreateSurvey}
                   disabled={creating || generatingAi}
                   className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
                 >
@@ -743,8 +764,12 @@ window.addEventListener("message", function(e) {
                   <div className="flex-1 h-px bg-gray-100" />
                 </div>
 
+                {createError && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{createError}</p>
+                )}
+
                 <button
-                  onClick={() => { setCreateModalOpen(false); handleCreateSurvey(); }}
+                  onClick={handleCreateSurvey}
                   disabled={creating}
                   className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
                 >
