@@ -28,6 +28,7 @@ export default function SurveysPage() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; surveyId: string; surveyTitle: string; loading: boolean }>({
@@ -67,6 +68,7 @@ export default function SurveysPage() {
 
   const handleCreateSurvey = async () => {
     setCreating(true);
+    setCreateError("");
     try {
       const res = await fetch("/api/surveys", {
         method: "POST",
@@ -74,11 +76,17 @@ export default function SurveysPage() {
         body: JSON.stringify({ title: "Nova Pesquisa" }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error || "Erro ao criar pesquisa");
+        setCreating(false);
+        return;
+      }
       if (data.survey) {
         router.push(`/editor/${data.survey.id}`);
       }
     } catch (error) {
       console.error("Error creating survey:", error);
+      setCreateError("Erro ao criar pesquisa. Tente novamente.");
       setCreating(false);
     }
   };
@@ -131,7 +139,7 @@ export default function SurveysPage() {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">{t.surveys.title}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{t.surveys.subtitle}</p>
@@ -149,6 +157,11 @@ export default function SurveysPage() {
           {t.surveys.newSurvey}
         </button>
       </div>
+      {createError && (
+        <p className="mb-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+          {createError}
+        </p>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-5">
