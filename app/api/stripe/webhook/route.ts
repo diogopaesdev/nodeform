@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
-import { addCredits } from "@/lib/credits";
+import { addCredits, resetCreditsForPlan } from "@/lib/credits";
 import { activateAddon, deactivateAddon } from "@/lib/services/addons";
 import { AddonId } from "@/types/addon";
 import { PLANS, PlanId } from "@/lib/plans";
@@ -137,6 +137,9 @@ export async function POST(req: NextRequest) {
         await Promise.all(ALL_ADDON_IDS.map((addonId) => activateAddon(userDoc.id, addonId)));
       }
 
+      // Give the plan's monthly credits immediately on new subscription/upgrade
+      await resetCreditsForPlan(userDoc.id, planId);
+
       break;
     }
 
@@ -171,6 +174,13 @@ export async function POST(req: NextRequest) {
       if (matchedPlanId) updatePayload.planId = matchedPlanId;
 
       await userDoc.ref.update(updatePayload);
+
+      // Reset credits when the user switches to a different plan mid-cycle
+      const previousPlanId = userDoc.data()?.planId as PlanId | undefined;
+      if (matchedPlanId && matchedPlanId !== previousPlanId) {
+        await resetCreditsForPlan(userDoc.id, matchedPlanId as PlanId);
+      }
+
       break;
     }
 
@@ -209,6 +219,25 @@ export async function POST(req: NextRequest) {
           trialEnd: null,
         });
       }
+      break;
+    }
+    case "invoice.payment_succeeded": {
+      const invoice = event.data.object as Stripe.Invoice;
+
+      // Only reset credits on subscription renewals, not on first payment
+      // (first payment is handled by checkout.session.completed)
+      if (invoice.billing_reason !== "subscription_cycle") break;
+
+      const customerId = invoice.customer as string;
+      const userDoc = await getUserByCustomerId(customerId);
+      if (!userDoc) break;
+
+      const userData = userDoc.data();
+      const subscriptionStatus: string = userData?.subscriptionStatus ?? "inactive";
+      const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
+      const planId: PlanId = isActive ? (userData?.planId as PlanId ?? "growth") : "growth";
+
+      await resetCreditsForPlan(userDoc.id, planId);
       break;
     }
   }

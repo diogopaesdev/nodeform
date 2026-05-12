@@ -61,6 +61,17 @@ export async function consumeCredit(userId: string): Promise<boolean> {
   });
 }
 
+// ─── Force credit reset to plan's monthly limit ───────────────────────────────
+
+export async function resetCreditsForPlan(userId: string, planId: PlanId): Promise<void> {
+  const { db } = getFirebaseAdmin();
+  const monthlyLimit = PLANS[planId]?.limits.aiCreditsPerMonth ?? PLANS.growth.limits.aiCreditsPerMonth;
+  await db.collection("users").doc(userId).set(
+    { aiCredits: monthlyLimit, creditsResetAt: new Date().toISOString() },
+    { merge: true }
+  );
+}
+
 // ─── Add credits (after purchase) ────────────────────────────────────────────
 
 export async function addCredits(userId: string, amount: number): Promise<void> {
