@@ -15,6 +15,7 @@ function monthlyCreditsForPlan(userData: Record<string, unknown>): number {
 
 export async function getCredits(userId: string): Promise<{
   credits: number;
+  monthlyLimit: number;
   resetAt: string;
   nextResetAt: string;
 }> {
@@ -23,6 +24,7 @@ export async function getCredits(userId: string): Promise<{
   const userDoc = await userRef.get();
   const userData = userDoc.data() || {};
 
+  const monthlyLimit = monthlyCreditsForPlan(userData);
   const { credits, resetAt, didReset } = resolveCredits(userData);
 
   if (didReset) {
@@ -34,7 +36,7 @@ export async function getCredits(userId: string): Promise<{
   nextReset.setDate(1);
   nextReset.setHours(0, 0, 0, 0);
 
-  return { credits, resetAt, nextResetAt: nextReset.toISOString() };
+  return { credits, monthlyLimit, resetAt, nextResetAt: nextReset.toISOString() };
 }
 
 // ─── Consume one credit (transactional) ──────────────────────────────────────

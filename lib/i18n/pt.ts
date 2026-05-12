@@ -85,7 +85,7 @@ export const pt = {
       noCredits: "Seus créditos acabaram",
       available: "Você tem {n} crédito disponível",
       availablePlural: "Você tem {n} créditos disponíveis",
-      freeInfo: "Todo mês você recebe <b>10 créditos</b> automaticamente para usar nas funcionalidades de IA da plataforma.",
+      freeInfo: "Todo mês você recebe <b>{n} créditos</b> automaticamente para usar nas funcionalidades de IA da plataforma.",
       freeTitle: "Créditos gratuitos",
       buyTitle: "Comprar mais créditos",
       packageName: "Pacote de 10 créditos",

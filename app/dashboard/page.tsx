@@ -137,6 +137,7 @@ export default function DashboardPage() {
   const [aiError, setAiError] = useState("");
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
+  const [monthlyLimit, setMonthlyLimit] = useState<number | null>(null);
   const [buyModalOpen, setBuyModalOpen] = useState(false);
   const [buyingCredits, setBuyingCredits] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
@@ -164,6 +165,7 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json();
         setCredits(data.credits);
+        if (data.monthlyLimit !== undefined) setMonthlyLimit(data.monthlyLimit);
       }
     } catch {
       // silently fail
@@ -512,7 +514,7 @@ window.addEventListener("message", function(e) {
             {/* Free credits info */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
               <p className="text-xs font-semibold text-gray-700 mb-1">{t.dashboard.credits.freeTitle}</p>
-              <p className="text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: t.dashboard.credits.freeInfo }} />
+              <p className="text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: t.dashboard.credits.freeInfo.replace("{n}", String(monthlyLimit ?? 10)) }} />
             </div>
 
             {/* Package */}

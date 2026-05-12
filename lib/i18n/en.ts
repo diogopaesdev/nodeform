@@ -87,7 +87,7 @@ export const en: Translations = {
       noCredits: "You've run out of credits",
       available: "You have {n} credit available",
       availablePlural: "You have {n} credits available",
-      freeInfo: "Every month you receive <b>10 credits</b> automatically to use on AI features.",
+      freeInfo: "Every month you receive <b>{n} credits</b> automatically to use on AI features.",
       freeTitle: "Free credits",
       buyTitle: "Buy more credits",
       packageName: "10-credit pack",
