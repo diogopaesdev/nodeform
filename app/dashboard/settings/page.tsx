@@ -46,6 +46,7 @@ function SettingsContent() {
   const { t } = useI18n();
   const searchParams = useSearchParams();
   const requirePlan = searchParams.get("require_plan") === "true";
+  const upgradeToPro = searchParams.get("upgrade_to_pro") === "true";
   const addonFromUrl = searchParams.get("addon");
 
   const VALID_ADDONS = ["respondents", "surveyProgress"] as const;
@@ -221,6 +222,8 @@ function SettingsContent() {
     userData?.subscriptionStatus === "past_due" ||
     isTrialing;
 
+  const isGrowthActive = userData?.subscriptionStatus === "active" && userData?.planId === "growth";
+
   const trialDaysLeft = userData?.trialEnd
     ? Math.max(0, Math.ceil((new Date(userData.trialEnd).getTime() - Date.now()) / 86400000))
     : null;
@@ -240,7 +243,7 @@ function SettingsContent() {
         <p className="text-sm text-gray-500 mt-0.5">{t.settings.subtitle}</p>
       </div>
 
-      {requirePlan && (
+      {(requirePlan || upgradeToPro) && !isGrowthActive && (
         <div className="mb-4 border border-amber-200 rounded-xl overflow-hidden">
           <div className="flex items-start gap-3 px-4 py-3.5 bg-amber-50 border-b border-amber-200">
             <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
@@ -405,6 +408,28 @@ function SettingsContent() {
                     </button>
                   )}
                 </div>
+
+                {/* Upgrade to Pro — visible for Growth active subscribers */}
+                {userData?.subscriptionStatus === "active" && userData.planId === "growth" && (
+                  <div className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border ${upgradeToPro ? "bg-gray-900 border-gray-900" : "bg-gray-50 border-gray-200"}`}>
+                    <div className="min-w-0">
+                      <p className={`text-xs font-semibold ${upgradeToPro ? "text-white" : "text-gray-800"}`}>
+                        {upgradeToPro ? "Desbloqueie módulos com o plano Pro" : "Upgrade para o plano Pro"}
+                      </p>
+                      <p className={`text-xs mt-0.5 ${upgradeToPro ? "text-gray-300" : "text-gray-500"}`}>
+                        Addons de respondentes, SSO, API Keys, pesquisas ilimitadas e muito mais.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handlePortal}
+                      disabled={billingLoading}
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${upgradeToPro ? "bg-white text-gray-900 hover:bg-gray-100" : "bg-gray-900 text-white hover:bg-gray-800"}`}
+                    >
+                      {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      Upgrade para Pro
+                    </button>
+                  </div>
+                )}
 
                 {/* Enterprise upsell — visible for Growth and Pro active subscribers */}
                 {userData?.subscriptionStatus === "active" && userData.planId !== "enterprise" && (

@@ -613,6 +613,8 @@ function IntegrationsContent() {
 
   // Addons can only be purchased by active Pro subscribers (not trial, not growth)
   const canBuyAddons = planId === "pro" && subscriptionStatus === "active";
+  // Growth active users need an upgrade (not a new subscription)
+  const isGrowthActive = planId === "growth" && subscriptionStatus === "active";
 
   // Enterprise includes all addons without explicit activation
   const hasAddon = isEnterprise || session?.user?.addons?.respondents?.active === true;
@@ -768,6 +770,14 @@ function IntegrationsContent() {
                 {activating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 {t.integrations.respondentsAddon.activate}
               </button>
+            ) : isGrowthActive ? (
+              <Link
+                href="/dashboard/settings?upgrade_to_pro=true"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {t.integrations.respondentsAddon.upgradeToUnlock}
+              </Link>
             ) : (
               <Link
                 href="/dashboard/settings?require_plan=true&addon=respondents"
@@ -824,6 +834,14 @@ function IntegrationsContent() {
                 {activatingProgress ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 {t.integrations.progressAddon.activate}
               </button>
+            ) : isGrowthActive ? (
+              <Link
+                href="/dashboard/settings?upgrade_to_pro=true"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {t.integrations.progressAddon.upgradeToUnlock}
+              </Link>
             ) : (
               <Link
                 href="/dashboard/settings?require_plan=true&addon=surveyProgress"

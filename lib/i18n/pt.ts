@@ -569,7 +569,8 @@ export const pt = {
       inactive: "Não ativo",
       description: "Autenticação dedicada, controle de acesso e integração B2B para pesquisas enterprise.",
       activate: "Ativar módulo",
-      requiresSubscription: "Requer assinatura",
+      requiresSubscription: "Requer plano Pro",
+      upgradeToUnlock: "Upgrade para Pro",
       features: [
         "Login obrigatório via OTP por e-mail ou SSO",
         "SSO — usuários da sua plataforma chegam autenticados, sem tela de login",
@@ -589,7 +590,8 @@ export const pt = {
       inactive: "Não ativo",
       description: "Persistência de respostas entre sessões com retomada inteligente em qualquer dispositivo.",
       activate: "Ativar módulo",
-      requiresSubscription: "Requer assinatura",
+      requiresSubscription: "Requer plano Pro",
+      upgradeToUnlock: "Upgrade para Pro",
       features: [
         "Progresso salvo automaticamente após cada resposta",
         "Respondente retoma de onde parou em qualquer device ou sessão",

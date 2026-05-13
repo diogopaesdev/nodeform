@@ -571,7 +571,8 @@ export const en: Translations = {
       inactive: "Not active",
       description: "Dedicated authentication, access control and B2B integration for enterprise surveys.",
       activate: "Activate module",
-      requiresSubscription: "Requires subscription",
+      requiresSubscription: "Requires Pro plan",
+      upgradeToUnlock: "Upgrade to Pro",
       features: [
         "Mandatory login via OTP by email or SSO",
         "SSO — users from your platform arrive authenticated, no login screen",
@@ -591,7 +592,8 @@ export const en: Translations = {
       inactive: "Not active",
       description: "Response persistence across sessions with smart resumption on any device.",
       activate: "Activate module",
-      requiresSubscription: "Requires subscription",
+      requiresSubscription: "Requires Pro plan",
+      upgradeToUnlock: "Upgrade to Pro",
       features: [
         "Progress saved automatically after each response",
         "Respondent resumes where they left off on any device or session",
