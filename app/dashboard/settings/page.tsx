@@ -195,6 +195,29 @@ function SettingsContent() {
     }
   };
 
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+
+  const handleUpgradeToPro = async () => {
+    setUpgradeLoading(true);
+    setUpgradeError(null);
+    try {
+      const res = await fetch("/api/stripe/upgrade", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setUpgradeError(data.error ?? "Erro ao fazer upgrade");
+        return;
+      }
+      // Sync and reload to reflect new plan
+      await fetch("/api/stripe/sync", { method: "POST" }).catch(() => {});
+      window.location.reload();
+    } catch {
+      setUpgradeError("Erro ao processar upgrade");
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
+
   const getSubscriptionBadge = (status: SubscriptionStatus) => {
     const map: Record<string, { label: string; className: string }> = {
       trialing:  { label: t.settings.subscription.badges.trialing,  className: "bg-blue-50 text-blue-700 border-blue-100" },
@@ -411,23 +434,28 @@ function SettingsContent() {
 
                 {/* Upgrade to Pro — visible for Growth active subscribers */}
                 {userData?.subscriptionStatus === "active" && userData.planId === "growth" && (
-                  <div className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border ${upgradeToPro ? "bg-gray-900 border-gray-900" : "bg-gray-50 border-gray-200"}`}>
-                    <div className="min-w-0">
-                      <p className={`text-xs font-semibold ${upgradeToPro ? "text-white" : "text-gray-800"}`}>
-                        {upgradeToPro ? "Desbloqueie módulos com o plano Pro" : "Upgrade para o plano Pro"}
-                      </p>
-                      <p className={`text-xs mt-0.5 ${upgradeToPro ? "text-gray-300" : "text-gray-500"}`}>
-                        Addons de respondentes, SSO, API Keys, pesquisas ilimitadas e muito mais.
-                      </p>
+                  <div className={`rounded-lg border ${upgradeToPro ? "bg-gray-900 border-gray-900" : "bg-gray-50 border-gray-200"}`}>
+                    <div className="flex items-center justify-between gap-3 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className={`text-xs font-semibold ${upgradeToPro ? "text-white" : "text-gray-800"}`}>
+                          {upgradeToPro ? "Desbloqueie módulos com o plano Pro" : "Upgrade para o plano Pro"}
+                        </p>
+                        <p className={`text-xs mt-0.5 ${upgradeToPro ? "text-gray-300" : "text-gray-500"}`}>
+                          Addons de respondentes, SSO, API Keys, pesquisas ilimitadas e muito mais.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleUpgradeToPro}
+                        disabled={upgradeLoading}
+                        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${upgradeToPro ? "bg-white text-gray-900 hover:bg-gray-100" : "bg-gray-900 text-white hover:bg-gray-800"}`}
+                      >
+                        {upgradeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        Upgrade para Pro
+                      </button>
                     </div>
-                    <button
-                      onClick={handlePortal}
-                      disabled={billingLoading}
-                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${upgradeToPro ? "bg-white text-gray-900 hover:bg-gray-100" : "bg-gray-900 text-white hover:bg-gray-800"}`}
-                    >
-                      {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                      Upgrade para Pro
-                    </button>
+                    {upgradeError && (
+                      <p className={`px-4 pb-3 text-xs ${upgradeToPro ? "text-red-300" : "text-red-500"}`}>{upgradeError}</p>
+                    )}
                   </div>
                 )}
 
