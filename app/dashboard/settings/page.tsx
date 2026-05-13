@@ -190,7 +190,9 @@ function SettingsContent() {
     (!userData?.subscriptionStatus && userData?.trialEnd && new Date(userData.trialEnd).getTime() > Date.now());
 
   const hasActiveSubscription =
-    userData?.subscriptionStatus === "active" || isTrialing;
+    userData?.subscriptionStatus === "active" ||
+    userData?.subscriptionStatus === "past_due" ||
+    isTrialing;
 
   const trialDaysLeft = userData?.trialEnd
     ? Math.max(0, Math.ceil((new Date(userData.trialEnd).getTime() - Date.now()) / 86400000))
@@ -326,7 +328,7 @@ function SettingsContent() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-gray-900">
-                        {userData?.subscriptionStatus === "active"
+                        {userData?.subscriptionStatus === "active" || userData?.subscriptionStatus === "past_due"
                           ? userData.planId === "growth"
                             ? "Plano Growth"
                             : userData.planId === "enterprise"

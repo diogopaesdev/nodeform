@@ -110,12 +110,12 @@ export const authOptions: NextAuthOptions = {
             token.subscriptionStatus = subscriptionStatus;
             token.planId = effectivePlanId;
             token.addons = data.addons ?? {};
-            token.isAdmin = token.email === process.env.ADMIN_EMAIL;
           }
         } catch {
           // mantém o valor anterior em caso de erro
         }
       }
+      token.isAdmin = token.email === process.env.ADMIN_EMAIL;
       return token;
     },
     async session({ session, token }) {

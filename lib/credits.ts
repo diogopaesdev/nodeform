@@ -7,19 +7,21 @@ export const CREDIT_PACKAGE_SIZE = 10; // créditos no pacote inicial
 export async function getCredits(userId: string): Promise<{
   credits: number;
   monthlyLimit: number;
+  planId: PlanId;
+  subscriptionStatus: string | null;
 }> {
   const { db } = getFirebaseAdmin();
   const userDoc = await db.collection("users").doc(userId).get();
   const userData = userDoc.data() || {};
 
-  const subscriptionStatus = userData.subscriptionStatus as string | undefined;
+  const subscriptionStatus = (userData.subscriptionStatus as string | undefined) ?? null;
   const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
   const planId: PlanId = (userData.planId as PlanId | undefined) ?? (isActive ? "pro" : "growth");
   const monthlyLimit = PLANS[planId]?.limits.aiCreditsPerMonth ?? PLANS.growth.limits.aiCreditsPerMonth;
 
   const credits = typeof userData.aiCredits === "number" ? userData.aiCredits : 0;
 
-  return { credits, monthlyLimit };
+  return { credits, monthlyLimit, planId, subscriptionStatus };
 }
 
 export async function consumeCredit(userId: string): Promise<boolean> {

@@ -138,6 +138,7 @@ export default function DashboardPage() {
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
   const [monthlyLimit, setMonthlyLimit] = useState<number | null>(null);
+  const [planData, setPlanData] = useState<{ planId: string; subscriptionStatus: string | null } | null>(null);
   const [buyModalOpen, setBuyModalOpen] = useState(false);
   const [buyingCredits, setBuyingCredits] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
@@ -166,6 +167,7 @@ export default function DashboardPage() {
         const data = await res.json();
         setCredits(data.credits);
         if (data.monthlyLimit !== undefined) setMonthlyLimit(data.monthlyLimit);
+        if (data.planId !== undefined) setPlanData({ planId: data.planId, subscriptionStatus: data.subscriptionStatus ?? null });
       }
     } catch {
       // silently fail
@@ -228,7 +230,12 @@ export default function DashboardPage() {
     }
   };
 
-  const isPro = session?.user?.subscriptionStatus === "active";
+  const _status = planData?.subscriptionStatus ?? session?.user?.subscriptionStatus;
+  const _isTrialing = _status === "trialing";
+  const _isActiveStatus = _status === "active";
+  const _planId = planData?.planId ?? session?.user?.planId;
+  const _effectivePlan = _isActiveStatus ? (_planId ?? "pro") : null;
+  const isPro = _isTrialing || _effectivePlan === "pro" || _effectivePlan === "enterprise";
 
   const handleCreateFromTemplate = async (template: SurveyTemplate) => {
     if (!isPro) {
