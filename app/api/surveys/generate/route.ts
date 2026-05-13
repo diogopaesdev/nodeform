@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createSurvey, updateSurvey } from "@/lib/services/surveys";
+import { createSurvey, updateSurvey, getUserSurveys } from "@/lib/services/surveys";
 import { consumeCredit, getCredits } from "@/lib/credits";
+import { getActiveUserPlan } from "@/lib/services/plan";
 import OpenAI from "openai";
 import { SurveyNode, SurveyEdge, NodeData } from "@/types/survey";
 
@@ -224,6 +225,19 @@ export async function POST(req: NextRequest) {
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ error: "API de IA não configurada" }, { status: 503 });
+    }
+
+    // Enforce survey count limit (same as POST /api/surveys)
+    const { effectivePlanId, limits } = await getActiveUserPlan(session.user.id);
+    const surveyLimit = limits.surveys;
+    if (surveyLimit !== null && surveyLimit !== undefined) {
+      const existing = await getUserSurveys(session.user.id);
+      if (existing.length >= surveyLimit) {
+        return NextResponse.json(
+          { error: `Limite de ${surveyLimit} pesquisas atingido para o plano ${effectivePlanId}` },
+          { status: 403 }
+        );
+      }
     }
 
     // Check and consume credit

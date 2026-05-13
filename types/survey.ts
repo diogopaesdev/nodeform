@@ -151,6 +151,11 @@ export interface Survey {
   requiresRespondentLogin?: boolean;
   maxResponses?: number;
   eligibilityRules?: EligibilityRule[]; // survey-level: block ineligible respondents
+  // Collaboration metadata (populated at API response time, not stored in Firestore)
+  isCollaborator?: boolean;
+  collaboratorRole?: "editor" | "viewer";
+  inviterName?: string;
+  invitedBy?: string;
 }
 
 /**

@@ -23,7 +23,15 @@ import {
   Zap,
   ShoppingCart,
   AlertTriangle,
+  Lock,
+  HeartPulse,
+  Building2,
+  Activity,
+  Calendar,
+  LayoutTemplate,
 } from "lucide-react";
+import { SURVEY_TEMPLATES } from "@/lib/templates";
+import type { SurveyTemplate } from "@/lib/templates";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 import {
   BarChart,
@@ -100,6 +108,17 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: { name: s
   );
 }
 
+// ─── Template segment icons ───────────────────────────────────────────────────
+
+const TEMPLATE_ICONS: Record<string, React.ElementType> = {
+  "clinicas-esteticas": HeartPulse,
+  "imobiliarias": Building2,
+  "pesquisa-de-mercado": BarChart2,
+  "infoprodutores": TrendingUp,
+  "healthcare": Activity,
+  "eventos": Calendar,
+};
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -110,12 +129,16 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createTab, setCreateTab] = useState<"ai" | "templates">("ai");
   const [aiPrompt, setAiPrompt] = useState("");
   const [generatingAi, setGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState("");
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
+  const [monthlyLimit, setMonthlyLimit] = useState<number | null>(null);
+  const [planData, setPlanData] = useState<{ planId: string; subscriptionStatus: string | null } | null>(null);
   const [buyModalOpen, setBuyModalOpen] = useState(false);
   const [buyingCredits, setBuyingCredits] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
@@ -135,6 +158,16 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData();
     fetchCredits();
+
+    const stored = localStorage.getItem("preferred_plan");
+    if (stored === "growth" || stored === "pro") {
+      localStorage.removeItem("preferred_plan");
+      fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prePlanSelected: stored }),
+      }).catch(() => {});
+    }
   }, []);
 
   const fetchCredits = async () => {
@@ -143,6 +176,8 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json();
         setCredits(data.credits);
+        if (data.monthlyLimit !== undefined) setMonthlyLimit(data.monthlyLimit);
+        if (data.planId !== undefined) setPlanData({ planId: data.planId, subscriptionStatus: data.subscriptionStatus ?? null });
       }
     } catch {
       // silently fail
@@ -181,6 +216,7 @@ export default function DashboardPage() {
 
   const handleCreateSurvey = async () => {
     setCreating(true);
+    setCreateError("");
     try {
       const res = await fetch("/api/surveys", {
         method: "POST",
@@ -188,11 +224,55 @@ export default function DashboardPage() {
         body: JSON.stringify({ title: "Nova Pesquisa" }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error || "Erro ao criar pesquisa");
+        setCreating(false);
+        return;
+      }
       if (data.survey) {
+        setCreateModalOpen(false);
         router.push(`/editor/${data.survey.id}`);
       }
     } catch (error) {
       console.error("Error creating survey:", error);
+      setCreateError("Erro ao criar pesquisa. Tente novamente.");
+      setCreating(false);
+    }
+  };
+
+  const _status = planData?.subscriptionStatus ?? session?.user?.subscriptionStatus;
+  const _isTrialing = _status === "trialing";
+  const _isActiveStatus = _status === "active";
+  const _planId = planData?.planId ?? session?.user?.planId;
+  const _effectivePlan = _isActiveStatus ? (_planId ?? "pro") : null;
+  const isPro = _isTrialing || _effectivePlan === "pro" || _effectivePlan === "enterprise";
+
+  const handleCreateFromTemplate = async (template: SurveyTemplate) => {
+    if (!isPro) {
+      router.push("/dashboard/settings");
+      return;
+    }
+    setCreating(true);
+    setCreateError("");
+    try {
+      const res = await fetch("/api/surveys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: template.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error || "Erro ao criar pesquisa");
+        setCreating(false);
+        return;
+      }
+      if (data.survey) {
+        setCreateModalOpen(false);
+        router.push(`/editor/${data.survey.id}`);
+      }
+    } catch (error) {
+      console.error("Error creating survey from template:", error);
+      setCreateError("Erro ao criar pesquisa. Tente novamente.");
       setCreating(false);
     }
   };
@@ -312,15 +392,18 @@ window.addEventListener("message", function(e) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surveys, t]);
 
-  const nonDraftSurveys = surveys.filter((s) => s.status !== "draft");
+  const ownedSurveys = useMemo(() => surveys.filter((s) => !s.isCollaborator), [surveys]);
+  const sharedSurveys = useMemo(() => surveys.filter((s) => s.isCollaborator), [surveys]);
+
+  const nonDraftSurveys = ownedSurveys.filter((s) => s.status !== "draft");
   const avgResponses =
     nonDraftSurveys.length > 0
       ? (nonDraftSurveys.reduce((a, s) => a + s.responseCount, 0) / nonDraftSurveys.length).toFixed(1)
       : "0";
 
   const maxResponses = useMemo(
-    () => Math.max(...surveys.map((s) => s.responseCount), 1),
-    [surveys]
+    () => Math.max(...ownedSurveys.map((s) => s.responseCount), 1),
+    [ownedSurveys]
   );
 
   // ── Stat cards config ───────────────────────────────────────────────────────
@@ -448,7 +531,7 @@ window.addEventListener("message", function(e) {
             {/* Free credits info */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
               <p className="text-xs font-semibold text-gray-700 mb-1">{t.dashboard.credits.freeTitle}</p>
-              <p className="text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: t.dashboard.credits.freeInfo }} />
+              <p className="text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: t.dashboard.credits.freeInfo.replace("{n}", String(monthlyLimit ?? 10)) }} />
             </div>
 
             {/* Package */}
@@ -490,113 +573,242 @@ window.addEventListener("message", function(e) {
       </Dialog>
 
       {/* ── Create Modal ────────────────────────────────────────────────────── */}
-      <Dialog open={createModalOpen} onOpenChange={(open) => { setCreateModalOpen(open); if (!open) { setAiPrompt(""); setAiError(""); } }}>
+      <Dialog open={createModalOpen} onOpenChange={(open) => { setCreateModalOpen(open); if (!open) { setAiPrompt(""); setAiError(""); setCreateError(""); setCreateTab("ai"); } }}>
         <DialogContent className="max-w-lg p-0 gap-0">
           <DialogTitle className="sr-only">{t.dashboard.createModal.title}</DialogTitle>
           <DialogDescription className="sr-only">{t.dashboard.createModal.subtitle}</DialogDescription>
+
+          {/* Header */}
           <div className="px-6 py-5 border-b border-gray-100">
             <h2 className="text-base font-semibold text-gray-900">{t.dashboard.createModal.title}</h2>
             <p className="text-xs text-gray-500 mt-0.5">{t.dashboard.createModal.subtitle}</p>
           </div>
 
-          <div className="p-6 space-y-4">
-            {/* AI option */}
-            <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{t.dashboard.createModal.aiTitle}</p>
-                    <p className="text-xs text-gray-500">{t.dashboard.createModal.aiSubtitle}</p>
-                  </div>
-                </div>
-                {credits !== null && (
-                  <button
-                    onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 ${
-                      credits === 0
-                        ? "bg-red-100 text-red-700"
-                        : credits <= 3
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    <Zap className="w-3 h-3" />
-                    {credits !== 1
-                      ? t.dashboard.credits.badgePlural.replace("{n}", String(credits))
-                      : t.dashboard.credits.badge.replace("{n}", String(credits))}
-                  </button>
-                )}
-              </div>
-
-              <textarea
-                value={aiPrompt}
-                onChange={(e) => { setAiPrompt(e.target.value); setAiError(""); }}
-                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerateWithAi(); }}
-                placeholder={t.dashboard.createModal.aiPlaceholder}
-                rows={4}
-                className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400 resize-none"
-              />
-
-              {aiError && (
-                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{aiError}</p>
-              )}
-
-              {credits === 0 && (
-                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                  {t.dashboard.createModal.aiNoCredits}{" "}
-                  <button onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }} className="underline font-medium">
-                    {t.dashboard.createModal.aiBuyCredits}
-                  </button>
-                </div>
-              )}
-
-              <button
-                onClick={handleGenerateWithAi}
-                disabled={!aiPrompt.trim() || generatingAi || credits === 0}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
-              >
-                {generatingAi ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" />{t.dashboard.createModal.aiGenerating}</>
-                ) : (
-                  <><Sparkles className="w-4 h-4" />{t.dashboard.createModal.aiGenerate}</>
-                )}
-              </button>
-              {!generatingAi && aiPrompt.trim() && (
-                <p className="text-[11px] text-gray-400 text-center">{t.dashboard.createModal.aiHint}</p>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs text-gray-400">{t.dashboard.createModal.or}</span>
-              <div className="flex-1 h-px bg-gray-100" />
-            </div>
-
-            {/* Manual option */}
+          {/* Tabs */}
+          <div className="flex gap-1 px-6 pt-4">
             <button
-              onClick={() => { setCreateModalOpen(false); handleCreateSurvey(); }}
-              disabled={creating || generatingAi}
-              className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
+              onClick={() => setCreateTab("ai")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                createTab === "ai"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <PenSquare className="w-4 h-4 text-gray-500" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">{t.dashboard.createModal.manualTitle}</p>
-                  <p className="text-xs text-gray-500">{t.dashboard.createModal.manualSubtitle}</p>
-                </div>
-              </div>
-              {creating
-                ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                : <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
-              }
+              <Sparkles className="w-3 h-3" />
+              Gerar com IA
             </button>
+            <button
+              onClick={() => setCreateTab("templates")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                createTab === "templates"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              <LayoutTemplate className="w-3 h-3" />
+              Templates
+              {!isPro && <Lock className="w-2.5 h-2.5 opacity-60" />}
+            </button>
+          </div>
+
+          <div className="p-6 space-y-4">
+
+            {/* ── AI tab ── */}
+            {createTab === "ai" && (
+              <>
+                <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{t.dashboard.createModal.aiTitle}</p>
+                        <p className="text-xs text-gray-500">{t.dashboard.createModal.aiSubtitle}</p>
+                      </div>
+                    </div>
+                    {credits !== null && (
+                      <button
+                        onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 ${
+                          credits === 0
+                            ? "bg-red-100 text-red-700"
+                            : credits <= 3
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        <Zap className="w-3 h-3" />
+                        {credits !== 1
+                          ? t.dashboard.credits.badgePlural.replace("{n}", String(credits))
+                          : t.dashboard.credits.badge.replace("{n}", String(credits))}
+                      </button>
+                    )}
+                  </div>
+
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(e) => { setAiPrompt(e.target.value); setAiError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerateWithAi(); }}
+                    placeholder={t.dashboard.createModal.aiPlaceholder}
+                    rows={4}
+                    className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-gray-900 placeholder-gray-400 resize-none"
+                  />
+
+                  {aiError && (
+                    <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{aiError}</p>
+                  )}
+
+                  {credits === 0 && (
+                    <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      {t.dashboard.createModal.aiNoCredits}{" "}
+                      <button onClick={() => { setCreateModalOpen(false); setBuyModalOpen(true); }} className="underline font-medium">
+                        {t.dashboard.createModal.aiBuyCredits}
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleGenerateWithAi}
+                    disabled={!aiPrompt.trim() || generatingAi || credits === 0}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+                  >
+                    {generatingAi ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />{t.dashboard.createModal.aiGenerating}</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" />{t.dashboard.createModal.aiGenerate}</>
+                    )}
+                  </button>
+                  {!generatingAi && aiPrompt.trim() && (
+                    <p className="text-[11px] text-gray-400 text-center">{t.dashboard.createModal.aiHint}</p>
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-100" />
+                  <span className="text-xs text-gray-400">{t.dashboard.createModal.or}</span>
+                  <div className="flex-1 h-px bg-gray-100" />
+                </div>
+
+                {createError && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{createError}</p>
+                )}
+
+                {/* Manual */}
+                <button
+                  onClick={handleCreateSurvey}
+                  disabled={creating || generatingAi}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <PenSquare className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-900">{t.dashboard.createModal.manualTitle}</p>
+                      <p className="text-xs text-gray-500">{t.dashboard.createModal.manualSubtitle}</p>
+                    </div>
+                  </div>
+                  {creating
+                    ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                    : <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                  }
+                </button>
+              </>
+            )}
+
+            {/* ── Templates tab ── */}
+            {createTab === "templates" && (
+              <>
+                {!isPro && (
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                    <Lock className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
+                    <span>
+                      Templates fazem parte do <strong>Plano Pro</strong>.{" "}
+                      <button
+                        onClick={() => { setCreateModalOpen(false); router.push("/dashboard/settings"); }}
+                        className="underline font-medium"
+                      >
+                        Assinar agora
+                      </button>
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {SURVEY_TEMPLATES.filter((t) => t.complexity === "basic").map((tpl) => {
+                    const Icon = TEMPLATE_ICONS[tpl.segment] ?? LayoutTemplate;
+                    const locked = !isPro;
+                    return (
+                      <button
+                        key={tpl.id}
+                        onClick={() => handleCreateFromTemplate(tpl)}
+                        disabled={creating}
+                        className={`relative text-left p-3.5 rounded-xl border transition-all ${
+                          locked
+                            ? "border-gray-200 bg-gray-50 opacity-70 cursor-pointer"
+                            : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                        }`}
+                      >
+                        {locked && (
+                          <div className="absolute top-2.5 right-2.5">
+                            <Lock className="w-3 h-3 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center mb-2.5">
+                          <Icon className="w-3.5 h-3.5 text-gray-600" />
+                        </div>
+                        <p className="text-xs font-semibold text-gray-900 leading-snug mb-1">{tpl.title}</p>
+                        <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">{tpl.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Ver todos */}
+                <button
+                  onClick={() => { setCreateModalOpen(false); router.push("/dashboard/templates"); }}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-gray-500 hover:text-gray-900 transition-colors"
+                >
+                  <LayoutTemplate className="w-3 h-3" />
+                  Ver todos os templates ({SURVEY_TEMPLATES.length})
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-100" />
+                  <span className="text-xs text-gray-400">{t.dashboard.createModal.or}</span>
+                  <div className="flex-1 h-px bg-gray-100" />
+                </div>
+
+                {createError && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{createError}</p>
+                )}
+
+                <button
+                  onClick={handleCreateSurvey}
+                  disabled={creating}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-xl transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <PenSquare className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-900">{t.dashboard.createModal.manualTitle}</p>
+                      <p className="text-xs text-gray-500">{t.dashboard.createModal.manualSubtitle}</p>
+                    </div>
+                  </div>
+                  {creating
+                    ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                    : <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                  }
+                </button>
+              </>
+            )}
+
           </div>
         </DialogContent>
       </Dialog>
@@ -756,16 +968,94 @@ window.addEventListener("message", function(e) {
         </div>
       )}
 
-      {/* ── Surveys Table ───────────────────────────────────────────────────── */}
+      {/* ── Shared surveys section ─────────────────────────────────────────── */}
+      {!loading && sharedSurveys.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+            <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+              <Users className="w-3.5 h-3.5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Compartilhadas comigo</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {sharedSurveys.length === 1
+                  ? "1 pesquisa compartilhada com você"
+                  : `${sharedSurveys.length} pesquisas compartilhadas com você`}
+              </p>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {[...sharedSurveys]
+              .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+              .map((survey) => (
+                <div
+                  key={survey.id}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/dashboard/survey/${survey.id}`)}
+                >
+                  {/* Icon */}
+                  <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-blue-500" />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-900 truncate">{survey.title}</p>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${STATUS_BADGE[survey.status]}`}>
+                        {STATUS_META[survey.status].label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                      <span className="text-xs text-gray-400">
+                        Por <span className="font-medium text-gray-600">{survey.inviterName}</span>
+                      </span>
+                      <span className="text-gray-200">·</span>
+                      <span className="text-xs text-gray-400">{survey.responseCount} respostas</span>
+                      <span className="text-gray-200">·</span>
+                      <span className="text-xs text-gray-400">Atualizado {formatDate(survey.updatedAt)}</span>
+                    </div>
+                  </div>
+
+                  {/* Role badge */}
+                  <span className={`flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                    survey.collaboratorRole === "editor"
+                      ? "bg-purple-50 text-purple-700 border-purple-100"
+                      : "bg-gray-50 text-gray-600 border-gray-200"
+                  }`}>
+                    {survey.collaboratorRole === "editor"
+                      ? <><Pencil className="w-3 h-3" />Editor</>
+                      : <><Eye className="w-3 h-3" />Visualizador</>}
+                  </span>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {survey.collaboratorRole === "editor" && (
+                      <button
+                        onClick={() => router.push(`/editor/${survey.id}`)}
+                        className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                        title={t.common.edit}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── My surveys table ────────────────────────────────────────────────── */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">{t.dashboard.table.title}</h2>
-            {!loading && surveys.length > 0 && (
+            {!loading && ownedSurveys.length > 0 && (
               <p className="text-xs text-gray-400 mt-0.5">
-                {surveys.length !== 1
-                  ? t.dashboard.table.subtitlePlural.replace("{n}", String(surveys.length))
-                  : t.dashboard.table.subtitle.replace("{n}", String(surveys.length))}
+                {ownedSurveys.length !== 1
+                  ? t.dashboard.table.subtitlePlural.replace("{n}", String(ownedSurveys.length))
+                  : t.dashboard.table.subtitle.replace("{n}", String(ownedSurveys.length))}
               </p>
             )}
           </div>
@@ -783,7 +1073,7 @@ window.addEventListener("message", function(e) {
               </div>
             ))}
           </div>
-        ) : surveys.length === 0 ? (
+        ) : ownedSurveys.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
               <PenSquare className="w-6 h-6 text-gray-400" />
@@ -809,7 +1099,7 @@ window.addEventListener("message", function(e) {
               <span className="w-20" />
             </div>
 
-            {[...surveys]
+            {[...ownedSurveys]
               .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
               .map((survey) => {
                 const pct = maxResponses > 0 ? (survey.responseCount / maxResponses) * 100 : 0;

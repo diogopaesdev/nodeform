@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
-import { addCredits } from "@/lib/credits";
+import { addCredits, resetCreditsForPlan } from "@/lib/credits";
 import { activateAddon, deactivateAddon } from "@/lib/services/addons";
 import { AddonId } from "@/types/addon";
+import { PLANS, PlanId } from "@/lib/plans";
+import { getPlanByStripePriceId } from "@/lib/services/plans-firestore";
 import Stripe from "stripe";
+
+const ALL_ADDON_IDS: AddonId[] = ["respondents", "surveyProgress"];
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -31,6 +35,7 @@ export async function POST(req: NextRequest) {
     if (sub.status === "trialing") return "trialing";
     if (sub.status === "active") return "active";
     if (sub.status === "past_due") return "past_due";
+    if (sub.status === "unpaid") return "unpaid";
     return "inactive";
   };
 
@@ -62,6 +67,13 @@ export async function POST(req: NextRequest) {
         const userId = checkoutSession.metadata.userId;
         const addonId = checkoutSession.metadata.addonId as AddonId;
         if (userId && addonId) {
+          // Re-verify plan from Firestore at activation time (defense-in-depth)
+          const userDocSnap = await db.collection("users").doc(userId).get();
+          const planId: string = userDocSnap.data()?.planId ?? "pro";
+          if (planId !== "pro") {
+            console.error(`[security] addon checkout completed for user ${userId} but planId=${planId} — skipping activation`);
+            break;
+          }
           const subscriptionId = checkoutSession.subscription as string;
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const itemId = subscription.items.data[0]?.id;
@@ -74,18 +86,24 @@ export async function POST(req: NextRequest) {
       if (checkoutSession.metadata?.type === "main" && checkoutSession.payment_status === "paid") {
         const userId = checkoutSession.metadata.userId;
         const addonsToActivate = checkoutSession.metadata.addonsToActivate;
+        const incomingPlanId = checkoutSession.metadata.planId ?? "pro";
         if (userId && addonsToActivate) {
-          const subscriptionId = checkoutSession.subscription as string;
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const addonPrices: Record<string, string> = {
-            respondents: process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? "",
-            surveyProgress: process.env.STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID ?? "",
-          };
-          const addonIds = addonsToActivate.split(",") as AddonId[];
-          await Promise.all(addonIds.map((addonId) => {
-            const item = subscription.items.data.find((i) => i.price.id === addonPrices[addonId]);
-            return activateAddon(userId, addonId, item?.id);
-          }));
+          // Addons can only be bundled with a Pro checkout
+          if (incomingPlanId !== "pro") {
+            console.error(`[security] bundled addons in non-pro checkout for user ${userId} (plan=${incomingPlanId}) — skipping activation`);
+          } else {
+            const subscriptionId = checkoutSession.subscription as string;
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const addonPrices: Record<string, string> = {
+              respondents: process.env.STRIPE_ADDON_RESPONDENTS_PRICE_ID ?? "",
+              surveyProgress: process.env.STRIPE_ADDON_SURVEY_PROGRESS_PRICE_ID ?? "",
+            };
+            const addonIds = addonsToActivate.split(",") as AddonId[];
+            await Promise.all(addonIds.map((addonId) => {
+              const item = subscription.items.data.find((i) => i.price.id === addonPrices[addonId]);
+              return activateAddon(userId, addonId, item?.id);
+            }));
+          }
         }
       }
 
@@ -102,6 +120,8 @@ export async function POST(req: NextRequest) {
         subscription.items.data[0]?.current_period_end ??
         (subscription as unknown as Record<string, number>).current_period_end;
 
+      const planId = (checkoutSession.metadata?.planId ?? "pro") as PlanId;
+
       await userDoc.ref.update({
         stripeSubscriptionId: subscriptionId,
         subscriptionStatus: getSubscriptionStatus(subscription),
@@ -111,7 +131,17 @@ export async function POST(req: NextRequest) {
         trialEnd: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
           : null,
+        planId,
       });
+
+      // Auto-activate all addons for plans that include them (e.g. Enterprise)
+      if (PLANS[planId]?.limits.includesAllAddons) {
+        await Promise.all(ALL_ADDON_IDS.map((addonId) => activateAddon(userDoc.id, addonId)));
+      }
+
+      // Give the plan's monthly credits immediately on new subscription/upgrade
+      await resetCreditsForPlan(userDoc.id, planId);
+
       break;
     }
 
@@ -126,16 +156,30 @@ export async function POST(req: NextRequest) {
         subscription.items.data[0]?.current_period_end ??
         (subscription as unknown as Record<string, number>).current_period_end;
 
-      await userDoc.ref.update({
+      // Derive planId from Firestore plans collection (supports custom/enterprise plans)
+      const planMatches = await Promise.all(
+        subscription.items.data.map((item) => getPlanByStripePriceId(item.price.id))
+      );
+      const matchedPlanId = planMatches.find(Boolean)?.id;
+
+      const updatePayload: Record<string, unknown> = {
         stripeSubscriptionId: subscription.id,
         subscriptionStatus: getSubscriptionStatus(subscription),
-        subscriptionCurrentPeriodEnd: new Date(
-          periodEnd * 1000
-        ).toISOString(),
+        subscriptionCurrentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
         trialEnd: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
           : null,
-      });
+      };
+      if (matchedPlanId) updatePayload.planId = matchedPlanId;
+
+      await userDoc.ref.update(updatePayload);
+
+      // Reset credits when the user switches to a different plan mid-cycle
+      const previousPlanId = userDoc.data()?.planId as PlanId | undefined;
+      if (matchedPlanId && matchedPlanId !== previousPlanId) {
+        await resetCreditsForPlan(userDoc.id, matchedPlanId as PlanId);
+      }
+
       break;
     }
 
@@ -168,11 +212,31 @@ export async function POST(req: NextRequest) {
       if (isMainSub) {
         await userDoc.ref.update({
           subscriptionStatus: "inactive",
+          planId: "growth",
           stripeSubscriptionId: null,
           subscriptionCurrentPeriodEnd: null,
-          trialEnd: null,
+          // trialEnd is intentionally preserved so the user cannot claim a second trial
         });
       }
+      break;
+    }
+    case "invoice.payment_succeeded": {
+      const invoice = event.data.object as Stripe.Invoice;
+
+      // Only reset credits on subscription renewals, not on first payment
+      // (first payment is handled by checkout.session.completed)
+      if (invoice.billing_reason !== "subscription_cycle") break;
+
+      const customerId = invoice.customer as string;
+      const userDoc = await getUserByCustomerId(customerId);
+      if (!userDoc) break;
+
+      const userData = userDoc.data();
+      const subscriptionStatus: string = userData?.subscriptionStatus ?? "inactive";
+      const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
+      const planId: PlanId = (userData?.planId as PlanId | undefined) ?? (isActive ? "pro" : "growth");
+
+      await resetCreditsForPlan(userDoc.id, planId);
       break;
     }
   }

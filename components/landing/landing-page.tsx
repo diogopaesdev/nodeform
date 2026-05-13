@@ -3,7 +3,7 @@
 import { motion, useInView } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight, Check, GitBranch, BarChart2,
@@ -11,8 +11,10 @@ import {
   Play, CircleDot, CheckSquare, Star, FlagTriangleRight,
   GripVertical, Settings, Save, ArrowLeft, Trash2,
   Sparkles, Brain, FileSearch, Languages, FileBarChart2, MessageSquare,
-  AlignLeft,
+  AlignLeft, HeartPulse, Building2, BookOpen, MessageCircle, Quote, Activity, CalendarDays, Lock,
 } from "lucide-react";
+
+const WHATSAPP_URL = "https://wa.me/5541995311160?text=Ol%C3%A1%2C%20vim%20pelo%20site%20do%20SurveyFlow%20e%20gostaria%20de%20saber%20mais!";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/lib/i18n";
 
@@ -235,31 +237,21 @@ function NodeEndScreen({ x, y }: { x: number; y: number }) {
 // ─── Flow Canvas ──────────────────────────────────────────────────────────────
 
 function FlowCanvas() {
-  // Posições dos nós (left, top) — largura fixa 240px
-  // N1 Pres:   left=16,  top=108  → source x=256,  y=179   (108 + 143/2)
-  // N2 Choice: left=286, top=92   → target x=286,  y=175   (92  + 167/2)
-  //   header=49px, p-3(12)+opt(26)+gap(8) per row:
-  //   opt0 center: 49+12+13=74  → y=92+74=166
-  //   opt1 center: 49+12+26+8+13=108 → y=92+108=200
-  //   opt2 center: 49+12+26+8+26+8+13=142 → y=92+142=234
-  // N4 End:    left=560, top=40   → target x=560,  y=92    (40  + 105/2)
-  // N3 Rating: left=560, top=252  → target x=560,  y=314   (252 + 124/2)
-  // Largura dos nós: 260px
-  // N1 Pres:    left=16,  right=276
-  // N2 Choice:  left=320, right=580  (gap=44px)
-  // N3/N4:      left=624             (gap=44px)
+  // Layout: Presentation (left, centered) → SingleChoice (middle, top-shifted)
+  // opt1 → TextInput (top-right, "tell us more" branch)
+  // opt2+3 → EndScreen (bottom-right, quick-exit branch)
+  // Nodes are 260px wide; right column partially fades out (intentional).
   const h = {
-    n1src:  { x: 276, y: 179 },
-    n2tgt:  { x: 320, y: 185 },
-    n2o1:   { x: 580, y: 196 },
-    n2o2:   { x: 580, y: 228 },
-    n2o3:   { x: 580, y: 260 },
-    n3tgt:  { x: 624, y: 322 },
-    n4tgt:  { x: 624, y: 90  },
+    n1src:  { x: 276, y: 211 }, // Presentation right center
+    n2tgt:  { x: 316, y: 138 }, // SingleChoice left center
+    n2o1:   { x: 576, y: 132 }, // opt1 right handle
+    n2o2:   { x: 576, y: 166 }, // opt2 right handle
+    n2o3:   { x: 576, y: 200 }, // opt3 right handle
+    n3tgt:  { x: 620, y: 78  }, // TextInput left center
+    n4tgt:  { x: 620, y: 322 }, // EndScreen left center
   };
 
   return (
-    // Fundo idêntico ao React Flow (BackgroundVariant.Dots)
     <div
       className="relative w-full h-[420px] overflow-hidden"
       style={{
@@ -272,9 +264,9 @@ function FlowCanvas() {
       {/* Edges SVG */}
       <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 2 }}>
         <AnimatedEdge from={h.n1src} to={h.n2tgt} delay={0.5}  />
-        <AnimatedEdge from={h.n2o1}  to={h.n4tgt} delay={0.82} />
-        <AnimatedEdge from={h.n2o2}  to={h.n3tgt} delay={1.02} />
-        <AnimatedEdge from={h.n2o3}  to={h.n3tgt} delay={1.22} />
+        <AnimatedEdge from={h.n2o1}  to={h.n3tgt} delay={0.82} />
+        <AnimatedEdge from={h.n2o2}  to={h.n4tgt} delay={1.02} />
+        <AnimatedEdge from={h.n2o3}  to={h.n4tgt} delay={1.22} />
 
         {/* Handles */}
         <SvgHandle cx={h.n1src.x} cy={h.n1src.y} fill="#f97316" delay={0.45} />
@@ -288,13 +280,13 @@ function FlowCanvas() {
 
       {/* Nodes */}
       <div className="absolute inset-0" style={{ zIndex: 3 }}>
-        <NodePresentation  x={16}  y={108} />
-        <NodeSingleChoice  x={320} y={88}  />
-        <NodeTextInput     x={624} y={240} />
-        <NodeEndScreen     x={624} y={36}  />
+        <NodePresentation  x={16}  y={136} />
+        <NodeSingleChoice  x={316} y={52}  />
+        <NodeTextInput     x={620} y={20}  />
+        <NodeEndScreen     x={620} y={270} />
       </div>
 
-      {/* Fade lateral (para o canvas "desaparecer" na borda direita) */}
+      {/* Fade (right bleed + top/bottom edges) */}
       <div className="absolute inset-0 pointer-events-none z-10"
         style={{ boxShadow: "inset -60px 0 40px -20px white, inset 0 -30px 30px -15px white, inset 0 8px 20px -12px white" }} />
     </div>
@@ -338,11 +330,12 @@ export function LandingPage() {
     { label: t.landing.planFeatures[9].label },
     { label: t.landing.planFeatures[10].label },
     { label: t.landing.planFeatures[11].label },
-    { label: t.landing.planFeatures[12].label, soon: true },
+    { label: t.landing.planFeatures[12].label },
     { label: t.landing.planFeatures[13].label, soon: true },
     { label: t.landing.planFeatures[14].label, soon: true },
     { label: t.landing.planFeatures[15].label, soon: true },
     { label: t.landing.planFeatures[16].label, soon: true },
+    { label: t.landing.planFeatures[17].label, soon: true },
   ];
 
   const AI_FEATURES: { icon: React.ElementType; title: string; desc: string; available: boolean }[] = [
@@ -354,11 +347,13 @@ export function LandingPage() {
     { icon: Languages,     title: t.landing.aiFeatures[5].title, desc: t.landing.aiFeatures[5].desc, available: false },
   ];
 
-  const USE_CASES = [
-    { icon: Users,      title: t.landing.useCases.items[0].title, desc: t.landing.useCases.items[0].desc },
-    { icon: Zap,        title: t.landing.useCases.items[1].title, desc: t.landing.useCases.items[1].desc },
-    { icon: TrendingUp, title: t.landing.useCases.items[2].title, desc: t.landing.useCases.items[2].desc },
-    { icon: GitBranch,  title: t.landing.useCases.items[3].title, desc: t.landing.useCases.items[3].desc },
+  const NICHES = [
+    { icon: HeartPulse,   niche: t.landing.useCases.items[0].niche, title: t.landing.useCases.items[0].title, desc: t.landing.useCases.items[0].desc, href: "/clinicas-esteticas" },
+    { icon: Building2,    niche: t.landing.useCases.items[1].niche, title: t.landing.useCases.items[1].title, desc: t.landing.useCases.items[1].desc, href: "/imobiliarias" },
+    { icon: BarChart2,    niche: t.landing.useCases.items[2].niche, title: t.landing.useCases.items[2].title, desc: t.landing.useCases.items[2].desc, href: "/pesquisa-de-mercado" },
+    { icon: BookOpen,     niche: t.landing.useCases.items[3].niche, title: t.landing.useCases.items[3].title, desc: t.landing.useCases.items[3].desc, href: "/infoprodutores" },
+    { icon: Activity,     niche: t.landing.useCases.items[4].niche, title: t.landing.useCases.items[4].title, desc: t.landing.useCases.items[4].desc, href: "/healthcare" },
+    { icon: CalendarDays, niche: t.landing.useCases.items[5].niche, title: t.landing.useCases.items[5].title, desc: t.landing.useCases.items[5].desc, href: "/eventos" },
   ];
 
   const PRICING_HIGHLIGHTS = [
@@ -392,6 +387,20 @@ export function LandingPage() {
     { id: "endScreen",      title: t.landing.editorMock.nodeEndScreen,       Icon: FlagTriangleRight, color: "text-rose-600",   bg: "bg-rose-100"   },
   ];
 
+  const [activePlan, setActivePlan] = useState<"growth" | "pro" | "enterprise">("growth");
+
+  const TEMPLATES = [
+    { icon: Star,        ...t.landing.templates.items[0] },
+    { icon: CalendarDays, ...t.landing.templates.items[1] },
+    { icon: BarChart2,    ...t.landing.templates.items[2] },
+    { icon: TrendingUp,   ...t.landing.templates.items[3] },
+    { icon: HeartPulse,   ...t.landing.templates.items[4] },
+    { icon: BookOpen,     ...t.landing.templates.items[5] },
+    { icon: Shield,       ...t.landing.templates.items[6] },
+    { icon: Building2,    ...t.landing.templates.items[7] },
+    { icon: Brain,        ...t.landing.templates.items[8] },
+  ];
+
   useEffect(() => {
     if (session) router.push("/dashboard");
   }, [session, router]);
@@ -423,8 +432,10 @@ export function LandingPage() {
           <nav className="hidden md:flex items-center gap-0.5 px-1">
             {[
               { href: "#features",   label: t.landing.nav.features },
+              { href: "#templates",  label: t.landing.nav.templates },
               { href: "#ai",         label: t.landing.nav.ai },
               { href: "#how",        label: t.landing.nav.how },
+              { href: "#segments",   label: t.landing.nav.segments },
               { href: "#enterprise", label: t.landing.nav.enterprise },
               { href: "#pricing",    label: t.landing.nav.pricing },
             ].map(({ href, label }) => (
@@ -466,7 +477,7 @@ export function LandingPage() {
 
       {/* ─ Hero ───────────────────────────────────────────────────────────── */}
       <section className="pt-[96px] pb-12 px-6">
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-center">
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
@@ -482,7 +493,7 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="text-[44px] sm:text-[64px] font-extrabold tracking-[-0.03em] leading-[1.06] text-gray-950 mb-6"
+            className="text-[44px] sm:text-[58px] font-extrabold tracking-[-0.03em] leading-[1.06] text-gray-950 mb-6"
           >
             {t.landing.hero.title1}{" "}
             <span className="relative inline-block">
@@ -584,7 +595,7 @@ export function LandingPage() {
             <div className="flex" style={{ height: 354 }}>
 
               {/* Sidebar — replica do EditorSidebar (w-56 bg-white border-r border-gray-200) */}
-              <div className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden sm:flex">
+              <div className="w-56 bg-white border-r border-gray-200 flex-col flex-shrink-0 hidden sm:flex">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <h3 className="font-semibold text-gray-900 text-sm">{t.landing.editorMock.sidebarTitle}</h3>
                   <p className="text-xs text-gray-400 mt-0.5">{t.landing.editorMock.sidebarDrag}</p>
@@ -684,12 +695,107 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ─ Templates ─────────────────────────────────────────────────────── */}
+      <section id="templates" className="py-24 px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+
+          <FadeUp className="text-center mb-10">
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.templates.sectionLabel}</p>
+            <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
+              {t.landing.templates.title}
+            </h2>
+            <p className="text-[16px] text-gray-500 mt-3 max-w-xl mx-auto">
+              {t.landing.templates.subtitle}
+            </p>
+          </FadeUp>
+
+          {/* Plan tabs */}
+          <FadeUp delay={0.06}>
+            <div className="flex items-center justify-center gap-2 mb-10">
+              {(["growth", "pro", "enterprise"] as const).map((plan) => (
+                <button
+                  key={plan}
+                  onClick={() => setActivePlan(plan)}
+                  className={`h-9 px-5 rounded-full text-[13px] font-semibold transition-colors ${
+                    activePlan === plan
+                      ? "bg-gray-900 text-white shadow-sm"
+                      : "bg-white border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  }`}
+                >
+                  {plan === "growth" ? t.landing.templates.tabGrowth
+                    : plan === "pro" ? t.landing.templates.tabPro
+                    : t.landing.templates.tabEnterprise}
+                </button>
+              ))}
+            </div>
+          </FadeUp>
+
+          {/* Templates grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TEMPLATES.map((tpl, i) => {
+              const isLocked =
+                (activePlan === "growth" && tpl.tier !== "basic") ||
+                (activePlan === "pro" && tpl.tier === "advanced");
+              const tierColor =
+                tpl.tier === "basic"
+                  ? "bg-blue-50 text-blue-600"
+                  : tpl.tier === "intermediate"
+                  ? "bg-purple-50 text-purple-600"
+                  : "bg-amber-50 text-amber-600";
+              return (
+                <FadeUp key={i} delay={i * 0.05}>
+                  <div className={`relative p-5 rounded-2xl border h-full flex flex-col transition-colors ${
+                    isLocked
+                      ? "bg-gray-100/60 border-gray-200/60"
+                      : "bg-white border-gray-200 hover:border-gray-300"
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${tierColor}`}>
+                        {tpl.tier === "basic"
+                          ? t.landing.templates.tierBasic
+                          : tpl.tier === "intermediate"
+                          ? t.landing.templates.tierIntermediate
+                          : t.landing.templates.tierAdvanced}
+                      </span>
+                    </div>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 flex-shrink-0 ${
+                      isLocked ? "bg-gray-200" : "bg-orange-50"
+                    }`}>
+                      <tpl.icon className={`w-[18px] h-[18px] ${isLocked ? "text-gray-400" : "text-orange-500"}`} />
+                    </div>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${isLocked ? "text-gray-400" : "text-gray-400"}`}>
+                      {tpl.category}
+                    </p>
+                    <h3 className={`text-[14px] font-semibold mb-1.5 ${isLocked ? "text-gray-400" : "text-gray-900"}`}>
+                      {tpl.title}
+                    </h3>
+                    <p className={`text-[12px] leading-relaxed flex-1 ${isLocked ? "text-gray-300" : "text-gray-500"}`}>
+                      {tpl.desc}
+                    </p>
+                    {isLocked && (
+                      <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-400">
+                        <Lock className="w-3 h-3 flex-shrink-0" />
+                        {tpl.tier === "intermediate"
+                          ? t.landing.templates.unlockPro
+                          : t.landing.templates.unlockEnterprise}
+                      </div>
+                    )}
+                  </div>
+                </FadeUp>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
       {/* ─ AI Section ─────────────────────────────────────────────────────── */}
       <section id="ai" className="py-24 px-6 bg-gray-950 overflow-hidden">
         <div className="max-w-5xl mx-auto">
 
-          <FadeUp className="mb-16">
-            <div className="flex items-center gap-2 mb-4">
+          {/* Header */}
+          <FadeUp className="mb-12 text-center">
+            <div className="flex items-center gap-2 mb-4 justify-center">
               <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
@@ -698,88 +804,93 @@ export function LandingPage() {
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-white mb-4">
               {t.landing.ai.title}
             </h2>
-            <p className="text-[16px] text-gray-400 max-w-xl leading-relaxed">
+            <p className="text-[16px] text-gray-400 max-w-xl mx-auto leading-relaxed">
               {t.landing.ai.credits} <strong className="text-white">{t.landing.ai.creditsHighlight}</strong> {t.landing.ai.creditsEnd}
             </p>
           </FadeUp>
 
-          {/* Prompt mockup */}
-          <FadeUp delay={0.08} className="mb-14">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 max-w-2xl">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-7 h-7 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Users className="w-3.5 h-3.5 text-white/60" />
-                </div>
-                <div className="flex-1 bg-white/8 rounded-xl px-4 py-3 text-[14px] text-white/80 leading-relaxed border border-white/10">
-                  {t.landing.aiMock.prompt}
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Sparkles className="w-3.5 h-3.5 text-gray-900" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <span className="text-[12px] font-medium text-white/40">{t.landing.aiMock.generated}</span>
-                    <span className="text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">{t.landing.aiMock.creditUsed}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {AI_MOCK_NODES.map((node, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: -8 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.3 + i * 0.08, duration: 0.4 }}
-                        className="flex items-center gap-2.5 bg-white/8 border border-white/10 rounded-lg px-3 py-2"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full bg-white/30 flex-shrink-0" />
-                        <span className="text-[12px] text-white/70">{node}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </FadeUp>
+          {/* Two-column layout: mockup + features grid */}
+          <div className="grid lg:grid-cols-2 gap-6 items-start">
 
-          {/* AI Features grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {AI_FEATURES.map((feat, i) => (
-              <FadeUp key={feat.title} delay={i * 0.06}>
-                <div className={`relative p-5 rounded-2xl border transition-colors h-full ${
-                  feat.available
-                    ? "bg-white/8 border-white/20 hover:border-white/30"
-                    : "bg-white/3 border-white/8"
-                }`}>
-                  {feat.available ? (
-                    <span className="absolute top-4 right-4 text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
-                      {t.landing.featureBadgeAvailable}
-                    </span>
-                  ) : (
-                    <span className="absolute top-4 right-4 text-[10px] font-semibold bg-white/10 text-white/40 px-2 py-0.5 rounded-full">
-                      {t.landing.featureBadgeSoon}
-                    </span>
-                  )}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${feat.available ? "bg-white/15" : "bg-white/6"}`}>
-                    <feat.icon className={`w-4.5 h-4.5 ${feat.available ? "text-white" : "text-white/35"}`} />
+            {/* Prompt mockup */}
+            <FadeUp delay={0.08}>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-7 h-7 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Users className="w-3.5 h-3.5 text-white/60" />
                   </div>
-                  <h3 className={`text-[14px] font-semibold mb-1.5 ${feat.available ? "text-white" : "text-white/40"}`}>
-                    {feat.title}
-                  </h3>
-                  <p className={`text-[13px] leading-relaxed ${feat.available ? "text-white/60" : "text-white/30"}`}>
-                    {feat.desc}
-                  </p>
+                  <div className="flex-1 bg-white/8 rounded-xl px-4 py-3 text-[14px] text-white/80 leading-relaxed border border-white/10">
+                    {t.landing.aiMock.prompt}
+                  </div>
                 </div>
-              </FadeUp>
-            ))}
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Sparkles className="w-3.5 h-3.5 text-gray-900" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-[12px] font-medium text-white/40">{t.landing.aiMock.generated}</span>
+                      <span className="text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">{t.landing.aiMock.creditUsed}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {AI_MOCK_NODES.map((node, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -8 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.3 + i * 0.08, duration: 0.4 }}
+                          className="flex items-center gap-2.5 bg-white/8 border border-white/10 rounded-lg px-3 py-2"
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-white/30 flex-shrink-0" />
+                          <span className="text-[12px] text-white/70">{node}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* AI Features grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {AI_FEATURES.map((feat, i) => (
+                <FadeUp key={feat.title} delay={0.08 + i * 0.06}>
+                  <div className={`relative p-4 rounded-2xl border transition-colors h-full ${
+                    feat.available
+                      ? "bg-white/8 border-white/20 hover:border-white/30"
+                      : "bg-white/3 border-white/8"
+                  }`}>
+                    {feat.available ? (
+                      <span className="absolute top-3 right-3 text-[10px] font-semibold bg-green-500/20 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
+                        {t.landing.featureBadgeAvailable}
+                      </span>
+                    ) : (
+                      <span className="absolute top-3 right-3 text-[10px] font-semibold bg-white/10 text-white/40 px-2 py-0.5 rounded-full">
+                        {t.landing.featureBadgeSoon}
+                      </span>
+                    )}
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${feat.available ? "bg-white/15" : "bg-white/6"}`}>
+                      <feat.icon className={`w-4 h-4 ${feat.available ? "text-white" : "text-white/35"}`} />
+                    </div>
+                    <h3 className={`text-[13px] font-semibold mb-1 ${feat.available ? "text-white" : "text-white/40"}`}>
+                      {feat.title}
+                    </h3>
+                    <p className={`text-[12px] leading-relaxed ${feat.available ? "text-white/60" : "text-white/30"}`}>
+                      {feat.desc}
+                    </p>
+                  </div>
+                </FadeUp>
+              ))}
+            </div>
+
           </div>
 
         </div>
       </section>
 
-      {/* ─ Use Cases ──────────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-gray-50">
+      {/* ─ Niche Segments ─────────────────────────────────────────────────── */}
+      <section id="segments" className="py-24 px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <FadeUp className="text-center mb-16">
             <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.useCases.sectionLabel}</p>
@@ -789,20 +900,57 @@ export function LandingPage() {
           </FadeUp>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            {USE_CASES.map((item, i) => (
-              <FadeUp key={item.title} delay={i * 0.08}>
-                <div className="flex gap-4 p-6 bg-white rounded-2xl border border-gray-200">
-                  <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-5 h-5 text-gray-600" />
+            {NICHES.map((item, i) => (
+              <FadeUp key={item.niche} delay={i * 0.08}>
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="flex flex-col gap-4 p-6 bg-white rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors h-full"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <span className="text-[11px] font-semibold text-orange-500 uppercase tracking-wider">{item.niche}</span>
                   </div>
-                  <div>
-                    <h3 className="text-[15px] font-semibold text-gray-900 mb-1">{item.title}</h3>
+                  <div className="flex-1">
+                    <h3 className="text-[16px] font-semibold text-gray-900 mb-2">{item.title}</h3>
                     <p className="text-[13px] text-gray-500 leading-relaxed">{item.desc}</p>
                   </div>
-                </div>
+                  <Link
+                    href={item.href}
+                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-700 hover:text-orange-600 transition-colors"
+                  >
+                    {t.landing.useCases.cta} <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </motion.div>
               </FadeUp>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─ Social Proof ───────────────────────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <FadeUp>
+            <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-10">{t.landing.socialProof.sectionLabel}</p>
+            <div className="flex justify-center mb-6">
+              <Quote className="w-8 h-8 text-gray-200" />
+            </div>
+            <blockquote className="text-[18px] sm:text-[22px] font-medium text-gray-800 leading-relaxed mb-10">
+              {t.landing.socialProof.quote}
+            </blockquote>
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-[14px] font-bold text-gray-600">M</span>
+              </div>
+              <div className="text-left">
+                <p className="text-[14px] font-semibold text-gray-900">{t.landing.socialProof.company}</p>
+                <p className="text-[12px] text-gray-500">{t.landing.socialProof.companyDesc}</p>
+              </div>
+            </div>
+          </FadeUp>
         </div>
       </section>
 
@@ -875,116 +1023,187 @@ export function LandingPage() {
       <section id="pricing" className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
 
-          <FadeUp className="mb-14">
+          <FadeUp className="text-center mb-14">
             <p className="text-[12px] font-semibold text-orange-500 uppercase tracking-widest mb-3">{t.landing.pricing.badge}</p>
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] leading-tight text-gray-950">
               {t.landing.pricing.title}
             </h2>
+            <p className="text-[16px] text-gray-500 mt-3 max-w-md mx-auto">
+              7 dias grátis nos planos Growth e Pro. Sem cartão para começar.
+            </p>
           </FadeUp>
 
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+          {/* ── 3 plan cards ── */}
+          <div className="grid md:grid-cols-3 gap-5 mb-16">
 
-            {/* ── Coluna esquerda ── */}
-            <FadeUp className="space-y-8">
-              <p className="text-[17px] text-gray-500 leading-relaxed">
-                {t.landing.pricing.planDesc}
-              </p>
-
-              {/* Destaques */}
-              <div className="space-y-4">
-                {PRICING_HIGHLIGHTS.map((item) => (
-                  <div key={item.title} className="flex gap-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${item.color}`}>
-                      <item.icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-semibold text-gray-900 mb-0.5">{item.title}</p>
-                      <p className="text-[13px] text-gray-500 leading-relaxed">{item.desc}</p>
-                    </div>
+            {/* Growth */}
+            <FadeUp className="pt-5 flex flex-col">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col flex-1">
+                <div className="px-6 pt-6 pb-5 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="w-4 h-4 text-blue-500" />
+                    <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">Growth</span>
                   </div>
-                ))}
-              </div>
-
-              {/* FAQ */}
-              <div className="space-y-3">
-                <p className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider">{t.landing.pricing.faqTitle}</p>
-                {FAQ.map((faq) => (
-                  <details key={faq.q} className="group bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200 overflow-hidden">
-                    <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none text-[14px] font-medium text-gray-800 hover:text-gray-900 transition-colors">
-                      {faq.q}
-                      <span className="text-gray-400 group-open:rotate-45 transition-transform duration-200 flex-shrink-0 text-lg leading-none">+</span>
-                    </summary>
-                    <p className="px-4 pb-4 text-[13px] text-gray-500 leading-relaxed border-t border-gray-100 pt-3">
-                      {faq.a}
-                    </p>
-                  </details>
-                ))}
-              </div>
-            </FadeUp>
-
-            {/* ── Coluna direita: card ── */}
-            <FadeUp delay={0.12}>
-              <div className="rounded-2xl overflow-hidden border-2 border-gray-900 shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
-
-                {/* Header dark */}
-                <div className="px-7 pt-7 pb-6 bg-gray-950">
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-[16px] font-bold text-white">{t.landing.pricing.planName}</span>
-                    <span className="h-6 px-2.5 bg-green-500/20 border border-green-500/30 text-green-400 text-[11px] font-semibold rounded-full flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      {t.landing.pricing.planTrial}
-                    </span>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-[36px] font-extrabold text-gray-900 leading-none tracking-tight">R$&nbsp;97</span>
+                    <span className="text-[13px] text-gray-400">/mês</span>
                   </div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-[52px] font-extrabold text-white leading-none tracking-tight">{t.landing.pricing.planPrice}</span>
-                    <span className="text-[14px] text-gray-500 mb-2">{t.landing.pricing.planPriceUnit}</span>
-                  </div>
-                  <p className="text-[13px] text-gray-500 mt-2">{t.landing.pricing.planNoCard}</p>
+                  <p className="text-[12px] text-gray-400 mt-1.5 leading-snug">
+                    Comece a capturar e organizar dados rapidamente
+                  </p>
                 </div>
-
-                {/* Features */}
-                <div className="px-7 pt-6 pb-2 bg-white">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-4">{t.landing.pricing.planIncluded}</p>
-                  <ul className="space-y-2.5">
-                    {PLAN_FEATURES.filter(f => !f.soon).map((feat) => (
-                      <li key={feat.label} className="flex items-center gap-3 text-[14px]">
-                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-700">{feat.label}</span>
+                <div className="px-6 py-4 flex-1">
+                  <ul className="space-y-2">
+                    {[
+                      "Até 5 pesquisas",
+                      "Até 500 respostas/mês",
+                      "Editor visual node-based",
+                      "Fluxo condicional",
+                      "Analytics e dashboard",
+                      "Exportação CSV",
+                      "3 créditos IA por mês",
+                      "Até 2 colaboradores por pesquisa",
+                    ].map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 text-[13px] text-gray-600">
+                        <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                        {feat}
                       </li>
                     ))}
                   </ul>
-
-                  {PLAN_FEATURES.some(f => f.soon) && (
-                    <>
-                      <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider mt-5 mb-3">{t.landing.pricing.planSoon}</p>
-                      <ul className="space-y-2.5">
-                        {PLAN_FEATURES.filter(f => f.soon).map((feat) => (
-                          <li key={feat.label} className="flex items-center gap-3 text-[14px]">
-                            <Sparkles className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                            <span className="text-gray-400">{feat.label}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
                 </div>
-
-                {/* CTA */}
-                <div className="px-7 pt-5 pb-7 bg-white">
+                <div className="px-6 pb-6">
                   <button
-                    onClick={() => router.push("/login")}
-                    className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    onClick={() => { localStorage.setItem("preferred_plan", "growth"); router.push("/login"); }}
+                    className="w-full h-10 bg-gray-100 hover:bg-gray-200 text-gray-900 text-[14px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
                   >
-                    {t.landing.pricing.trialCta} <ArrowRight className="w-4 h-4" />
+                    Começar agora <ArrowRight className="w-3.5 h-3.5" />
                   </button>
-                  <p className="text-center text-[12px] text-gray-400 mt-3">
-                    {t.landing.pricing.cancelNote}
+                  <p className="text-center text-[11px] text-gray-400 mt-2">7 dias grátis · Sem cartão</p>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* Pro — destaque */}
+            <FadeUp delay={0.08} className="relative pt-5 flex flex-col">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
+                <span className="flex items-center gap-1 bg-amber-400 text-gray-900 text-[11px] font-bold px-3 py-1 rounded-full shadow whitespace-nowrap">
+                  <Star className="w-3 h-3" /> Mais utilizado
+                </span>
+              </div>
+              <div className="bg-gray-900 rounded-2xl overflow-hidden shadow-xl ring-2 ring-gray-900 flex flex-col flex-1">
+                <div className="px-6 pt-6 pb-5 border-b border-white/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">Pro</span>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-[36px] font-extrabold text-white leading-none tracking-tight">R$&nbsp;499</span>
+                    <span className="text-[13px] text-gray-500">/mês</span>
+                  </div>
+                  <p className="text-[12px] text-gray-500 mt-1.5 leading-snug">
+                    Automatize e escale seus fluxos com mais controle
                   </p>
+                </div>
+                <div className="px-6 py-4 flex-1">
+                  <ul className="space-y-2">
+                    {PLAN_FEATURES.filter(f => !f.soon).map((feat) => (
+                      <li key={feat.label} className="flex items-center gap-2 text-[13px] text-gray-300">
+                        <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                        {feat.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="px-6 pb-6">
+                  <button
+                    onClick={() => { localStorage.setItem("preferred_plan", "pro"); router.push("/login"); }}
+                    className="w-full h-10 bg-white hover:bg-gray-100 text-gray-900 text-[14px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" /> Assinar
+                  </button>
+                  <p className="text-center text-[11px] text-gray-500 mt-2">7 dias grátis · Cancele quando quiser</p>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* Enterprise */}
+            <FadeUp delay={0.16} className="pt-5 flex flex-col">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col flex-1">
+                <div className="px-6 pt-6 pb-5 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Shield className="w-4 h-4 text-violet-500" />
+                    <span className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">Enterprise</span>
+                  </div>
+                  <div className="mb-1">
+                    <span className="text-[20px] font-bold text-gray-900">Consulte</span>
+                  </div>
+                  <p className="text-[12px] text-gray-400 mt-1.5 leading-snug">
+                    Estruture operações críticas com segurança, escala e suporte dedicado
+                  </p>
+                </div>
+                <div className="px-6 py-4 flex-1">
+                  <ul className="space-y-2">
+                    {[
+                      "Tudo do Pro incluso",
+                      "Colaboradores ilimitados",
+                      "Todos os módulos inclusos",
+                      "White-label completo",
+                      "Onboarding assistido",
+                      "SLA e estabilidade",
+                      "Suporte dedicado",
+                      "Créditos IA customizados",
+                      "Customizações sob demanda",
+                    ].map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 text-[13px] text-gray-600">
+                        <Check className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="px-6 pb-6">
+                  <a
+                    href={WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full h-10 bg-violet-600 hover:bg-violet-700 text-white text-[14px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" /> Falar com especialista
+                  </a>
+                  <p className="text-center text-[11px] text-gray-400 mt-2">Proposta personalizada · Sem compromisso</p>
                 </div>
               </div>
             </FadeUp>
 
           </div>
+
+          {/* ── FAQ ── */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+            <FadeUp className="space-y-4">
+              <p className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider">{t.landing.pricing.faqTitle}</p>
+              {FAQ.slice(0, Math.ceil(FAQ.length / 2)).map((faq) => (
+                <details key={faq.q} className="group bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none text-[14px] font-medium text-gray-800 hover:text-gray-900 transition-colors">
+                    {faq.q}
+                    <span className="text-gray-400 group-open:rotate-45 transition-transform duration-200 flex-shrink-0 text-lg leading-none">+</span>
+                  </summary>
+                  <p className="px-4 pb-4 text-[13px] text-gray-500 leading-relaxed border-t border-gray-100 pt-3">{faq.a}</p>
+                </details>
+              ))}
+            </FadeUp>
+            <FadeUp delay={0.08} className="space-y-4 lg:pt-9">
+              {FAQ.slice(Math.ceil(FAQ.length / 2)).map((faq) => (
+                <details key={faq.q} className="group bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none text-[14px] font-medium text-gray-800 hover:text-gray-900 transition-colors">
+                    {faq.q}
+                    <span className="text-gray-400 group-open:rotate-45 transition-transform duration-200 flex-shrink-0 text-lg leading-none">+</span>
+                  </summary>
+                  <p className="px-4 pb-4 text-[13px] text-gray-500 leading-relaxed border-t border-gray-100 pt-3">{faq.a}</p>
+                </details>
+              ))}
+            </FadeUp>
+          </div>
+
         </div>
       </section>
 
@@ -998,12 +1217,29 @@ export function LandingPage() {
             <p className="text-[16px] text-gray-400 mb-10 max-w-sm mx-auto">
               {t.landing.ctaSection.subtitle}
             </p>
-            <button
-              onClick={() => router.push("/login")}
-              className="inline-flex items-center gap-2 h-12 px-8 bg-white hover:bg-gray-100 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors"
-            >
-              {t.landing.ctaSection.button}
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={() => router.push("/login")}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 bg-white hover:bg-gray-100 text-gray-900 text-[15px] font-semibold rounded-xl transition-colors"
+              >
+                {t.landing.ctaSection.button}
+              </button>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 bg-white/10 hover:bg-white/20 text-white text-[15px] font-medium rounded-xl transition-colors border border-white/20"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {t.landing.ctaSection.whatsapp}
+              </a>
+              <Link
+                href="#segments"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-8 bg-transparent hover:bg-white/5 text-white/60 hover:text-white text-[15px] font-medium rounded-xl transition-colors"
+              >
+                {t.landing.ctaSection.solutions} <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </FadeUp>
       </section>

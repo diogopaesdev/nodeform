@@ -4,7 +4,9 @@ import { Survey, DashboardStats, SurveyNode, SurveyEdge, SurveyResponse, NodeAns
 // Criar nova pesquisa
 export async function createSurvey(
   userId: string,
-  title: string = "Nova Pesquisa"
+  title: string = "Nova Pesquisa",
+  nodes: SurveyNode[] = [],
+  edges: SurveyEdge[] = []
 ): Promise<Survey> {
   const { db } = getFirebaseAdmin();
   const surveyRef = db.collection("surveys").doc();
@@ -15,8 +17,8 @@ export async function createSurvey(
     userId,
     title,
     description: "",
-    nodes: [],
-    edges: [],
+    nodes,
+    edges,
     createdAt: now,
     updatedAt: now,
     enableScoring: false,
@@ -132,6 +134,33 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
     totalResponses: surveys.reduce((acc, s) => acc + s.responseCount, 0),
     activeSurveys: surveys.filter((s) => s.status === "published").length,
   };
+}
+
+// Contar respostas do workspace no mês corrente (para limite do plano Growth)
+export async function countWorkspaceResponsesThisMonth(workspaceId: string): Promise<number> {
+  const { db } = getFirebaseAdmin();
+
+  const surveysSnapshot = await db.collection("surveys").where("userId", "==", workspaceId).get();
+  if (surveysSnapshot.empty) return 0;
+
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const startIso = startOfMonth.toISOString();
+
+  let total = 0;
+  await Promise.all(
+    surveysSnapshot.docs.map(async (surveyDoc) => {
+      const snap = await db
+        .collection("surveys")
+        .doc(surveyDoc.id)
+        .collection("responses")
+        .where("createdAt", ">=", startIso)
+        .get();
+      total += snap.size;
+    })
+  );
+  return total;
 }
 
 // ==================== RESPOSTAS ====================

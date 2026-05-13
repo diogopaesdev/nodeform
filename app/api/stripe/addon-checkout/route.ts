@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
+import { getActiveUserPlan } from "@/lib/services/plan";
 
 const Schema = z.object({
   addonId: z.enum(["respondents", "surveyProgress"]),
@@ -30,6 +31,16 @@ export async function POST(request: NextRequest) {
 
   if (!priceId) {
     return NextResponse.json({ error: "Addon não configurado" }, { status: 500 });
+  }
+
+  // Read plan from Firestore — never rely on JWT which can be stale.
+  const { limits } = await getActiveUserPlan(session.user.id);
+
+  if (!limits.canPurchaseAddons) {
+    return NextResponse.json(
+      { error: "Módulos adicionais não estão disponíveis no seu plano atual" },
+      { status: 403 }
+    );
   }
 
   const { db } = getFirebaseAdmin();

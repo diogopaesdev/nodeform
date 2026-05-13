@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createSurvey, getUserSurveys, getDashboardStats } from "@/lib/services/surveys";
+import { createSurvey, getUserSurveys, getDashboardStats, getSurvey } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
+import { SURVEY_TEMPLATES, cloneTemplate } from "@/lib/templates";
+import { getActiveUserPlan } from "@/lib/services/plan";
+import { getFirebaseAdmin } from "@/lib/firebase-admin";
+import type { UserTemplate } from "@/lib/services/user-templates";
+import { getCollaboratedSurveyIds } from "@/lib/services/collaborators";
 
 // GET /api/surveys - Listar pesquisas do usuário
 export async function GET(req: NextRequest) {
@@ -13,7 +18,26 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const includeStats = searchParams.get("stats") === "true";
 
-    const surveys = await getUserSurveys(auth.workspaceId);
+    const ownedSurveys = await getUserSurveys(auth.workspaceId);
+
+    // Include surveys the user is a collaborator on (session only, not API key)
+    let collaboratedSurveys: typeof ownedSurveys = [];
+    if (auth.source === "session") {
+      const collaborations = await getCollaboratedSurveyIds(auth.workspaceId);
+      const fetched = await Promise.all(
+        collaborations.map(async ({ surveyId, role, inviterName, invitedBy }) => {
+          const survey = await getSurvey(surveyId);
+          if (!survey) return null;
+          return { ...survey, isCollaborator: true, collaboratorRole: role, inviterName, invitedBy };
+        })
+      );
+      collaboratedSurveys = fetched.filter(Boolean) as typeof ownedSurveys;
+    }
+
+    const surveys = [
+      ...ownedSurveys,
+      ...collaboratedSurveys,
+    ];
 
     if (includeStats && auth.source === "session") {
       const stats = await getDashboardStats(auth.workspaceId);
@@ -30,7 +54,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/surveys - Criar nova pesquisa
+// POST /api/surveys - Criar nova pesquisa (em branco ou a partir de template)
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -39,10 +63,88 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const templateId: string | undefined = body.templateId;
+    const userTemplateId: string | undefined = body.userTemplateId;
+
+    // Read plan from Firestore — never trust JWT for security decisions
+    const { planId, subscriptionStatus, effectivePlanId, limits } = await getActiveUserPlan(session.user.id);
+
+    // Enforce survey count limit based on effective plan
+    if (limits.surveys !== null && limits.surveys !== undefined) {
+      const existing = await getUserSurveys(session.user.id);
+      if (existing.length >= limits.surveys) {
+        return NextResponse.json(
+          { error: `Limite de ${limits.surveys} pesquisas atingido para o plano ${effectivePlanId}` },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (templateId) {
+      // Templates require active paid subscription (no trial)
+      if (subscriptionStatus !== "active") {
+        return NextResponse.json(
+          { error: "Templates disponíveis apenas em planos pagos ativos" },
+          { status: 403 }
+        );
+      }
+
+      const template = SURVEY_TEMPLATES.find((t) => t.id === templateId);
+      if (!template) {
+        return NextResponse.json({ error: "Template não encontrado" }, { status: 404 });
+      }
+
+      // Enforce template complexity access per plan
+      const accessibleComplexities: string[] = ["basic"];
+      if (planId === "pro" || planId === "enterprise") accessibleComplexities.push("intermediate");
+      if (planId === "enterprise") accessibleComplexities.push("advanced");
+
+      if (!accessibleComplexities.includes(template.complexity)) {
+        return NextResponse.json(
+          { error: "Este template não está disponível no seu plano" },
+          { status: 403 }
+        );
+      }
+
+      const { nodes, edges, title } = cloneTemplate(template);
+      const survey = await createSurvey(session.user.id, title, nodes, edges);
+      return NextResponse.json({ survey }, { status: 201 });
+    }
+
+    if (userTemplateId) {
+      const { db } = getFirebaseAdmin();
+      const doc = await db
+        .collection("users")
+        .doc(session.user.id)
+        .collection("userTemplates")
+        .doc(userTemplateId)
+        .get();
+
+      if (!doc.exists) {
+        return NextResponse.json({ error: "Template não encontrado" }, { status: 404 });
+      }
+
+      const userTpl = doc.data() as UserTemplate;
+      const ts = Date.now();
+      const idMap = new Map<string, string>();
+      const nodes = userTpl.nodes.map((n, i) => {
+        const newId = `node_${ts}_${i}`;
+        idMap.set(n.id, newId);
+        return { ...n, id: newId };
+      });
+      const edges = userTpl.edges.map((e, i) => ({
+        ...e,
+        id: `edge_${ts}_${i}`,
+        source: idMap.get(e.source) ?? e.source,
+        target: idMap.get(e.target) ?? e.target,
+      }));
+
+      const survey = await createSurvey(session.user.id, userTpl.title, nodes, edges);
+      return NextResponse.json({ survey }, { status: 201 });
+    }
+
     const title = body.title || "Nova Pesquisa";
-
     const survey = await createSurvey(session.user.id, title);
-
     return NextResponse.json({ survey }, { status: 201 });
   } catch (error) {
     console.error("Error creating survey:", error);

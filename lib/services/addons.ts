@@ -9,7 +9,15 @@ export async function getWorkspaceAddons(workspaceId: string): Promise<Workspace
 }
 
 export async function hasAddon(workspaceId: string, addonId: AddonId): Promise<boolean> {
-  const addons = await getWorkspaceAddons(workspaceId);
+  const { db } = getFirebaseAdmin();
+  const doc = await db.collection("users").doc(workspaceId).get();
+  if (!doc.exists) return false;
+  const data = doc.data()!;
+
+  // Enterprise plan includes all addons automatically
+  if (data.planId === "enterprise") return true;
+
+  const addons = (data.addons as WorkspaceAddons) ?? {};
   return addons[addonId]?.active === true;
 }
 
@@ -19,6 +27,19 @@ export async function activateAddon(
   stripeSubscriptionItemId?: string
 ): Promise<void> {
   const { db } = getFirebaseAdmin();
+
+  // Read plan fresh from Firestore — never trust JWT for security decisions
+  const userDoc = await db.collection("users").doc(workspaceId).get();
+  if (!userDoc.exists) throw new Error("WORKSPACE_NOT_FOUND");
+
+  const planId: string = userDoc.data()?.planId ?? "pro";
+
+  // Addons are exclusive to the Pro plan.
+  // Growth cannot have addons; Enterprise already includes them via hasAddon().
+  if (planId === "growth") {
+    throw new Error("ADDON_NOT_ALLOWED_ON_PLAN");
+  }
+
   const addon: WorkspaceAddon = {
     id: addonId,
     active: true,
@@ -26,7 +47,7 @@ export async function activateAddon(
     ...(stripeSubscriptionItemId ? { stripeSubscriptionItemId } : {}),
   };
 
-  await db.collection("users").doc(workspaceId).update({
+  await userDoc.ref.update({
     [`addons.${addonId}`]: addon,
   });
 }

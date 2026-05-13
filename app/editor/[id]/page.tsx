@@ -18,6 +18,8 @@ import {
   Archive,
   Users,
   Hash,
+  Lock,
+  BookmarkPlus,
 } from "lucide-react";
 import { EligibilityRuleBuilder } from "@/components/editor/eligibility-rule-builder";
 import { useSession } from "next-auth/react";
@@ -49,6 +51,10 @@ export default function EditorPage({
   const [saved, setSaved] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [saveTemplateError, setSaveTemplateError] = useState("");
 
   const {
     nodes,
@@ -98,6 +104,13 @@ export default function EditorPage({
         return;
       }
       const data = await res.json();
+
+      // Viewers cannot access the editor
+      if (data.isCollaborator && data.collaboratorRole === "viewer") {
+        router.push(`/dashboard/survey/${id}`);
+        return;
+      }
+
       loadSurvey(data.survey as Survey);
     } catch (error) {
       console.error("Error fetching survey:", error);
@@ -200,6 +213,35 @@ export default function EditorPage({
       clearSurvey();
       // Recarregar os dados do título original
       useEditorStore.setState({ surveyId: id });
+    }
+  };
+
+  const handleOpenSaveTemplate = () => {
+    setTemplateName(surveyTitle);
+    setSaveTemplateError("");
+    setShowSaveTemplateModal(true);
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!templateName.trim() || nodes.length === 0) return;
+    setSavingTemplate(true);
+    setSaveTemplateError("");
+    try {
+      const res = await fetch("/api/user/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: templateName.trim(), nodes, edges }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSaveTemplateError(data.error || "Erro ao salvar template");
+        return;
+      }
+      setShowSaveTemplateModal(false);
+    } catch {
+      setSaveTemplateError("Erro de conexão. Tente novamente.");
+    } finally {
+      setSavingTemplate(false);
     }
   };
 
@@ -500,21 +542,28 @@ export default function EditorPage({
         {/* Right Section */}
         <div className="flex items-center gap-2">
           {/* Toggle de Pontuação */}
-          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gray-50 mr-1">
-            <span className="text-xs text-gray-500">Pontuação</span>
-            <button
-              onClick={() => setEnableScoring(!enableScoring)}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                enableScoring ? "bg-green-500" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
-                  enableScoring ? "translate-x-5" : "translate-x-1"
+          {session?.user?.planId === "growth" ? (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 mr-1 opacity-50 cursor-not-allowed" title="Pontuação disponível a partir do Plano Pro">
+              <span className="text-xs text-gray-500">Pontuação</span>
+              <Lock className="w-3 h-3 text-gray-400" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-gray-50 mr-1">
+              <span className="text-xs text-gray-500">Pontuação</span>
+              <button
+                onClick={() => setEnableScoring(!enableScoring)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  enableScoring ? "bg-green-500" : "bg-gray-300"
                 }`}
-              />
-            </button>
-          </div>
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                    enableScoring ? "translate-x-5" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          )}
 
           <div className="h-5 w-px bg-gray-200" />
 
@@ -524,6 +573,15 @@ export default function EditorPage({
             title="Limpar pesquisa"
           >
             <Trash2 className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handleOpenSaveTemplate}
+            disabled={nodes.length === 0}
+            className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Salvar como template"
+          >
+            <BookmarkPlus className="w-4 h-4" />
           </button>
 
           <button
@@ -554,6 +612,60 @@ export default function EditorPage({
           </button>
         </div>
       </header>
+
+      {/* Save as Template Modal */}
+      <Dialog open={showSaveTemplateModal} onOpenChange={(open) => { if (!savingTemplate) setShowSaveTemplateModal(open); }}>
+        <DialogContent className="sm:max-w-sm p-0 gap-0">
+          <DialogTitle className="sr-only">Salvar como Template</DialogTitle>
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+              <BookmarkPlus className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Salvar como Template</h2>
+              <p className="text-xs text-gray-500">Reutilize esta pesquisa como ponto de partida</p>
+            </div>
+          </div>
+          <div className="px-5 py-4 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-700">Nome do template</label>
+              <input
+                value={templateName}
+                onChange={(e) => { setTemplateName(e.target.value); setSaveTemplateError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && handleSaveAsTemplate()}
+                placeholder="Ex: Pesquisa de Satisfação"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                autoFocus
+              />
+            </div>
+            {saveTemplateError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {saveTemplateError}
+              </p>
+            )}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={() => setShowSaveTemplateModal(false)}
+                disabled={savingTemplate}
+                className="flex-1 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveAsTemplate}
+                disabled={!templateName.trim() || savingTemplate}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 rounded-lg transition-colors"
+              >
+                {savingTemplate ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" />Salvando...</>
+                ) : (
+                  <><BookmarkPlus className="w-3.5 h-3.5" />Salvar</>
+                )}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Main Editor Area */}
       <main className="flex-1 flex overflow-hidden">

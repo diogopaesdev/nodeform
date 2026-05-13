@@ -14,6 +14,10 @@ import {
   LogOut,
   ChevronDown,
   Sparkles,
+  LayoutTemplate,
+  Lock,
+  Zap,
+  ShieldCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,19 +28,37 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/language-toggle";
 
-export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | null }) {
+export function Sidebar({
+  subscriptionStatus,
+  planId,
+  trialEnd,
+}: {
+  subscriptionStatus?: string | null;
+  planId?: string | null;
+  trialEnd?: string | null;
+}) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { t } = useI18n();
 
-  const isPro = subscriptionStatus === "active";
-  const isTrialing = subscriptionStatus === "trialing";
+  const isActive = subscriptionStatus === "active";
+  const isTrialing =
+    subscriptionStatus === "trialing" ||
+    (!subscriptionStatus && !!trialEnd && new Date(trialEnd).getTime() > Date.now());
+  const effectivePlan = isActive ? (planId ?? "pro") : null;
+  const isAdmin = session?.user?.isAdmin === true;
+
+  // Templates and other "pro+" features are unlocked for Pro, Enterprise, or trialing users
+  const hasProAccess = isTrialing || effectivePlan === "pro" || effectivePlan === "enterprise";
+  // Backward compat: isPro used below for badge
+  const isPro = isActive;
 
   const navItems = [
-    { label: t.sidebar.dashboard, href: "/dashboard",            icon: LayoutDashboard },
-    { label: t.sidebar.surveys,   href: "/dashboard/surveys",    icon: FileText },
-    { label: t.sidebar.appearance,href: "/dashboard/appearance", icon: Paintbrush },
-    { label: t.sidebar.themes,    href: "/dashboard/themes",     icon: Palette },
+    { label: t.sidebar.dashboard,  href: "/dashboard",             icon: LayoutDashboard, pro: false },
+    { label: t.sidebar.surveys,    href: "/dashboard/surveys",     icon: FileText,        pro: false },
+    { label: t.sidebar.templates,  href: "/dashboard/templates",   icon: LayoutTemplate,  pro: true  },
+    { label: t.sidebar.appearance, href: "/dashboard/appearance",  icon: Paintbrush,      pro: false },
+    { label: t.sidebar.themes,     href: "/dashboard/themes",      icon: Palette,         pro: false },
   ];
 
   const getInitials = (name: string) =>
@@ -66,7 +88,10 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = item.href === "/dashboard"
+            ? pathname === "/dashboard"
+            : pathname === item.href || pathname.startsWith(item.href + "/");
+          const showLock = item.pro && !hasProAccess;
           return (
             <Link
               key={item.href}
@@ -77,8 +102,16 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
                   : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <item.icon className="w-4 h-4" />
-              <span>{item.label}</span>
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{item.label}</span>
+              {showLock && (
+                <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
+              )}
+              {item.pro && hasProAccess && (
+                <span className="text-[9px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded-full leading-none flex-shrink-0">
+                  PRO
+                </span>
+              )}
             </Link>
           );
         })}
@@ -88,6 +121,24 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
       <div className="px-3 pb-2">
         <LanguageToggle variant="sidebar" />
       </div>
+
+      {/* Admin */}
+      {isAdmin && (
+        <div className="px-3 pb-1">
+          <Link
+            href="/dashboard/admin/plans"
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              pathname.startsWith("/dashboard/admin")
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">Admin</span>
+            <span className="text-[9px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-full leading-none">ADM</span>
+          </Link>
+        </div>
+      )}
 
       {/* Settings */}
       <div className="px-3 pb-2">
@@ -107,7 +158,7 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
       {/* User Section */}
       <div className="p-3 border-t border-gray-100">
         <DropdownMenu>
-          <DropdownMenuTrigger className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors outline-none">
+          <DropdownMenuTrigger suppressHydrationWarning className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors outline-none">
             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
               {session?.user?.image ? (
                 <Image src={session.user.image} alt="" width={32} height={32} className="rounded-full object-cover" />
@@ -118,21 +169,35 @@ export function Sidebar({ subscriptionStatus }: { subscriptionStatus?: string | 
               )}
             </div>
             <div className="flex-1 text-left min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name || "Usuário"}</p>
-                {isPro && (
-                  <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded-full leading-none">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    PRO
-                  </span>
-                )}
-                {isTrialing && !isPro && (
-                  <span className="flex-shrink-0 text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100 px-1.5 py-0.5 rounded-full leading-none">
-                    Trial
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-gray-400 truncate">{session?.user?.email}</p>
+              {(isActive || isTrialing) && (
+                <span className="flex items-center gap-1 mb-0.5">
+                  {isActive && effectivePlan === "growth" && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-blue-500 leading-none">
+                      <Zap className="w-2.5 h-2.5" />
+                      GROWTH
+                    </span>
+                  )}
+                  {isActive && effectivePlan === "enterprise" && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-violet-500 leading-none">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      ENTERPRISE
+                    </span>
+                  )}
+                  {isActive && (effectivePlan === "pro" || !effectivePlan) && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-amber-500 leading-none">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      PRO
+                    </span>
+                  )}
+                  {isTrialing && (
+                    <span className="text-[9px] font-bold text-blue-500 leading-none">
+                      TRIAL
+                    </span>
+                  )}
+                </span>
+              )}
+              <span className="block text-sm font-medium text-gray-900 truncate leading-snug">{session?.user?.name || "Usuário"}</span>
+              <span className="block text-xs text-gray-400 truncate">{session?.user?.email}</span>
             </div>
             <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
           </DropdownMenuTrigger>

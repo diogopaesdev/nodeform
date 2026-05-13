@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSurvey, updateSurvey, deleteSurvey, saveSurveyContent } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
+import { getActiveUserPlan } from "@/lib/services/plan";
+import { getCollaboratorAccessForUser } from "@/lib/services/collaborators";
 
 // GET /api/surveys/[id] - Buscar pesquisa específica
 export async function GET(
@@ -17,7 +19,15 @@ export async function GET(
     const survey = await getSurvey(id);
 
     if (!survey) return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
-    if (survey.userId !== auth.workspaceId) return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+
+    const isOwner = survey.userId === auth.workspaceId;
+    if (!isOwner) {
+      const collaboratorRole = await getCollaboratorAccessForUser(id, auth.workspaceId);
+      if (!collaboratorRole) {
+        return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+      }
+      return NextResponse.json({ survey, collaboratorRole, isCollaborator: true });
+    }
 
     return NextResponse.json({ survey });
   } catch (error) {
@@ -44,11 +54,25 @@ export async function PATCH(
       return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
     }
 
-    if (survey.userId !== session.user.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+    const isOwner = survey.userId === session.user.id;
+    if (!isOwner) {
+      const collaboratorRole = await getCollaboratorAccessForUser(id, session.user.id);
+      if (collaboratorRole !== "editor") {
+        return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+      }
     }
 
     const body = await req.json();
+
+    // Read plan from Firestore — never trust JWT for security decisions
+    const { planId, subscriptionStatus } = await getActiveUserPlan(session.user.id);
+    const isSubscriptionActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
+    const effectivePlanId = isSubscriptionActive ? planId : "growth";
+
+    // Growth plan (or inactive subscription) cannot enable scoring
+    if (effectivePlanId === "growth" && body.enableScoring === true) {
+      body.enableScoring = false;
+    }
 
     // Se tem nodes/edges, salvar conteúdo
     if (body.nodes !== undefined || body.edges !== undefined) {

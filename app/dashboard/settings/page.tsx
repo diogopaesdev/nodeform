@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles, KeyRound, ChevronRight, BookmarkCheck } from "lucide-react";
+import { Building2, User, CreditCard, Loader2, Check, Pencil, ExternalLink, Sparkles, KeyRound, ChevronRight, BookmarkCheck, MessageCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 
@@ -30,6 +30,7 @@ interface UserData {
   trialEnd?: string;
   subscriptionCurrentPeriodEnd?: string;
   stripeCustomerId?: string;
+  planId?: string;
 }
 
 export default function SettingsPage() {
@@ -45,12 +46,15 @@ function SettingsContent() {
   const { t } = useI18n();
   const searchParams = useSearchParams();
   const requirePlan = searchParams.get("require_plan") === "true";
+  const upgradeToPro = searchParams.get("upgrade_to_pro") === "true";
   const addonFromUrl = searchParams.get("addon");
 
   const VALID_ADDONS = ["respondents", "surveyProgress"] as const;
   const [selectedAddons, setSelectedAddons] = useState<string[]>(
     addonFromUrl && VALID_ADDONS.includes(addonFromUrl as typeof VALID_ADDONS[number])
       ? [addonFromUrl]
+      : requirePlan
+      ? ["respondents", "surveyProgress"]
       : []
   );
 
@@ -58,6 +62,17 @@ function SettingsContent() {
     setSelectedAddons((prev) => prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<"growth" | "pro">("pro");
+  const [showPlanModal, setShowPlanModal] = useState(false);
+
+  const savePlanPreference = async (plan: "growth" | "pro") => {
+    setSelectedPlan(plan);
+    await fetch("/api/user", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prePlanSelected: plan }),
+    });
+  };
 
   // Company form
   const [editing, setEditing] = useState(false);
@@ -91,6 +106,22 @@ function SettingsContent() {
       setUserData(data.user);
       setCompanyName(data.user?.companyName || "");
       setCnpj(data.user?.cnpj || "");
+
+      // Absorb localStorage plan intent (set from LP before login)
+      const stored = typeof window !== "undefined" ? localStorage.getItem("preferred_plan") : null;
+      if (stored === "growth" || stored === "pro") {
+        if (!data.user?.prePlanSelected) {
+          setSelectedPlan(stored);
+          await fetch("/api/user", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prePlanSelected: stored }),
+          });
+        }
+        localStorage.removeItem("preferred_plan");
+      } else if (data.user?.prePlanSelected === "growth" || data.user?.prePlanSelected === "pro") {
+        setSelectedPlan(data.user.prePlanSelected);
+      }
     } catch (err) {
       console.error("Error fetching user:", err);
     } finally {
@@ -134,13 +165,13 @@ function SettingsContent() {
     setError("");
   };
 
-  const handleCheckout = async (addons: string[] = []) => {
+  const handleCheckout = async (planId: "growth" | "pro" = selectedPlan, addons: string[] = []) => {
     setBillingLoading(true);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ addons }),
+        body: JSON.stringify({ planId, addons }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
@@ -161,6 +192,29 @@ function SettingsContent() {
       // silently fail
     } finally {
       setBillingLoading(false);
+    }
+  };
+
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+
+  const handleUpgradeToPro = async () => {
+    setUpgradeLoading(true);
+    setUpgradeError(null);
+    try {
+      const res = await fetch("/api/stripe/upgrade", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setUpgradeError(data.error ?? "Erro ao fazer upgrade");
+        return;
+      }
+      // Sync and reload to reflect new plan
+      await fetch("/api/stripe/sync", { method: "POST" }).catch(() => {});
+      window.location.reload();
+    } catch {
+      setUpgradeError("Erro ao processar upgrade");
+    } finally {
+      setUpgradeLoading(false);
     }
   };
 
@@ -187,7 +241,11 @@ function SettingsContent() {
     (!userData?.subscriptionStatus && userData?.trialEnd && new Date(userData.trialEnd).getTime() > Date.now());
 
   const hasActiveSubscription =
-    userData?.subscriptionStatus === "active" || isTrialing;
+    userData?.subscriptionStatus === "active" ||
+    userData?.subscriptionStatus === "past_due" ||
+    isTrialing;
+
+  const isGrowthActive = userData?.subscriptionStatus === "active" && userData?.planId === "growth";
 
   const trialDaysLeft = userData?.trialEnd
     ? Math.max(0, Math.ceil((new Date(userData.trialEnd).getTime() - Date.now()) / 86400000))
@@ -208,7 +266,7 @@ function SettingsContent() {
         <p className="text-sm text-gray-500 mt-0.5">{t.settings.subtitle}</p>
       </div>
 
-      {requirePlan && (
+      {(requirePlan || upgradeToPro) && !isGrowthActive && (
         <div className="mb-4 border border-amber-200 rounded-xl overflow-hidden">
           <div className="flex items-start gap-3 px-4 py-3.5 bg-amber-50 border-b border-amber-200">
             <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
@@ -241,7 +299,7 @@ function SettingsContent() {
           </div>
           <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
             <button
-              onClick={() => handleCheckout(selectedAddons)}
+              onClick={() => handleCheckout(selectedPlan, selectedAddons)}
               disabled={billingLoading}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
             >
@@ -318,52 +376,106 @@ function SettingsContent() {
                 <div className="h-8 w-36 bg-gray-100 rounded" />
               </div>
             ) : hasActiveSubscription ? (
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">
-                      {userData?.subscriptionStatus === "active" ? t.settings.subscription.proPlan : t.settings.subscription.freeTrial}
-                    </p>
-                    {getSubscriptionBadge(userData?.subscriptionStatus as SubscriptionStatus ?? (isTrialing ? "trialing" : "inactive"))}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900">
+                        {userData?.subscriptionStatus === "active" || userData?.subscriptionStatus === "past_due"
+                          ? userData.planId === "growth"
+                            ? "Plano Growth"
+                            : userData.planId === "enterprise"
+                            ? "Plano Enterprise"
+                            : t.settings.subscription.proPlan
+                          : t.settings.subscription.freeTrial}
+                      </p>
+                      {getSubscriptionBadge(userData?.subscriptionStatus as SubscriptionStatus ?? (isTrialing ? "trialing" : "inactive"))}
+                    </div>
+                    {isTrialing && trialDaysLeft !== null && (
+                      <p className="text-xs text-gray-400">
+                        {trialDaysText}
+                        {" · "}
+                        <button onClick={() => handleCheckout(selectedPlan, selectedAddons)} className="text-gray-600 underline underline-offset-2">
+                          {t.settings.subscription.subscribeNow}
+                        </button>
+                      </p>
+                    )}
+                    {userData?.subscriptionStatus === "active" && userData.subscriptionCurrentPeriodEnd && (
+                      <p className="text-xs text-gray-400">
+                        {t.settings.subscription.renewsAt.replace("{date}", formatDate(userData.subscriptionCurrentPeriodEnd) ?? "")}
+                      </p>
+                    )}
+                    {userData?.subscriptionStatus === "past_due" && (
+                      <p className="text-xs text-amber-600">
+                        {t.settings.subscription.pastDueWarning}
+                      </p>
+                    )}
                   </div>
-                  {isTrialing && trialDaysLeft !== null && (
-                    <p className="text-xs text-gray-400">
-                      {trialDaysText}
-                      {" · "}
-                      <button onClick={() => handleCheckout()} className="text-gray-600 underline underline-offset-2">
-                        {t.settings.subscription.subscribeNow}
-                      </button>
-                    </p>
-                  )}
-                  {userData?.subscriptionStatus === "active" && userData.subscriptionCurrentPeriodEnd && (
-                    <p className="text-xs text-gray-400">
-                      {t.settings.subscription.renewsAt.replace("{date}", formatDate(userData.subscriptionCurrentPeriodEnd) ?? "")}
-                    </p>
-                  )}
-                  {userData?.subscriptionStatus === "past_due" && (
-                    <p className="text-xs text-amber-600">
-                      {t.settings.subscription.pastDueWarning}
-                    </p>
+                  {userData?.subscriptionStatus === "active" || userData?.subscriptionStatus === "past_due" ? (
+                    <button
+                      onClick={handlePortal}
+                      disabled={billingLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-md transition-colors"
+                    >
+                      {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                      {t.settings.subscription.manage}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowPlanModal(true)}
+                      disabled={billingLoading}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg transition-colors ring-2 ring-gray-900 ring-offset-2"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Planos completos
+                    </button>
                   )}
                 </div>
-                {userData?.subscriptionStatus === "active" || userData?.subscriptionStatus === "past_due" ? (
-                  <button
-                    onClick={handlePortal}
-                    disabled={billingLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 rounded-md transition-colors"
-                  >
-                    {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
-                    {t.settings.subscription.manage}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleCheckout(selectedAddons)}
-                    disabled={billingLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
-                  >
-                    {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                    {t.settings.subscription.subscribe}
-                  </button>
+
+                {/* Upgrade to Pro — visible for Growth active subscribers */}
+                {userData?.subscriptionStatus === "active" && userData.planId === "growth" && (
+                  <div className={`rounded-lg border ${upgradeToPro ? "bg-gray-900 border-gray-900" : "bg-gray-50 border-gray-200"}`}>
+                    <div className="flex items-center justify-between gap-3 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className={`text-xs font-semibold ${upgradeToPro ? "text-white" : "text-gray-800"}`}>
+                          {upgradeToPro ? "Desbloqueie módulos com o plano Pro" : "Upgrade para o plano Pro"}
+                        </p>
+                        <p className={`text-xs mt-0.5 ${upgradeToPro ? "text-gray-300" : "text-gray-500"}`}>
+                          Addons de respondentes, SSO, API Keys, pesquisas ilimitadas e muito mais.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleUpgradeToPro}
+                        disabled={upgradeLoading}
+                        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${upgradeToPro ? "bg-white text-gray-900 hover:bg-gray-100" : "bg-gray-900 text-white hover:bg-gray-800"}`}
+                      >
+                        {upgradeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        Upgrade para Pro
+                      </button>
+                    </div>
+                    {upgradeError && (
+                      <p className={`px-4 pb-3 text-xs ${upgradeToPro ? "text-red-300" : "text-red-500"}`}>{upgradeError}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Enterprise upsell — visible for Growth and Pro active subscribers */}
+                {userData?.subscriptionStatus === "active" && userData.planId !== "enterprise" && (
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 bg-violet-50 border border-violet-100 rounded-lg">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-violet-700">Quer recursos Enterprise?</p>
+                      <p className="text-xs text-violet-500 mt-0.5">White-label, módulos inclusos, onboarding e SLA dedicado.</p>
+                    </div>
+                    <a
+                      href="https://wa.me/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      Falar com especialista
+                    </a>
+                  </div>
                 )}
               </div>
             ) : (
@@ -373,12 +485,12 @@ function SettingsContent() {
                   <p className="text-xs text-gray-400">{t.settings.subscription.trialExpiredDesc}</p>
                 </div>
                 <button
-                  onClick={() => handleCheckout(selectedAddons)}
+                  onClick={() => setShowPlanModal(true)}
                   disabled={billingLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg transition-colors ring-2 ring-gray-900 ring-offset-2"
                 >
-                  {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  {t.settings.subscription.subscribe}
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Planos completos
                 </button>
               </div>
             )}
@@ -497,6 +609,65 @@ function SettingsContent() {
           </div>
         </div>
       </div>
+
+      {/* Plan selection modal */}
+      {showPlanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex flex-col items-center text-center mb-5">
+              <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center mb-3">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-base font-bold text-gray-900">Escolha seu plano</h2>
+              <p className="text-xs text-gray-500 mt-1">Selecione o plano ideal para o seu momento.</p>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              {(["growth", "pro"] as const).map((plan) => (
+                <button
+                  key={plan}
+                  onClick={() => savePlanPreference(plan)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
+                    selectedPlan === plan
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">{plan}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {plan === "growth"
+                        ? "Até 5 pesquisas · 500 respostas/mês"
+                        : "Pesquisas ilimitadas · Respondentes ilimitados"}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-4">
+                    <p className="text-sm font-bold text-gray-900">
+                      {plan === "growth" ? "R$97" : "R$499"}
+                    </p>
+                    <p className="text-[10px] text-gray-400">/mês</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => { setShowPlanModal(false); handleCheckout(selectedPlan, selectedAddons); }}
+              disabled={billingLoading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-xl transition-colors mb-2"
+            >
+              {billingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              Assinar {selectedPlan === "growth" ? "Growth" : "Pro"}
+            </button>
+            <button
+              onClick={() => setShowPlanModal(false)}
+              className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

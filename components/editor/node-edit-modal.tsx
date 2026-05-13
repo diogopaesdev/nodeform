@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, GripVertical, User, Mail, Trophy, Play, CircleDot, CheckSquare, Star, FlagTriangleRight, FileText, AlignLeft, ExternalLink } from "lucide-react";
+import { Plus, Trash2, GripVertical, User, Mail, Trophy, Play, CircleDot, CheckSquare, Star, FlagTriangleRight, FileText, AlignLeft, ExternalLink, Lock } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { EligibilityRuleBuilder } from "@/components/editor/eligibility-rule-builder";
 import type { EligibilityRule } from "@/types";
@@ -366,6 +366,13 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                       Colete informações do respondente antes de iniciar.
                     </p>
 
+                    {session?.user?.planId === "growth" && (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg mb-3">
+                        <Lock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                        <p className="text-xs text-amber-700">Coleta de nome e e-mail disponível a partir do Plano Pro.</p>
+                      </div>
+                    )}
+
                     {/* Coletar Nome */}
                     <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 mb-2">
                       <div className="flex items-center justify-between">
@@ -383,6 +390,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
                                   className="scale-90"
+                                  disabled={session?.user?.planId === "growth"}
                                 />
                               </FormControl>
                             </FormItem>
@@ -440,6 +448,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
                                   className="scale-90"
+                                  disabled={session?.user?.planId === "growth"}
                                 />
                               </FormControl>
                             </FormItem>
