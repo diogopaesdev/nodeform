@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     if (sub.status === "trialing") return "trialing";
     if (sub.status === "active") return "active";
     if (sub.status === "past_due") return "past_due";
+    if (sub.status === "unpaid") return "unpaid";
     return "inactive";
   };
 
@@ -216,7 +217,7 @@ export async function POST(req: NextRequest) {
           planId: "growth",
           stripeSubscriptionId: null,
           subscriptionCurrentPeriodEnd: null,
-          trialEnd: null,
+          // trialEnd is intentionally preserved so the user cannot claim a second trial
         });
       }
       break;

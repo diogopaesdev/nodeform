@@ -90,6 +90,9 @@ export default function UpgradePage() {
   const subscriptionStatus = session?.user?.subscriptionStatus;
   const alreadyUsedTrial = !!session?.user?.trialEnd;
   const isPastDue = subscriptionStatus === "past_due";
+  const isUnpaid = subscriptionStatus === "unpaid";
+  const isCancelled = subscriptionStatus === "inactive";
+  const needsPaymentFix = isPastDue || isUnpaid;
 
   const handlePortal = async () => {
     setLoadingPortal(true);
@@ -137,25 +140,27 @@ export default function UpgradePage() {
 
       {/* Header */}
       <div className="flex justify-center mb-6">
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${isPastDue ? "bg-red-600" : "bg-gray-900"}`}>
-          {isPastDue ? <AlertTriangle className="w-7 h-7 text-white" /> : <Sparkles className="w-7 h-7 text-white" />}
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${needsPaymentFix ? "bg-red-600" : "bg-gray-900"}`}>
+          {needsPaymentFix ? <AlertTriangle className="w-7 h-7 text-white" /> : <Sparkles className="w-7 h-7 text-white" />}
         </div>
       </div>
       <div className="text-center mb-10">
         <h1 className="text-2xl font-bold text-gray-900">
-          {isPastDue ? "Problema com o pagamento" : "Escolha seu plano"}
+          {needsPaymentFix ? "Problema com o pagamento" : isCancelled ? "Assinatura encerrada" : "Escolha seu plano"}
         </h1>
         <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">
-          {isPastDue
+          {needsPaymentFix
             ? "Não foi possível processar o pagamento da sua assinatura. Atualize seu método de pagamento para continuar."
-            : alreadyUsedTrial
-              ? "Seu trial encerrou. Continue com o plano certo para o seu momento."
-              : "Comece com 7 dias grátis no plano que melhor se adapta ao seu momento."}
+            : isCancelled
+              ? "Sua assinatura foi encerrada. Escolha um plano para continuar usando a plataforma."
+              : alreadyUsedTrial
+                ? "Seu trial encerrou. Continue com o plano certo para o seu momento."
+                : "Comece com 7 dias grátis no plano que melhor se adapta ao seu momento."}
         </p>
       </div>
 
-      {/* Past due: payment recovery screen */}
-      {isPastDue && (
+      {/* Payment recovery screen (past_due or unpaid) */}
+      {needsPaymentFix && (
         <div className="w-full max-w-md bg-white border border-red-200 rounded-2xl shadow-sm p-8 flex flex-col items-center gap-6 mb-8">
           <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
             <CreditCard className="w-6 h-6 text-red-500" />
@@ -187,7 +192,7 @@ export default function UpgradePage() {
       )}
 
       {/* Plan cards */}
-      {!isPastDue && <div className="w-full max-w-5xl grid md:grid-cols-3 gap-5">
+      {!needsPaymentFix && <div className="w-full max-w-5xl grid md:grid-cols-3 gap-5">
 
         {/* ── Growth ───────────────────────────────────────────────── */}
         <div className="pt-5 flex flex-col">
@@ -384,7 +389,7 @@ export default function UpgradePage() {
       </div>}
 
       {/* Compare hint */}
-      {!isPastDue && <div className="mt-8 flex items-center gap-2 text-xs text-gray-400">
+      {!needsPaymentFix && <div className="mt-8 flex items-center gap-2 text-xs text-gray-400">
         <Headphones className="w-3.5 h-3.5" />
         <span>Dúvidas? Fale com a gente via WhatsApp antes de assinar.</span>
       </div>}
