@@ -1073,7 +1073,7 @@ export function LandingPage() {
                 </div>
                 <div className="px-6 pb-6">
                   <button
-                    onClick={() => router.push("/login")}
+                    onClick={() => { localStorage.setItem("preferred_plan", "growth"); router.push("/login"); }}
                     className="w-full h-10 bg-gray-100 hover:bg-gray-200 text-gray-900 text-[14px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
                   >
                     Começar agora <ArrowRight className="w-3.5 h-3.5" />
@@ -1116,7 +1116,7 @@ export function LandingPage() {
                 </div>
                 <div className="px-6 pb-6">
                   <button
-                    onClick={() => router.push("/login")}
+                    onClick={() => { localStorage.setItem("preferred_plan", "pro"); router.push("/login"); }}
                     className="w-full h-10 bg-white hover:bg-gray-100 text-gray-900 text-[14px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
                   >
                     <Sparkles className="w-3.5 h-3.5" /> Assinar

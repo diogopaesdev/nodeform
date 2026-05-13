@@ -158,6 +158,16 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData();
     fetchCredits();
+
+    const stored = localStorage.getItem("preferred_plan");
+    if (stored === "growth" || stored === "pro") {
+      localStorage.removeItem("preferred_plan");
+      fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prePlanSelected: stored }),
+      }).catch(() => {});
+    }
   }, []);
 
   const fetchCredits = async () => {

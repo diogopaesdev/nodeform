@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
-import { requireAdmin, ADMIN_EMAIL } from "@/lib/services/admin";
+import { requireAdmin } from "@/lib/services/admin";
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!code) return NextResponse.json({ error: "Código obrigatório" }, { status: 400 });
 
   const { db } = getFirebaseAdmin();
-  const otpDoc = await db.collection("adminOtps").doc(ADMIN_EMAIL).get();
+  const otpDoc = await db.collection("adminOtps").doc(admin.email!).get();
 
   if (!otpDoc.exists) {
     return NextResponse.json({ error: "Nenhum código solicitado" }, { status: 400 });
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   // Cria sessão admin com 1h de validade
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-  await db.collection("adminSessions").doc(token).set({ email: ADMIN_EMAIL, expiresAt, createdAt: new Date().toISOString() });
+  await db.collection("adminSessions").doc(token).set({ email: admin.email, expiresAt, createdAt: new Date().toISOString() });
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set("admin_session", token, {

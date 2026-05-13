@@ -15,11 +15,12 @@ export async function POST() {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-  await db.collection("adminOtps").doc(admin.email).set({ code, expiresAt, usedAt: null });
+  const adminEmail = admin.email!;
+  await db.collection("adminOtps").doc(adminEmail).set({ code, expiresAt, usedAt: null });
 
   await resend.emails.send({
     from: FROM,
-    to: admin.email,
+    to: adminEmail,
     subject: `${code} — Código de acesso Admin · SurveyFlow`,
     html: `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#111827;">

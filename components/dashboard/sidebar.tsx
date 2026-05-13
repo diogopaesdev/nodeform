@@ -31,16 +31,20 @@ import { LanguageToggle } from "@/components/language-toggle";
 export function Sidebar({
   subscriptionStatus,
   planId,
+  trialEnd,
 }: {
   subscriptionStatus?: string | null;
   planId?: string | null;
+  trialEnd?: string | null;
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { t } = useI18n();
 
   const isActive = subscriptionStatus === "active";
-  const isTrialing = subscriptionStatus === "trialing";
+  const isTrialing =
+    subscriptionStatus === "trialing" ||
+    (!subscriptionStatus && !!trialEnd && new Date(trialEnd).getTime() > Date.now());
   const effectivePlan = isActive ? (planId ?? "pro") : null;
   const isAdmin = session?.user?.isAdmin === true;
 
@@ -165,33 +169,35 @@ export function Sidebar({
               )}
             </div>
             <div className="flex-1 text-left min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.name || "Usuário"}</p>
-                {isActive && effectivePlan === "growth" && (
-                  <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full leading-none">
-                    <Zap className="w-2.5 h-2.5" />
-                    GROWTH
-                  </span>
-                )}
-                {isActive && effectivePlan === "enterprise" && (
-                  <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-full leading-none">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    ENTERPRISE
-                  </span>
-                )}
-                {isActive && (effectivePlan === "pro" || !effectivePlan) && (
-                  <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] font-bold bg-gray-900 text-white px-1.5 py-0.5 rounded-full leading-none">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    PRO
-                  </span>
-                )}
-                {isTrialing && (
-                  <span className="flex-shrink-0 text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100 px-1.5 py-0.5 rounded-full leading-none">
-                    Trial
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-gray-400 truncate">{session?.user?.email}</p>
+              {(isActive || isTrialing) && (
+                <span className="flex items-center gap-1 mb-0.5">
+                  {isActive && effectivePlan === "growth" && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-blue-500 leading-none">
+                      <Zap className="w-2.5 h-2.5" />
+                      GROWTH
+                    </span>
+                  )}
+                  {isActive && effectivePlan === "enterprise" && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-violet-500 leading-none">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      ENTERPRISE
+                    </span>
+                  )}
+                  {isActive && (effectivePlan === "pro" || !effectivePlan) && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-amber-500 leading-none">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      PRO
+                    </span>
+                  )}
+                  {isTrialing && (
+                    <span className="text-[9px] font-bold text-blue-500 leading-none">
+                      TRIAL
+                    </span>
+                  )}
+                </span>
+              )}
+              <span className="block text-sm font-medium text-gray-900 truncate leading-snug">{session?.user?.name || "Usuário"}</span>
+              <span className="block text-xs text-gray-400 truncate">{session?.user?.email}</span>
             </div>
             <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
           </DropdownMenuTrigger>

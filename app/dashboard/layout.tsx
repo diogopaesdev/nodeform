@@ -4,22 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { hasValidAccess } from "@/lib/services/plan";
 
-const ACTIVE_STATUSES = ["active", "trialing"];
 const EXEMPT_PATHS = ["/dashboard/settings"];
-
-function hasValidAccess(data: {
-  subscriptionStatus?: string | null;
-  trialEnd?: string | null;
-}): boolean {
-  if (data.subscriptionStatus && ACTIVE_STATUSES.includes(data.subscriptionStatus)) {
-    return true;
-  }
-  if (data.trialEnd && new Date(data.trialEnd).getTime() > Date.now()) {
-    return true;
-  }
-  return false;
-}
 
 export default async function DashboardLayout({
   children,
@@ -42,10 +29,11 @@ export default async function DashboardLayout({
 
   const subscriptionStatus = (userData?.subscriptionStatus as string | undefined) ?? null;
   const planId = (userData?.planId as string | undefined) ?? null;
+  const trialEnd = (userData?.trialEnd as string | undefined) ?? null;
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar subscriptionStatus={subscriptionStatus} planId={planId} />
+      <Sidebar subscriptionStatus={subscriptionStatus} planId={planId} trialEnd={trialEnd} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );

@@ -61,6 +61,17 @@ function SettingsContent() {
     setSelectedAddons((prev) => prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<"growth" | "pro">("pro");
+  const [showPlanModal, setShowPlanModal] = useState(false);
+
+  const savePlanPreference = async (plan: "growth" | "pro") => {
+    setSelectedPlan(plan);
+    await fetch("/api/user", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prePlanSelected: plan }),
+    });
+  };
 
   // Company form
   const [editing, setEditing] = useState(false);
@@ -94,6 +105,22 @@ function SettingsContent() {
       setUserData(data.user);
       setCompanyName(data.user?.companyName || "");
       setCnpj(data.user?.cnpj || "");
+
+      // Absorb localStorage plan intent (set from LP before login)
+      const stored = typeof window !== "undefined" ? localStorage.getItem("preferred_plan") : null;
+      if (stored === "growth" || stored === "pro") {
+        if (!data.user?.prePlanSelected) {
+          setSelectedPlan(stored);
+          await fetch("/api/user", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prePlanSelected: stored }),
+          });
+        }
+        localStorage.removeItem("preferred_plan");
+      } else if (data.user?.prePlanSelected === "growth" || data.user?.prePlanSelected === "pro") {
+        setSelectedPlan(data.user.prePlanSelected);
+      }
     } catch (err) {
       console.error("Error fetching user:", err);
     } finally {
@@ -137,13 +164,13 @@ function SettingsContent() {
     setError("");
   };
 
-  const handleCheckout = async (addons: string[] = []) => {
+  const handleCheckout = async (planId: "growth" | "pro" = selectedPlan, addons: string[] = []) => {
     setBillingLoading(true);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ addons }),
+        body: JSON.stringify({ planId, addons }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
@@ -246,7 +273,7 @@ function SettingsContent() {
           </div>
           <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
             <button
-              onClick={() => handleCheckout(selectedAddons)}
+              onClick={() => handleCheckout(selectedPlan, selectedAddons)}
               disabled={billingLoading}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
             >
@@ -342,7 +369,7 @@ function SettingsContent() {
                       <p className="text-xs text-gray-400">
                         {trialDaysText}
                         {" · "}
-                        <button onClick={() => handleCheckout(selectedAddons)} className="text-gray-600 underline underline-offset-2">
+                        <button onClick={() => handleCheckout(selectedPlan, selectedAddons)} className="text-gray-600 underline underline-offset-2">
                           {t.settings.subscription.subscribeNow}
                         </button>
                       </p>
@@ -369,12 +396,12 @@ function SettingsContent() {
                     </button>
                   ) : (
                     <button
-                      onClick={() => handleCheckout(selectedAddons)}
+                      onClick={() => setShowPlanModal(true)}
                       disabled={billingLoading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg transition-colors ring-2 ring-gray-900 ring-offset-2"
                     >
-                      {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                      {t.settings.subscription.subscribe}
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Planos completos
                     </button>
                   )}
                 </div>
@@ -405,12 +432,12 @@ function SettingsContent() {
                   <p className="text-xs text-gray-400">{t.settings.subscription.trialExpiredDesc}</p>
                 </div>
                 <button
-                  onClick={() => handleCheckout(selectedAddons)}
+                  onClick={() => setShowPlanModal(true)}
                   disabled={billingLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg transition-colors ring-2 ring-gray-900 ring-offset-2"
                 >
-                  {billingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  {t.settings.subscription.subscribe}
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Planos completos
                 </button>
               </div>
             )}
@@ -529,6 +556,65 @@ function SettingsContent() {
           </div>
         </div>
       </div>
+
+      {/* Plan selection modal */}
+      {showPlanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex flex-col items-center text-center mb-5">
+              <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center mb-3">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-base font-bold text-gray-900">Escolha seu plano</h2>
+              <p className="text-xs text-gray-500 mt-1">Selecione o plano ideal para o seu momento.</p>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              {(["growth", "pro"] as const).map((plan) => (
+                <button
+                  key={plan}
+                  onClick={() => savePlanPreference(plan)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
+                    selectedPlan === plan
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">{plan}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {plan === "growth"
+                        ? "Até 5 pesquisas · 500 respostas/mês"
+                        : "Pesquisas ilimitadas · Respondentes ilimitados"}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-4">
+                    <p className="text-sm font-bold text-gray-900">
+                      {plan === "growth" ? "R$97" : "R$499"}
+                    </p>
+                    <p className="text-[10px] text-gray-400">/mês</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => { setShowPlanModal(false); handleCheckout(selectedPlan, selectedAddons); }}
+              disabled={billingLoading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-xl transition-colors mb-2"
+            >
+              {billingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              Assinar {selectedPlan === "growth" ? "Growth" : "Pro"}
+            </button>
+            <button
+              onClick={() => setShowPlanModal(false)}
+              className="w-full text-xs text-gray-400 hover:text-gray-600 py-1.5 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

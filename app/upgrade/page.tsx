@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
 import {
   Loader2,
@@ -134,6 +134,8 @@ export default function UpgradePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-50 px-4 py-12">
+
+
       <div className="absolute top-4 right-4">
         <LanguageToggle variant="navbar" />
       </div>
