@@ -15,6 +15,8 @@ import {
   Shield,
   Headphones,
   Star,
+  CreditCard,
+  AlertTriangle,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -82,7 +84,23 @@ export default function UpgradePage() {
   const { data: session } = useSession();
   const { t } = useI18n();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [loadingPortal, setLoadingPortal] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
+
+  const subscriptionStatus = session?.user?.subscriptionStatus;
+  const alreadyUsedTrial = !!session?.user?.trialEnd;
+  const isPastDue = subscriptionStatus === "past_due";
+
+  const handlePortal = async () => {
+    setLoadingPortal(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      setLoadingPortal(false);
+    }
+  };
 
   const toggleAddon = (id: string) => {
     setSelectedAddons((prev) => {
@@ -119,19 +137,57 @@ export default function UpgradePage() {
 
       {/* Header */}
       <div className="flex justify-center mb-6">
-        <div className="w-14 h-14 bg-gray-900 rounded-2xl flex items-center justify-center shadow-lg">
-          <Sparkles className="w-7 h-7 text-white" />
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${isPastDue ? "bg-red-600" : "bg-gray-900"}`}>
+          {isPastDue ? <AlertTriangle className="w-7 h-7 text-white" /> : <Sparkles className="w-7 h-7 text-white" />}
         </div>
       </div>
       <div className="text-center mb-10">
-        <h1 className="text-2xl font-bold text-gray-900">Escolha seu plano</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {isPastDue ? "Problema com o pagamento" : "Escolha seu plano"}
+        </h1>
         <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">
-          Seu trial encerrou. Continue com o plano certo para o seu momento.
+          {isPastDue
+            ? "Não foi possível processar o pagamento da sua assinatura. Atualize seu método de pagamento para continuar."
+            : alreadyUsedTrial
+              ? "Seu trial encerrou. Continue com o plano certo para o seu momento."
+              : "Comece com 7 dias grátis no plano que melhor se adapta ao seu momento."}
         </p>
       </div>
 
+      {/* Past due: payment recovery screen */}
+      {isPastDue && (
+        <div className="w-full max-w-md bg-white border border-red-200 rounded-2xl shadow-sm p-8 flex flex-col items-center gap-6 mb-8">
+          <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
+            <CreditCard className="w-6 h-6 text-red-500" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-900 mb-1">Assinatura com pagamento pendente</p>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Acesse o portal de pagamentos para atualizar seu cartão ou verificar o status da cobrança. Sua conta será reativada imediatamente após a confirmação.
+            </p>
+          </div>
+          <button
+            onClick={handlePortal}
+            disabled={loadingPortal}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl transition-colors"
+          >
+            {loadingPortal ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <CreditCard className="w-4 h-4" />
+                Atualizar método de pagamento
+              </>
+            )}
+          </button>
+          <p className="text-[11px] text-gray-400 text-center">
+            Você será redirecionado ao portal seguro do Stripe
+          </p>
+        </div>
+      )}
+
       {/* Plan cards */}
-      <div className="w-full max-w-5xl grid md:grid-cols-3 gap-5">
+      {!isPastDue && <div className="w-full max-w-5xl grid md:grid-cols-3 gap-5">
 
         {/* ── Growth ───────────────────────────────────────────────── */}
         <div className="pt-5 flex flex-col">
@@ -176,7 +232,7 @@ export default function UpgradePage() {
               )}
             </button>
             <p className="text-center text-[11px] text-gray-400 mt-2">
-              7 dias grátis · Cancele quando quiser
+              {alreadyUsedTrial ? "Cancele quando quiser" : "7 dias grátis · Cancele quando quiser"}
             </p>
           </div>
         </div>
@@ -276,7 +332,7 @@ export default function UpgradePage() {
               )}
             </button>
             <p className="text-center text-[11px] text-gray-600 mt-2">
-              7 dias grátis · Pagamento seguro via Stripe
+              {alreadyUsedTrial ? "Pagamento seguro via Stripe" : "7 dias grátis · Pagamento seguro via Stripe"}
             </p>
           </div>
           </div>
@@ -325,13 +381,13 @@ export default function UpgradePage() {
           </div>
         </div>
         </div>
-      </div>
+      </div>}
 
       {/* Compare hint */}
-      <div className="mt-8 flex items-center gap-2 text-xs text-gray-400">
+      {!isPastDue && <div className="mt-8 flex items-center gap-2 text-xs text-gray-400">
         <Headphones className="w-3.5 h-3.5" />
         <span>Dúvidas? Fale com a gente via WhatsApp antes de assinar.</span>
-      </div>
+      </div>}
 
       {/* Footer */}
       <div className="flex items-center justify-center gap-1.5 mt-6">
