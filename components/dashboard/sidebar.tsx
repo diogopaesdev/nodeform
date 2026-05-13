@@ -158,7 +158,7 @@ export function Sidebar({
       {/* User Section */}
       <div className="p-3 border-t border-gray-100">
         <DropdownMenu>
-          <DropdownMenuTrigger className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors outline-none">
+          <DropdownMenuTrigger suppressHydrationWarning className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors outline-none">
             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
               {session?.user?.image ? (
                 <Image src={session.user.image} alt="" width={32} height={32} className="rounded-full object-cover" />

@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { getActiveUserPlan } from "@/lib/services/plan";
-import { PLANS } from "@/lib/plans";
 
 function getExt(name: string) {
   const m = name.match(/\.[^.]+$/);
@@ -17,10 +16,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Read plan from Firestore — never trust JWT for security decisions
-  const { planId, subscriptionStatus } = await getActiveUserPlan(session.user.id);
-  const isSubscriptionActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
-  const effectivePlanId = isSubscriptionActive ? planId : "growth";
-  if (!PLANS[effectivePlanId]?.limits.hasWhiteLabel) {
+  const { limits } = await getActiveUserPlan(session.user.id);
+  if (!limits.hasWhiteLabel) {
     return NextResponse.json(
       { error: "Upload de logo não está disponível no seu plano atual" },
       { status: 403 }

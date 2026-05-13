@@ -3,7 +3,8 @@ import { z } from "zod";
 import { cookies } from "next/headers";
 import { saveResponse, getSurvey } from "@/lib/services/surveys";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
-import { PLANS } from "@/lib/plans";
+import { PLANS, PlanId } from "@/lib/plans";
+import { getPlanById } from "@/lib/services/plans-firestore";
 import {
   getRespondentSession,
   checkParticipation,
@@ -54,8 +55,10 @@ export async function POST(
     const ownerData = ownerDoc.data();
     const ownerSubscriptionStatus = ownerData?.subscriptionStatus as string | undefined;
     const isOwnerActive = ownerSubscriptionStatus === "active" || ownerSubscriptionStatus === "trialing";
-    const ownerPlanId = ((ownerData?.planId as string | undefined) ?? (isOwnerActive ? "pro" : "growth")) as keyof typeof PLANS;
-    const planLimits = PLANS[ownerPlanId]?.limits;
+    const ownerPlanId = ((ownerData?.planId as string | undefined) ?? (isOwnerActive ? "pro" : "growth")) as PlanId;
+    const effectiveOwnerPlanId: PlanId = isOwnerActive ? ownerPlanId : "growth";
+    const planDoc = await getPlanById(effectiveOwnerPlanId);
+    const planLimits = planDoc?.limits ?? PLANS[effectiveOwnerPlanId]?.limits;
     if (planLimits?.responsesPerMonth !== null && planLimits?.responsesPerMonth !== undefined) {
       const limit = planLimits.responsesPerMonth;
       const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"

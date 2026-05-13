@@ -250,6 +250,12 @@ export default function AdminPlansPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Gerenciar Planos</h1>
           <p className="text-sm text-gray-500 mt-0.5">Planos do Firestore com fallback estático</p>
+          <a
+            href="/dashboard/admin/users"
+            className="inline-block mt-2 text-sm text-gray-500 hover:text-gray-800 underline underline-offset-2 transition-colors"
+          >
+            Gerenciar Usuários
+          </a>
         </div>
         <div className="flex items-center gap-3">
           <button

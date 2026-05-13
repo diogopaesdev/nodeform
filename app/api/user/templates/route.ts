@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUserTemplates, countUserTemplates, createUserTemplate } from "@/lib/services/user-templates";
 import { getActiveUserPlan } from "@/lib/services/plan";
-import { PLANS } from "@/lib/plans";
 
 // GET /api/user/templates - List user templates
 export async function GET() {
@@ -30,11 +29,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
 
-  const { planId, subscriptionStatus } = await getActiveUserPlan(session.user.id);
-  const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
-  const effectivePlanId = isActive ? planId : "growth";
+  const { effectivePlanId, limits } = await getActiveUserPlan(session.user.id);
 
-  const limit = PLANS[effectivePlanId]?.limits.userTemplates;
+  const limit = limits.userTemplates;
   if (limit !== null) {
     const count = await countUserTemplates(session.user.id);
     if (count >= limit) {

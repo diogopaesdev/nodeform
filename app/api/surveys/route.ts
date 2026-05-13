@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { createSurvey, getUserSurveys, getDashboardStats, getSurvey } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { SURVEY_TEMPLATES, cloneTemplate } from "@/lib/templates";
-import { PLANS } from "@/lib/plans";
 import { getActiveUserPlan } from "@/lib/services/plan";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import type { UserTemplate } from "@/lib/services/user-templates";
@@ -68,17 +67,14 @@ export async function POST(req: NextRequest) {
     const userTemplateId: string | undefined = body.userTemplateId;
 
     // Read plan from Firestore — never trust JWT for security decisions
-    const { planId, subscriptionStatus } = await getActiveUserPlan(session.user.id);
-    const isSubscriptionActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
-    const effectivePlanId = isSubscriptionActive ? planId : "growth";
+    const { planId, subscriptionStatus, effectivePlanId, limits } = await getActiveUserPlan(session.user.id);
 
     // Enforce survey count limit based on effective plan
-    const planLimits = PLANS[effectivePlanId]?.limits;
-    if (planLimits?.surveys !== null && planLimits?.surveys !== undefined) {
+    if (limits.surveys !== null && limits.surveys !== undefined) {
       const existing = await getUserSurveys(session.user.id);
-      if (existing.length >= planLimits.surveys) {
+      if (existing.length >= limits.surveys) {
         return NextResponse.json(
-          { error: `Limite de ${planLimits.surveys} pesquisas atingido para o plano ${effectivePlanId}` },
+          { error: `Limite de ${limits.surveys} pesquisas atingido para o plano ${effectivePlanId}` },
           { status: 403 }
         );
       }

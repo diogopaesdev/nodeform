@@ -1,5 +1,6 @@
 import { getFirebaseAdmin } from "../firebase-admin";
 import { PlanId, PlanConfig, PLANS } from "../plans";
+import { getPlanById, PlanLimitsConfig } from "./plans-firestore";
 
 export async function getUserPlan(workspaceId: string): Promise<PlanId> {
   const { db } = getFirebaseAdmin();
@@ -26,7 +27,7 @@ export function hasValidAccess(data: {
 // Treats trialEnd-based trial as subscriptionStatus "trialing" so API routes enforce it correctly.
 export async function getActiveUserPlan(
   userId: string
-): Promise<{ planId: PlanId; subscriptionStatus: string }> {
+): Promise<{ planId: PlanId; subscriptionStatus: string; effectivePlanId: PlanId; limits: PlanLimitsConfig }> {
   const { db } = getFirebaseAdmin();
   const doc = await db.collection("users").doc(userId).get();
   const data = doc.data();
@@ -42,7 +43,15 @@ export async function getActiveUserPlan(
   const isActive = activeStates.includes(subscriptionStatus);
   const planId: PlanId = (data?.planId as PlanId | undefined) ?? (isActive ? "pro" : "growth");
 
-  return { planId, subscriptionStatus };
+  // effectivePlanId: only active/trialing use the real plan; past_due and others fall back to growth
+  const isSubscriptionActive = ["active", "trialing"].includes(subscriptionStatus);
+  const effectivePlanId: PlanId = isSubscriptionActive ? planId : ("growth" as PlanId);
+
+  // Resolve limits from Firestore with fallback to static config
+  const planDoc = await getPlanById(effectivePlanId);
+  const limits: PlanLimitsConfig = planDoc?.limits ?? PLANS[effectivePlanId]?.limits ?? PLANS.growth.limits;
+
+  return { planId, subscriptionStatus, effectivePlanId, limits };
 }
 
 export async function getUserPlanConfig(workspaceId: string): Promise<PlanConfig> {

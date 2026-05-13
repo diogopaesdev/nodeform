@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { createSurvey, updateSurvey, getUserSurveys } from "@/lib/services/surveys";
 import { consumeCredit, getCredits } from "@/lib/credits";
 import { getActiveUserPlan } from "@/lib/services/plan";
-import { PLANS } from "@/lib/plans";
 import OpenAI from "openai";
 import { SurveyNode, SurveyEdge, NodeData } from "@/types/survey";
 
@@ -229,10 +228,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Enforce survey count limit (same as POST /api/surveys)
-    const { planId, subscriptionStatus } = await getActiveUserPlan(session.user.id);
-    const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
-    const effectivePlanId = isActive ? planId : "growth";
-    const surveyLimit = PLANS[effectivePlanId]?.limits.surveys;
+    const { effectivePlanId, limits } = await getActiveUserPlan(session.user.id);
+    const surveyLimit = limits.surveys;
     if (surveyLimit !== null && surveyLimit !== undefined) {
       const existing = await getUserSurveys(session.user.id);
       if (existing.length >= surveyLimit) {
