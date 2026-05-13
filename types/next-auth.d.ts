@@ -13,6 +13,7 @@ declare module "next-auth" {
       subscriptionStatus?: string;
       planId?: string;
       addons?: WorkspaceAddons;
+      isAdmin?: boolean;
     };
   }
 }
@@ -24,5 +25,6 @@ declare module "next-auth/jwt" {
     subscriptionStatus?: string;
     planId?: string;
     addons?: WorkspaceAddons;
+    isAdmin?: boolean;
   }
 }

@@ -20,14 +20,10 @@ export async function getActiveUserPlan(
   const data = doc.data();
   const subscriptionStatus: string = data?.subscriptionStatus ?? "inactive";
 
-  let planId: PlanId;
-  if (data?.planId) {
-    planId = data.planId as PlanId;
-  } else {
-    // Backward compat: users without planId who have an active subscription default to "pro"
-    const activeStates = ["active", "trialing", "past_due"];
-    planId = activeStates.includes(subscriptionStatus) ? "pro" : "growth";
-  }
+  // Users without planId who have an active subscription default to "pro" (backward compat)
+  const activeStates = ["active", "trialing", "past_due"];
+  const isActive = activeStates.includes(subscriptionStatus);
+  const planId: PlanId = (data?.planId as PlanId | undefined) ?? (isActive ? "pro" : "growth");
 
   return { planId, subscriptionStatus };
 }

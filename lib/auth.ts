@@ -110,6 +110,7 @@ export const authOptions: NextAuthOptions = {
             token.subscriptionStatus = subscriptionStatus;
             token.planId = effectivePlanId;
             token.addons = data.addons ?? {};
+            token.isAdmin = token.email === process.env.ADMIN_EMAIL;
           }
         } catch {
           // mantém o valor anterior em caso de erro
@@ -125,6 +126,7 @@ export const authOptions: NextAuthOptions = {
         session.user.subscriptionStatus = token.subscriptionStatus ?? undefined;
         session.user.planId = token.planId ?? undefined;
         session.user.addons = token.addons ?? {};
+        session.user.isAdmin = token.isAdmin ?? false;
       }
       return session;
     },

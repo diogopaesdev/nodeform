@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const userData = userDoc.data();
 
   // Read plan from Firestore — never rely on JWT which can be stale.
-  const currentPlanId = (userData?.planId ?? "growth") as PlanId;
+  const currentPlanId = ((userData?.planId as PlanId | undefined) ?? "pro") as PlanId;
   const currentStatus: string = userData?.subscriptionStatus ?? "";
   const isActive = currentStatus === "active" || currentStatus === "trialing";
   const effectivePlanId = isActive ? currentPlanId : "growth";

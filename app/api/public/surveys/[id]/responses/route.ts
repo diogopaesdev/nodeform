@@ -54,7 +54,7 @@ export async function POST(
     const ownerData = ownerDoc.data();
     const ownerSubscriptionStatus = ownerData?.subscriptionStatus as string | undefined;
     const isOwnerActive = ownerSubscriptionStatus === "active" || ownerSubscriptionStatus === "trialing";
-    const ownerPlanId = (isOwnerActive ? (ownerData?.planId ?? "growth") : "growth") as keyof typeof PLANS;
+    const ownerPlanId = ((ownerData?.planId as string | undefined) ?? (isOwnerActive ? "pro" : "growth")) as keyof typeof PLANS;
     const planLimits = PLANS[ownerPlanId]?.limits;
     if (planLimits?.responsesPerMonth !== null && planLimits?.responsesPerMonth !== undefined) {
       const limit = planLimits.responsesPerMonth;

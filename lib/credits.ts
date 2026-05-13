@@ -14,7 +14,7 @@ export async function getCredits(userId: string): Promise<{
 
   const subscriptionStatus = userData.subscriptionStatus as string | undefined;
   const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
-  const planId: PlanId = (isActive ? (userData.planId as PlanId | undefined) : undefined) ?? "growth";
+  const planId: PlanId = (userData.planId as PlanId | undefined) ?? (isActive ? "pro" : "growth");
   const monthlyLimit = PLANS[planId]?.limits.aiCreditsPerMonth ?? PLANS.growth.limits.aiCreditsPerMonth;
 
   const credits = typeof userData.aiCredits === "number" ? userData.aiCredits : 0;

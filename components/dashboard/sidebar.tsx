@@ -17,6 +17,7 @@ import {
   LayoutTemplate,
   Lock,
   Zap,
+  ShieldCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -41,6 +42,7 @@ export function Sidebar({
   const isActive = subscriptionStatus === "active";
   const isTrialing = subscriptionStatus === "trialing";
   const effectivePlan = isActive ? (planId ?? "pro") : null;
+  const isAdmin = session?.user?.isAdmin === true;
 
   // Templates and other "pro+" features are unlocked for Pro, Enterprise, or trialing users
   const hasProAccess = isTrialing || effectivePlan === "pro" || effectivePlan === "enterprise";
@@ -115,6 +117,24 @@ export function Sidebar({
       <div className="px-3 pb-2">
         <LanguageToggle variant="sidebar" />
       </div>
+
+      {/* Admin */}
+      {isAdmin && (
+        <div className="px-3 pb-1">
+          <Link
+            href="/dashboard/admin/plans"
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              pathname.startsWith("/dashboard/admin")
+                ? "bg-gray-100 text-gray-900"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">Admin</span>
+            <span className="text-[9px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-full leading-none">ADM</span>
+          </Link>
+        </div>
+      )}
 
       {/* Settings */}
       <div className="px-3 pb-2">

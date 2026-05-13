@@ -5,6 +5,7 @@ import { addCredits, resetCreditsForPlan } from "@/lib/credits";
 import { activateAddon, deactivateAddon } from "@/lib/services/addons";
 import { AddonId } from "@/types/addon";
 import { PLANS, PlanId } from "@/lib/plans";
+import { getPlanByStripePriceId } from "@/lib/services/plans-firestore";
 import Stripe from "stripe";
 
 const ALL_ADDON_IDS: AddonId[] = ["respondents", "surveyProgress"];
@@ -155,14 +156,11 @@ export async function POST(req: NextRequest) {
         subscription.items.data[0]?.current_period_end ??
         (subscription as unknown as Record<string, number>).current_period_end;
 
-      // Derive planId from which price is in the subscription
-      const planPrices: Record<string, string> = {
-        [process.env.STRIPE_GROWTH_PRICE_ID ?? ""]: "growth",
-        [process.env.STRIPE_PRICE_ID ?? ""]: "pro",
-      };
-      const matchedPlanId = subscription.items.data
-        .map((item) => planPrices[item.price.id])
-        .find(Boolean);
+      // Derive planId from Firestore plans collection (supports custom/enterprise plans)
+      const planMatches = await Promise.all(
+        subscription.items.data.map((item) => getPlanByStripePriceId(item.price.id))
+      );
+      const matchedPlanId = planMatches.find(Boolean)?.id;
 
       const updatePayload: Record<string, unknown> = {
         stripeSubscriptionId: subscription.id,
@@ -236,7 +234,7 @@ export async function POST(req: NextRequest) {
       const userData = userDoc.data();
       const subscriptionStatus: string = userData?.subscriptionStatus ?? "inactive";
       const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
-      const planId: PlanId = isActive ? (userData?.planId as PlanId ?? "growth") : "growth";
+      const planId: PlanId = (userData?.planId as PlanId | undefined) ?? (isActive ? "pro" : "growth");
 
       await resetCreditsForPlan(userDoc.id, planId);
       break;
