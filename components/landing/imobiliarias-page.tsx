@@ -433,11 +433,11 @@ export function ImobiliariasPage() {
             </blockquote>
             <div className="flex items-center justify-center gap-3 mt-8">
               <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-[14px] font-bold text-gray-600">M</span>
+                <span className="text-[14px] font-bold text-gray-600">U</span>
               </div>
               <div className="text-left">
-                <p className="text-[14px] font-semibold text-gray-900">MOC Brasil</p>
-                <p className="text-[12px] text-gray-500">Pesquisa clínica e de mercado em oncologia</p>
+                <p className="text-[14px] font-semibold text-gray-900">Usuário SurveyFlow</p>
+                <p className="text-[12px] text-gray-500">Empresa de pesquisa e mercado</p>
               </div>
             </div>
           </FadeUp>

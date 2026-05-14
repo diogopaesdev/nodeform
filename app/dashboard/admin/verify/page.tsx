@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Loader2, ShieldCheck, Mail } from "lucide-react";
 
 export default function AdminVerifyPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const [code, setCode] = useState("");
   const [sending, setSending] = useState(false);
@@ -46,7 +44,7 @@ export default function AdminVerifyPage() {
         body: JSON.stringify({ code }),
       });
       if (res.ok) {
-        router.push("/dashboard/admin/plans");
+        window.location.href = "/dashboard/admin/plans";
       } else {
         const data = await res.json();
         setError(data.error ?? "Código inválido");

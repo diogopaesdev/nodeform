@@ -129,7 +129,7 @@ const BENEFITS = [
 const OBJECTIONS = [
   {
     q: "A plataforma atende pesquisas com rigor metodológico clínico?",
-    a: "Sim. A MOC Brasil usa o SurveyFlow para pesquisas de mercado em oncologia — uma das áreas de maior exigência metodológica em saúde. Fluxo condicional, critérios de elegibilidade e exportação estruturada estão disponíveis desde o plano base.",
+    a: "Sim. A Usuário SurveyFlow usa o SurveyFlow para pesquisas de mercado em oncologia — uma das áreas de maior exigência metodológica em saúde. Fluxo condicional, critérios de elegibilidade e exportação estruturada estão disponíveis desde o plano base.",
   },
   {
     q: "Como garantir que só profissionais de saúde elegíveis respondam?",
@@ -414,7 +414,7 @@ export function HealthcarePage() {
         </div>
       </section>
 
-      {/* ─ Prova Social / Case MOC Brasil ─────────────────────────────────── */}
+      {/* ─ Prova Social / Case Usuário SurveyFlow ─────────────────────────────────── */}
       <section id="prova" className="py-24 px-6">
         <div className="max-w-3xl mx-auto">
           <FadeUp className="text-center">
@@ -427,11 +427,11 @@ export function HealthcarePage() {
             </blockquote>
             <div className="flex items-center justify-center gap-3 mt-8">
               <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0 border border-teal-100">
-                <span className="text-[14px] font-bold text-teal-700">M</span>
+                <span className="text-[14px] font-bold text-teal-700">U</span>
               </div>
               <div className="text-left">
-                <p className="text-[14px] font-semibold text-gray-900">MOC Brasil</p>
-                <p className="text-[12px] text-gray-500">Pesquisa clínica e de mercado em oncologia</p>
+                <p className="text-[14px] font-semibold text-gray-900">Usuário SurveyFlow</p>
+                <p className="text-[12px] text-gray-500">Empresa de pesquisa e mercado</p>
               </div>
             </div>
           </FadeUp>
