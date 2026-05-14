@@ -943,7 +943,7 @@ export function LandingPage() {
             </blockquote>
             <div className="flex items-center justify-center gap-3">
               <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-[14px] font-bold text-gray-600">M</span>
+                <span className="text-[14px] font-bold text-gray-600">U</span>
               </div>
               <div className="text-left">
                 <p className="text-[14px] font-semibold text-gray-900">{t.landing.socialProof.company}</p>

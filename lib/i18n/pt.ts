@@ -427,9 +427,9 @@ export const pt = {
     },
     socialProof: {
       sectionLabel: "Quem usa o SurveyFlow",
-      quote: "Utilizamos o SurveyFlow para condução de pesquisas de mercado na área de oncologia, gerando insights clínicos e estratégicos que orientam decisões em saúde.",
-      company: "MOC Brasil",
-      companyDesc: "Pesquisa de mercado em oncologia",
+      quote: "Utilizamos o SurveyFlow para condução de pesquisas de mercado com alto rigor metodológico, gerando insights estratégicos que orientam decisões de negócio.",
+      company: "Usuário SurveyFlow",
+      companyDesc: "Empresa de pesquisa e mercado",
     },
     planFeatures: {
       0: { label: "Pesquisas ilimitadas" },

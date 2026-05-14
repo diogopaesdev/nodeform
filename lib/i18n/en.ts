@@ -429,9 +429,9 @@ export const en: Translations = {
     },
     socialProof: {
       sectionLabel: "Who uses SurveyFlow",
-      quote: "We use SurveyFlow to conduct market research in the field of oncology, generating clinical and strategic insights that guide healthcare decisions.",
-      company: "MOC Brasil",
-      companyDesc: "Market research in oncology",
+      quote: "We use SurveyFlow to conduct market research with high methodological rigor, generating strategic insights that guide business decisions.",
+      company: "SurveyFlow User",
+      companyDesc: "Research and market company",
     },
     planFeatures: {
       0: { label: "Unlimited surveys" },
