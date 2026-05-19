@@ -21,7 +21,7 @@ function Logo() {
   );
 }
 
-const LAST_UPDATED = "12 de março de 2026";
+const LAST_UPDATED = "19 de maio de 2026";
 
 export default function TermsPage() {
   return (
@@ -82,21 +82,33 @@ export default function TermsPage() {
             <p>O Serviço inclui, mas não se limita a:</p>
             <ul>
               <li>Editor visual de fluxo com arrasto e conexão de nós</li>
-              <li>Publicação de pesquisas via link ou embed</li>
-              <li>Coleta e armazenamento de respostas</li>
-              <li>Dashboard de análise de resultados</li>
-              <li>Sistema de pontuação e scoring</li>
+              <li>Publicação de pesquisas via link ou embed (iframe)</li>
+              <li>Coleta e armazenamento de respostas de respondentes</li>
+              <li>Dashboard de análise de resultados e scoring</li>
+              <li>Geração de pesquisas por inteligência artificial (IA)</li>
+              <li>Módulo de Respondentes: autenticação dedicada via OTP ou SSO, controle de elegibilidade, perfil de respondente, participação única e rastreamento de bônus</li>
+              <li>Módulo de Progresso: persistência de respostas parciais entre sessões</li>
+              <li>API Keys para integração server-to-server com sistemas externos</li>
+              <li>Colaboração em workspace: convite de membros com papéis distintos (editor/visualizador)</li>
+              <li>Biblioteca de templates por segmento e complexidade</li>
+              <li>Personalização visual (white-label, temas e aparência) nos planos elegíveis</li>
             </ul>
           </Section>
 
           <Section title="3. Conta de Usuário">
             <p>
-              Para usar o Serviço, você deve criar uma conta utilizando autenticação Google OAuth. Você é responsável
-              por manter a confidencialidade das credenciais e por todas as atividades realizadas na sua conta.
+              Para usar o Serviço, você deve criar uma conta utilizando autenticação Google OAuth ou e-mail com OTP.
+              Você é responsável por manter a confidencialidade das credenciais e por todas as atividades realizadas
+              na sua conta.
             </p>
             <p>
               Você concorda em notificar imediatamente a SurveyFlow sobre qualquer uso não autorizado da sua conta.
               A SurveyFlow não será responsável por perdas decorrentes de uso não autorizado.
+            </p>
+            <p>
+              Você poderá criar API Keys para integração com sistemas externos. Cada chave concede acesso ao seu
+              workspace em nome da sua conta. Você é integralmente responsável pelo uso das chaves emitidas.
+              Chaves comprometidas devem ser revogadas imediatamente no painel de configurações.
             </p>
             <p>
               Reservamo-nos o direito de encerrar contas que violem estes Termos ou que estejam inativas por
@@ -107,13 +119,15 @@ export default function TermsPage() {
           <Section title="4. Uso Aceitável">
             <p>Você concorda em utilizar o Serviço somente para fins lícitos e de acordo com estes Termos. É expressamente proibido:</p>
             <ul>
-              <li>Coletar dados pessoais sem o consentimento dos respondentes</li>
+              <li>Coletar dados pessoais de respondentes sem base legal adequada (consentimento, contrato ou legítimo interesse)</li>
               <li>Criar pesquisas com conteúdo ilegal, ofensivo, discriminatório ou enganoso</li>
               <li>Utilizar o Serviço para envio de spam ou comunicações não solicitadas</li>
-              <li>Tentar acessar sistemas ou dados não autorizados</li>
+              <li>Tentar acessar sistemas, dados ou contas não autorizados</li>
               <li>Fazer engenharia reversa, descompilar ou reproduzir qualquer parte do Serviço</li>
               <li>Revender ou sublicenciar o acesso ao Serviço sem autorização expressa</li>
               <li>Sobrecarregar intencionalmente a infraestrutura da plataforma</li>
+              <li>Utilizar a funcionalidade de geração por IA para criar conteúdo que viole direitos de terceiros ou que seja prejudicial</li>
+              <li>Compartilhar credenciais de acesso ou API Keys com terceiros não autorizados</li>
             </ul>
             <p>
               A violação dessas regras pode resultar na suspensão imediata da conta, sem direito a reembolso
@@ -121,28 +135,82 @@ export default function TermsPage() {
             </p>
           </Section>
 
-          <Section title="5. Propriedade Intelectual">
+          <Section title="5. Responsabilidade pelo Conteúdo e Dados dos Respondentes">
+            <p>
+              Você, como criador das pesquisas ("Controlador"), é o único responsável pelo conteúdo que cria,
+              pelas perguntas formuladas e pelos dados pessoais coletados dos respondentes por meio das suas pesquisas.
+            </p>
+            <p>
+              A SurveyFlow atua como <span className="font-medium text-gray-800">operadora de dados</span> em relação
+              às informações fornecidas pelos respondentes das suas pesquisas, processando-as exclusivamente para
+              fornecer o Serviço conforme suas instruções.
+            </p>
+            <p>
+              Você declara e garante que:
+            </p>
+            <ul>
+              <li>Possui base legal adequada para coletar e tratar os dados dos respondentes, conforme a LGPD (Lei nº 13.709/2018)</li>
+              <li>Informou os respondentes sobre a coleta e tratamento de seus dados, conforme exigido pela LGPD</li>
+              <li>Os dados coletados são adequados, pertinentes e não excessivos em relação à finalidade declarada</li>
+              <li>Não utilizará as funcionalidades de elegibilidade ou filtragem de respondentes para discriminação ilegal</li>
+            </ul>
+          </Section>
+
+          <Section title="6. Inteligência Artificial (IA)">
+            <p>
+              O Serviço oferece geração automática de pesquisas por IA, processada pela OpenAI. Ao utilizar
+              esta funcionalidade, você compreende que:
+            </p>
+            <ul>
+              <li>As sugestões geradas são automatizadas e podem conter imprecisões — revise antes de publicar</li>
+              <li>O prompt que você digita é enviado à OpenAI para processamento; não inclua dados pessoais sensíveis nos prompts</li>
+              <li>O uso de IA consome créditos mensais conforme seu plano</li>
+              <li>A SurveyFlow não se responsabiliza pelo conteúdo gerado pela IA que você optar por publicar</li>
+            </ul>
+          </Section>
+
+          <Section title="7. Colaboração e Workspaces">
+            <p>
+              Você pode convidar colaboradores para o seu workspace com papéis de editor ou visualizador.
+              Colaboradores terão acesso às pesquisas e dados do workspace conforme o papel atribuído.
+            </p>
+            <p>
+              Você é responsável pelas ações de todos os colaboradores que convidar. Revogue acessos de
+              colaboradores que não devem mais ter acesso ao workspace o quanto antes.
+            </p>
+            <p>
+              O número de colaboradores permitidos varia conforme o plano contratado.
+            </p>
+          </Section>
+
+          <Section title="8. Propriedade Intelectual">
             <p>
               O SurveyFlow e todo o seu conteúdo, recursos e funcionalidades (incluindo código-fonte, design,
               logotipos e textos) são de propriedade exclusiva da SurveyFlow e protegidos por leis de
               propriedade intelectual.
             </p>
             <p>
-              Você retém todos os direitos sobre o conteúdo que criar no Serviço, como títulos de pesquisas,
-              perguntas e configurações. Ao usar o Serviço, você concede à SurveyFlow uma licença limitada,
-              não exclusiva e não transferível para processar e armazenar esse conteúdo com o único propósito
-              de fornecer o Serviço.
+              Você retém todos os direitos sobre o conteúdo que criar no Serviço (títulos de pesquisas,
+              perguntas e configurações) e sobre os dados coletados dos respondentes. Ao usar o Serviço,
+              você concede à SurveyFlow uma licença limitada, não exclusiva e não transferível para
+              processar e armazenar esse conteúdo com o único propósito de fornecer o Serviço.
             </p>
           </Section>
 
-          <Section title="6. Pagamento e Assinatura">
+          <Section title="9. Planos, Pagamento e Assinatura">
             <p>
-              O SurveyFlow opera no modelo de assinatura mensal. Os valores e condições são exibidos na página
-              de preços. Todo pagamento é processado de forma segura via Stripe.
+              O SurveyFlow opera no modelo de assinatura com três planos pagos: <span className="font-medium text-gray-800">Growth</span>,{" "}
+              <span className="font-medium text-gray-800">Pro</span> e <span className="font-medium text-gray-800">Enterprise</span>.
+              Cada plano possui limites e funcionalidades distintas, conforme descrito na página de preços.
+              Todo pagamento é processado de forma segura via Stripe.
             </p>
             <p>
               O período de teste gratuito de 7 dias não requer cartão de crédito. Após o período de teste,
               a assinatura é cobrada mensalmente de forma recorrente.
+            </p>
+            <p>
+              Módulos adicionais (Respondentes e Progresso) podem ser adquiridos separadamente nos planos elegíveis.
+              Os valores são exibidos na página de configurações.
             </p>
             <p>
               Em caso de falha no pagamento, o acesso ao Serviço poderá ser suspenso após notificação por e-mail.
@@ -150,18 +218,18 @@ export default function TermsPage() {
             </p>
           </Section>
 
-          <Section title="7. Cancelamento">
+          <Section title="10. Cancelamento">
             <p>
               Você pode cancelar sua assinatura a qualquer momento através do portal de gerenciamento disponível
               em Configurações. O acesso permanece ativo até o fim do período já pago.
             </p>
             <p>
               Após o cancelamento, os dados da conta ficam disponíveis por 30 dias para exportação. Após esse prazo,
-              os dados podem ser permanentemente excluídos.
+              os dados podem ser permanentemente excluídos, incluindo pesquisas, respostas e dados de respondentes.
             </p>
           </Section>
 
-          <Section title="8. Disponibilidade e SLA">
+          <Section title="11. Disponibilidade e SLA">
             <p>
               Buscamos manter o Serviço disponível 24 horas por dia, 7 dias por semana, mas não garantimos
               disponibilidade ininterrupta. Manutenções programadas serão comunicadas com antecedência sempre
@@ -169,11 +237,12 @@ export default function TermsPage() {
             </p>
             <p>
               A SurveyFlow não se responsabiliza por perdas decorrentes de indisponibilidades temporárias,
-              falhas de terceiros (como Firebase, Stripe ou provedores de nuvem) ou eventos fora do nosso controle.
+              falhas de terceiros (como Firebase, Stripe, OpenAI ou provedores de nuvem) ou eventos fora do
+              nosso controle.
             </p>
           </Section>
 
-          <Section title="9. Limitação de Responsabilidade">
+          <Section title="12. Limitação de Responsabilidade">
             <p>
               Na máxima extensão permitida por lei, a SurveyFlow não será responsável por danos indiretos,
               incidentais, especiais, consequenciais ou punitivos, incluindo perda de dados, lucros cessantes
@@ -185,7 +254,7 @@ export default function TermsPage() {
             </p>
           </Section>
 
-          <Section title="10. Alterações nos Termos">
+          <Section title="13. Alterações nos Termos">
             <p>
               Podemos modificar estes Termos a qualquer momento. Alterações significativas serão comunicadas
               por e-mail com pelo menos 15 dias de antecedência. O uso continuado após a vigência das
@@ -193,14 +262,15 @@ export default function TermsPage() {
             </p>
           </Section>
 
-          <Section title="11. Lei Aplicável">
+          <Section title="14. Lei Aplicável">
             <p>
-              Estes Termos são regidos pelas leis brasileiras. Qualquer disputa será submetida ao foro da
-              comarca de São Paulo — SP, com exclusão de qualquer outro, por mais privilegiado que seja.
+              Estes Termos são regidos pelas leis brasileiras, incluindo a Lei Geral de Proteção de Dados
+              (Lei nº 13.709/2018 — LGPD). Qualquer disputa será submetida ao foro da comarca de São Paulo — SP,
+              com exclusão de qualquer outro, por mais privilegiado que seja.
             </p>
           </Section>
 
-          <Section title="12. Contato">
+          <Section title="15. Contato">
             <p>
               Dúvidas sobre estes Termos? Entre em contato pelo e-mail:{" "}
               <span className="font-medium text-gray-800">suporte@surveyflow.com.br</span>
