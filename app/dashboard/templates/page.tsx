@@ -224,8 +224,12 @@ export default function TemplatesPage() {
   const router = useRouter();
   const { data: session } = useSession();
 
-  const subscriptionStatus = session?.user?.subscriptionStatus;
-  const planId = session?.user?.planId;
+  // Fresh plan data from Firestore — JWT can be stale after admin plan assignment
+  const [freshPlanId, setFreshPlanId] = useState<string | undefined>(session?.user?.planId);
+  const [freshStatus, setFreshStatus] = useState<string | undefined>(session?.user?.subscriptionStatus);
+
+  const subscriptionStatus = freshStatus ?? session?.user?.subscriptionStatus;
+  const planId = freshPlanId ?? session?.user?.planId;
   const isTrialing = subscriptionStatus === "trialing";
   const accessibleLevels = getAccessibleLevels(subscriptionStatus, planId);
 
@@ -241,6 +245,15 @@ export default function TemplatesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Fetch fresh plan data from Firestore to avoid stale JWT
+    fetch("/api/user/credits")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.planId !== undefined) setFreshPlanId(data.planId);
+        if (data?.subscriptionStatus !== undefined) setFreshStatus(data.subscriptionStatus);
+      })
+      .catch(() => {});
+
     fetch("/api/user/templates")
       .then((res) => res.ok ? res.json() : { templates: [] })
       .then((data) => setUserTemplates(data.templates || []))

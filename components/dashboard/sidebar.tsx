@@ -48,8 +48,8 @@ export function Sidebar({
   const effectivePlan = isActive ? (planId ?? "pro") : null;
   const isAdmin = session?.user?.isAdmin === true;
 
-  // Templates and other "pro+" features are unlocked for Pro, Enterprise, or trialing users
-  const hasProAccess = isTrialing || effectivePlan === "pro" || effectivePlan === "enterprise";
+  // Templates require active paid subscription (not trial) — pro or enterprise only
+  const hasProAccess = effectivePlan === "pro" || effectivePlan === "enterprise";
   // Backward compat: isPro used below for badge
   const isPro = isActive;
 
