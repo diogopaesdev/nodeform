@@ -21,7 +21,7 @@ function Logo() {
   );
 }
 
-const LAST_UPDATED = "12 de março de 2026";
+const LAST_UPDATED = "19 de maio de 2026";
 
 export default function PrivacyPage() {
   return (
@@ -71,11 +71,22 @@ export default function PrivacyPage() {
         {/* Body */}
         <div className="space-y-10">
 
-          <Section title="1. Quem somos">
+          <Section title="1. Quem somos e papéis no tratamento de dados">
             <p>
-              A SurveyFlow é a controladora dos dados pessoais tratados nesta política. Operamos a plataforma
-              de criação de pesquisas acessível em <span className="font-medium text-gray-800">surveyflow.com.br</span>.
+              A SurveyFlow opera a plataforma de criação de pesquisas acessível em{" "}
+              <span className="font-medium text-gray-800">surveyflow.com.br</span>.
             </p>
+            <p>
+              Em relação à LGPD (Lei nº 13.709/2018), a SurveyFlow assume papéis distintos conforme o tipo de dado tratado:
+            </p>
+            <ul>
+              <li>
+                <span className="font-medium text-gray-800">Controladora</span> — dos dados de conta, pagamento e uso dos criadores de pesquisas (administradores de workspace). Determinamos as finalidades e meios do tratamento desses dados.
+              </li>
+              <li>
+                <span className="font-medium text-gray-800">Operadora</span> — dos dados dos respondentes coletados por meio das pesquisas criadas na plataforma. Esses dados são tratados exclusivamente conforme as instruções do criador da pesquisa (o Controlador), que é inteiramente responsável pela base legal e pela comunicação ao respondente.
+              </li>
+            </ul>
             <p>
               Para dúvidas sobre privacidade, entre em contato com nosso encarregado de dados (DPO) em{" "}
               <span className="font-medium text-gray-800">privacidade@surveyflow.com.br</span>.
@@ -83,19 +94,34 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="2. Dados que coletamos">
-            <p>Coletamos as seguintes categorias de dados:</p>
-            <Subsection label="Dados de conta">
+            <Subsection label="Dados de conta (criadores de pesquisas)">
               <ul>
-                <li>Nome e endereço de e-mail (via autenticação Google OAuth)</li>
+                <li>Nome e endereço de e-mail (via Google OAuth ou e-mail com OTP)</li>
                 <li>Foto de perfil (fornecida pelo Google, opcional)</li>
-                <li>Data e hora de criação da conta</li>
+                <li>Data e hora de criação da conta e status da assinatura</li>
+                <li>API Keys criadas pelo usuário (armazenadas apenas como hash SHA-256; a chave original não é retida)</li>
               </ul>
             </Subsection>
-            <Subsection label="Dados de uso">
+            <Subsection label="Dados de uso e conteúdo">
               <ul>
-                <li>Pesquisas criadas (título, nós, configurações)</li>
-                <li>Respostas coletadas nas suas pesquisas (respondentes)</li>
+                <li>Pesquisas criadas (título, nós, configurações, temas visuais)</li>
+                <li>Templates salvos e configurações de aparência (white-label)</li>
+                <li>Créditos de IA consumidos e prompts enviados para geração de pesquisas</li>
                 <li>Logs de acesso e atividade na plataforma</li>
+              </ul>
+            </Subsection>
+            <Subsection label="Dados de respondentes (tratados como operadora)">
+              <p className="text-[13px] text-gray-500 mb-1.5">
+                Coletados e tratados conforme instrução do criador da pesquisa (controlador):
+              </p>
+              <ul>
+                <li>Nome e e-mail fornecidos no nó de apresentação da pesquisa</li>
+                <li>Respostas às perguntas (escolha única, múltipla, avaliação, texto livre)</li>
+                <li>Campos de perfil personalizados definidos pelo criador (ex.: cargo, cidade, segmento)</li>
+                <li>Dados de participação: data/hora, elegibilidade, status de bônus</li>
+                <li>Progresso parcial da pesquisa (quando o módulo Progresso está ativado)</li>
+                <li>Token SSO one-time (TTL de 5 minutos, invalidado após o primeiro uso)</li>
+                <li>Sessão de respondente: cookie httpOnly <span className="font-mono text-[12px] bg-gray-100 px-1 rounded">respondent_session</span> com TTL de 24 horas</li>
               </ul>
             </Subsection>
             <Subsection label="Dados de pagamento">
@@ -118,7 +144,9 @@ export default function PrivacyPage() {
             <ul>
               <li>Fornecer, operar e manter o Serviço</li>
               <li>Processar pagamentos e gerenciar assinaturas</li>
-              <li>Enviar comunicações essenciais (confirmações, alertas de conta, alterações nos Termos)</li>
+              <li>Enviar comunicações transacionais via e-mail (OTP de acesso, confirmações, alertas de conta, alterações nos Termos) — processadas pela Resend</li>
+              <li>Gerar pesquisas por inteligência artificial (prompts enviados à OpenAI)</li>
+              <li>Avaliar elegibilidade de respondentes e calcular pontuações com base nos campos de perfil e respostas</li>
               <li>Melhorar a plataforma com base em padrões de uso anônimos</li>
               <li>Responder a solicitações de suporte</li>
               <li>Cumprir obrigações legais e regulatórias</li>
@@ -131,8 +159,8 @@ export default function PrivacyPage() {
 
           <Section title="4. Base legal para o tratamento (LGPD)">
             <p>
-              O tratamento dos seus dados é fundamentado nas seguintes bases legais previstas na Lei Geral de
-              Proteção de Dados (Lei nº 13.709/2018):
+              O tratamento dos dados dos <span className="font-medium text-gray-800">criadores de pesquisas</span> é
+              fundamentado nas seguintes bases legais previstas na LGPD:
             </p>
             <ul>
               <li><span className="font-medium text-gray-800">Execução de contrato:</span> para fornecer os serviços contratados</li>
@@ -140,6 +168,11 @@ export default function PrivacyPage() {
               <li><span className="font-medium text-gray-800">Cumprimento de obrigação legal:</span> quando exigido por lei</li>
               <li><span className="font-medium text-gray-800">Consentimento:</span> para comunicações opcionais de marketing</li>
             </ul>
+            <p>
+              Os dados dos <span className="font-medium text-gray-800">respondentes</span> são tratados pela SurveyFlow
+              na qualidade de operadora, sob instrução do criador da pesquisa (controlador), que é responsável por
+              definir e comunicar a base legal aplicável (consentimento, contrato ou legítimo interesse) aos respondentes.
+            </p>
           </Section>
 
           <Section title="5. Compartilhamento de dados">
@@ -150,34 +183,59 @@ export default function PrivacyPage() {
             <Table
               headers={["Provedor", "Finalidade", "País"]}
               rows={[
-                ["Google (Firebase)", "Autenticação e banco de dados", "EUA / Global"],
-                ["Stripe", "Processamento de pagamentos", "EUA / Global"],
-                ["Google Cloud", "Armazenamento de arquivos", "EUA / Global"],
-                ["Vercel", "Hospedagem da aplicação", "EUA / Global"],
+                ["Google (Firebase)", "Autenticação, banco de dados e armazenamento de arquivos", "EUA / Global"],
+                ["Stripe", "Processamento de pagamentos e gestão de assinaturas", "EUA / Global"],
+                ["Vercel", "Hospedagem e execução da aplicação", "EUA / Global"],
+                ["OpenAI", "Geração de pesquisas por inteligência artificial", "EUA"],
+                ["Resend", "Envio de e-mails transacionais (OTP, alertas, notificações)", "EUA"],
               ]}
             />
             <p>
               Todos os provedores estão sujeitos a acordos de proteção de dados adequados e operam em
-              conformidade com o GDPR e/ou legislação equivalente.
+              conformidade com o GDPR e/ou legislação equivalente. As transferências internacionais são
+              realizadas com base em cláusulas contratuais padrão e mecanismos adequados de proteção,
+              garantindo nível de proteção equivalente ao da LGPD.
             </p>
             <p>
               Não vendemos, alugamos ou compartilhamos dados pessoais com terceiros para fins comerciais próprios.
             </p>
           </Section>
 
-          <Section title="6. Cookies">
-            <p>Utilizamos os seguintes tipos de cookies:</p>
-            <ul>
-              <li><span className="font-medium text-gray-800">Essenciais:</span> necessários para autenticação e funcionamento do Serviço (não podem ser desativados)</li>
-              <li><span className="font-medium text-gray-800">De sessão:</span> mantêm você autenticado durante a navegação</li>
-              <li><span className="font-medium text-gray-800">De preferências:</span> armazenam configurações do editor no localStorage do navegador</li>
-            </ul>
+          <Section title="6. Cookies e armazenamento local">
+            <p>Utilizamos os seguintes cookies e mecanismos de armazenamento:</p>
+            <Table
+              headers={["Cookie / Chave", "Tipo", "TTL", "Finalidade"]}
+              rows={[
+                ["next-auth.session-token", "httpOnly cookie", "Sessão / 30 dias", "Autenticação do criador de pesquisa (NextAuth)"],
+                ["respondent_session", "httpOnly cookie", "24 horas", "Sessão autenticada do respondente (OTP ou SSO)"],
+                ["admin_session", "httpOnly cookie", "1 hora", "Sessão de administrador interno"],
+                ["surveyflow-editor-storage", "localStorage", "Persistente", "Estado do editor de nós (rascunho local)"],
+                ["surveyflow-locale", "localStorage", "Persistente", "Preferência de idioma (pt / en)"],
+              ]}
+            />
             <p>
               Não utilizamos cookies de rastreamento de terceiros nem tecnologias de publicidade comportamental.
             </p>
           </Section>
 
-          <Section title="7. Seus direitos (LGPD)">
+          <Section title="7. Segurança">
+            <p>Adotamos medidas técnicas e organizacionais para proteger seus dados, incluindo:</p>
+            <ul>
+              <li>Transmissão de dados via HTTPS/TLS</li>
+              <li>Autenticação via OAuth 2.0 (Google) ou OTP de 6 dígitos com expiração de 10 minutos</li>
+              <li>API Keys armazenadas exclusivamente como hash SHA-256 — a chave original nunca é retida após a criação</li>
+              <li>Tokens SSO de uso único com expiração de 5 minutos</li>
+              <li>Dados armazenados no Firebase Firestore com regras de segurança que isolam dados por workspace</li>
+              <li>Acesso restrito a dados por colaboradores com necessidade funcional</li>
+              <li>Monitoramento contínuo de vulnerabilidades</li>
+            </ul>
+            <p>
+              Em caso de incidente de segurança que afete seus dados, notificaremos conforme exigido pela
+              LGPD e pela ANPD.
+            </p>
+          </Section>
+
+          <Section title="8. Seus direitos (LGPD)">
             <p>
               Como titular de dados, você tem os seguintes direitos garantidos pela LGPD, exercíveis a
               qualquer momento pelo e-mail <span className="font-medium text-gray-800">privacidade@surveyflow.com.br</span>:
@@ -191,16 +249,25 @@ export default function PrivacyPage() {
               <li><span className="font-medium text-gray-800">Oposição:</span> opor-se a tratamentos realizados com base em legítimo interesse</li>
             </ul>
             <p>
+              Se você é <span className="font-medium text-gray-800">respondente</span> de uma pesquisa criada por
+              terceiros na plataforma, seus direitos de acesso, correção e exclusão devem ser exercidos
+              diretamente junto ao criador da pesquisa (controlador). A SurveyFlow, atuando como operadora,
+              auxiliará o controlador no atendimento das solicitações quando tecnicamente aplicável.
+            </p>
+            <p>
               Respondemos às solicitações em até 15 dias úteis. Podemos solicitar comprovação de identidade
               antes de processar o pedido.
             </p>
           </Section>
 
-          <Section title="8. Retenção de dados">
+          <Section title="9. Retenção de dados">
             <p>Mantemos seus dados pelos seguintes períodos:</p>
             <ul>
               <li>Dados de conta ativa: durante toda a vigência da conta</li>
               <li>Dados após cancelamento: 30 dias para exportação, depois excluídos</li>
+              <li>Dados de respondentes: retidos enquanto a conta do criador estiver ativa; excluídos junto com a conta</li>
+              <li>Tokens de sessão de respondente: expiram automaticamente em 24 horas</li>
+              <li>Tokens SSO: expiram automaticamente em 5 minutos ou após o primeiro uso</li>
               <li>Logs de transação: 5 anos (obrigação fiscal)</li>
               <li>Logs de segurança: 12 meses</li>
             </ul>
@@ -210,26 +277,17 @@ export default function PrivacyPage() {
             </p>
           </Section>
 
-          <Section title="9. Segurança">
-            <p>Adotamos medidas técnicas e organizacionais para proteger seus dados, incluindo:</p>
-            <ul>
-              <li>Transmissão de dados via HTTPS/TLS</li>
-              <li>Autenticação via OAuth 2.0 (Google)</li>
-              <li>Dados armazenados no Firebase com regras de segurança</li>
-              <li>Acesso restrito a dados por colaboradores com necessidade funcional</li>
-              <li>Monitoramento contínuo de vulnerabilidades</li>
-            </ul>
-            <p>
-              Em caso de incidente de segurança que afete seus dados, notificaremos conforme exigido pela
-              LGPD e pela ANPD.
-            </p>
-          </Section>
-
           <Section title="10. Transferência internacional">
             <p>
-              Alguns dos nossos prestadores de serviço estão localizados fora do Brasil (principalmente nos EUA).
-              Realizamos essas transferências com base em cláusulas contratuais padrão e mecanismos adequados
-              de proteção de dados, garantindo nível de proteção equivalente ao da LGPD.
+              Alguns dos nossos prestadores de serviço estão localizados fora do Brasil (principalmente nos EUA),
+              conforme indicado na tabela da seção 5. Realizamos essas transferências com base em cláusulas
+              contratuais padrão e mecanismos adequados de proteção de dados, garantindo nível de proteção
+              equivalente ao da LGPD.
+            </p>
+            <p>
+              Especificamente para a funcionalidade de geração de pesquisas por IA, os prompts digitados pelo
+              usuário são transmitidos à OpenAI (EUA) para processamento. Não inclua dados pessoais sensíveis
+              em prompts de geração.
             </p>
           </Section>
 
