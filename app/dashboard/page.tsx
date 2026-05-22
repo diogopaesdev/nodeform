@@ -817,9 +817,9 @@ window.addEventListener("message", function(e) {
 
       {/* ── Embed Modal ─────────────────────────────────────────────────────── */}
       <Dialog open={embedModalOpen} onOpenChange={setEmbedModalOpen}>
-        <DialogContent className="max-w-3xl p-0 gap-0">
+        <DialogContent className="max-w-3xl p-0 gap-0 max-h-[85vh] flex flex-col overflow-hidden">
           <DialogTitle className="sr-only">{t.dashboard.embedModal.title}</DialogTitle>
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 flex-shrink-0">
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
               <Code className="w-4 h-4 text-gray-600" />
             </div>
@@ -828,7 +828,7 @@ window.addEventListener("message", function(e) {
               <p className="text-xs text-gray-500">{t.dashboard.embedModal.subtitle}</p>
             </div>
           </div>
-          <div className="px-5 py-4 space-y-4">
+          <div className="px-5 py-4 space-y-4 overflow-y-auto">
             {/* Embed options */}
             <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
               <div>
