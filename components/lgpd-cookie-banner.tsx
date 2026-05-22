@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export function LgpdCookieBanner() {
+  const searchParams = useSearchParams();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (searchParams.get("embed") === "true") return;
     if (!localStorage.getItem("lgpd_accepted")) {
       setVisible(true);
     }
-  }, []);
+  }, [searchParams]);
 
   const accept = () => {
     localStorage.setItem("lgpd_accepted", "true");
