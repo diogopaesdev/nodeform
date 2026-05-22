@@ -32,6 +32,7 @@ export default function UserSurveysPage({
   const { userId } = use(params);
   const searchParams = useSearchParams();
   const isEmbedMode = searchParams.get("embed") === "true";
+  const hideHeader = searchParams.get("hide_header") === "true";
 
   const [surveys, setSurveys] = useState<PublicSurvey[]>([]);
   const [brand, setBrand] = useState<Brand>({ brandColor: null, logoUrl: null, displayName: null, brandDescription: null });
@@ -89,7 +90,7 @@ export default function UserSurveysPage({
       <div className={`mx-auto ${isEmbedMode ? "max-w-full" : "max-w-4xl"}`}>
 
         {/* Brand header */}
-        {(brand.logoUrl || brand.displayName || brand.brandDescription) && (
+        {!hideHeader && (brand.logoUrl || brand.displayName || brand.brandDescription) && (
           <div className={`flex flex-col items-center text-center ${isEmbedMode ? "mb-5" : "mb-8"}`}>
             {brand.logoUrl && (
               <div className="mb-3">
@@ -114,7 +115,7 @@ export default function UserSurveysPage({
         )}
 
         {/* Fallback header quando sem brand */}
-        {!brand.logoUrl && !brand.displayName && !isEmbedMode && (
+        {!hideHeader && !brand.logoUrl && !brand.displayName && !isEmbedMode && (
           <div className="text-center mb-8">
             <h1 className="text-xl font-semibold text-gray-900 mb-1">Pesquisas Disponíveis</h1>
             <p className="text-sm text-gray-500">Selecione uma pesquisa para participar</p>
