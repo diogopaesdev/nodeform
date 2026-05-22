@@ -159,7 +159,7 @@ export default function UserSurveysPage({
                 </div>
 
                 <Link
-                  href={`/survey/${survey.id}${isEmbedMode ? `?embed=true&from_list=${userId}` : ""}`}
+                  href={`/survey/${survey.id}${isEmbedMode ? `?embed=true&from_list=${userId}${hideHeader ? "&hide_header=true" : ""}` : ""}`}
                   style={{ backgroundColor: accentColor }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-md transition-opacity hover:opacity-90"
                 >
