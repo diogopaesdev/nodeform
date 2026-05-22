@@ -7,6 +7,7 @@ export function LgpdCookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("embed") === "true") return;
     if (!localStorage.getItem("lgpd_accepted")) {
       setVisible(true);
     }
