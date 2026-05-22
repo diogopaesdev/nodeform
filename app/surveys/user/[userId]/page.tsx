@@ -32,6 +32,7 @@ export default function UserSurveysPage({
   const { userId } = use(params);
   const searchParams = useSearchParams();
   const isEmbedMode = searchParams.get("embed") === "true";
+  const hideHeader = searchParams.get("hide_header") === "true";
 
   const [surveys, setSurveys] = useState<PublicSurvey[]>([]);
   const [brand, setBrand] = useState<Brand>({ brandColor: null, logoUrl: null, displayName: null, brandDescription: null });
@@ -66,7 +67,7 @@ export default function UserSurveysPage({
 
   if (loading) {
     return (
-      <div className={isEmbedMode ? "p-4" : "min-h-screen bg-gray-50 p-8"}>
+      <div className={isEmbedMode ? "min-h-screen bg-white p-4" : "min-h-screen bg-gray-50 p-8"}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
         </div>
@@ -76,7 +77,7 @@ export default function UserSurveysPage({
 
   if (error) {
     return (
-      <div className={isEmbedMode ? "p-4" : "min-h-screen bg-gray-50 p-8"}>
+      <div className={isEmbedMode ? "min-h-screen bg-white p-4" : "min-h-screen bg-gray-50 p-8"}>
         <div className="text-center py-12">
           <p className="text-sm text-gray-500">{error}</p>
         </div>
@@ -85,11 +86,11 @@ export default function UserSurveysPage({
   }
 
   return (
-    <div className={isEmbedMode ? "p-4" : "min-h-screen bg-gray-50 p-8"}>
+    <div className={isEmbedMode ? "min-h-screen bg-white p-4" : "min-h-screen bg-gray-50 p-8"}>
       <div className={`mx-auto ${isEmbedMode ? "max-w-full" : "max-w-4xl"}`}>
 
         {/* Brand header */}
-        {(brand.logoUrl || brand.displayName || brand.brandDescription) && (
+        {!hideHeader && (brand.logoUrl || brand.displayName || brand.brandDescription) && (
           <div className={`flex flex-col items-center text-center ${isEmbedMode ? "mb-5" : "mb-8"}`}>
             {brand.logoUrl && (
               <div className="mb-3">
@@ -114,7 +115,7 @@ export default function UserSurveysPage({
         )}
 
         {/* Fallback header quando sem brand */}
-        {!brand.logoUrl && !brand.displayName && !isEmbedMode && (
+        {!hideHeader && !brand.logoUrl && !brand.displayName && !isEmbedMode && (
           <div className="text-center mb-8">
             <h1 className="text-xl font-semibold text-gray-900 mb-1">Pesquisas Disponíveis</h1>
             <p className="text-sm text-gray-500">Selecione uma pesquisa para participar</p>
@@ -158,7 +159,7 @@ export default function UserSurveysPage({
                 </div>
 
                 <Link
-                  href={`/survey/${survey.id}${isEmbedMode ? "?embed=true" : ""}`}
+                  href={`/survey/${survey.id}${isEmbedMode ? `?embed=true&from_list=${userId}` : ""}`}
                   style={{ backgroundColor: accentColor }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-md transition-opacity hover:opacity-90"
                 >

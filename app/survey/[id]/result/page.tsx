@@ -140,7 +140,7 @@ export default function ResultPage({
   };
 
   return (
-    <div className={`${isEmbedMode ? "py-4" : "min-h-screen bg-gray-50 py-12"} px-4 relative overflow-hidden`}>
+    <div className={`${isEmbedMode ? "min-h-screen bg-white py-4" : "min-h-screen bg-gray-50 py-12"} px-4 relative overflow-hidden`}>
       {/* Confetti Animation */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none">

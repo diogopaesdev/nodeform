@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { I18nProvider } from "@/lib/i18n";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { LgpdCookieBanner } from "@/components/lgpd-cookie-banner";
 import "./globals.css";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://surveyflow.com.br";
@@ -83,6 +84,7 @@ export default function RootLayout({
         <SessionProvider>
           <I18nProvider>{children}</I18nProvider>
         </SessionProvider>
+        <LgpdCookieBanner />
         {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
