@@ -39,6 +39,8 @@ export default function SurveyPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEmbedMode = searchParams.get("embed") === "true";
+  const hideHeader = searchParams.get("hide_header") === "true";
+  const fromList = searchParams.get("from_list");
   const ssoToken = searchParams.get("sso_token");
 
   const {
@@ -399,7 +401,7 @@ export default function SurveyPage({
   };
 
   return (
-    <div className={isEmbedMode ? "" : "min-h-screen bg-gray-50"}>
+    <div className={isEmbedMode ? "min-h-screen bg-white" : "min-h-screen bg-gray-50"}>
       {!isEmbedMode && (
         <div className="absolute top-4 right-4 z-10">
           <button
@@ -413,8 +415,20 @@ export default function SurveyPage({
       )}
 
       <div className={`px-4 ${isEmbedMode ? "py-6" : "py-12"}`}>
+        {isEmbedMode && fromList && (
+          <div className="mb-4">
+            <button
+              onClick={() => router.push(`/surveys/user/${fromList}?embed=true`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Voltar à lista
+            </button>
+          </div>
+        )}
+
         <div className={`mx-auto space-y-6 ${isEmbedMode ? "max-w-full" : "max-w-4xl space-y-8"}`}>
-          {(brand.logoUrl || brand.displayName) && (
+          {!hideHeader && (brand.logoUrl || brand.displayName) && (
             <div className="flex items-center justify-center gap-2.5">
               {brand.logoUrl && (
                 <Image src={brand.logoUrl} alt={brand.displayName || "Logo"} width={28} height={28} className="rounded-lg object-contain" />
@@ -425,12 +439,14 @@ export default function SurveyPage({
             </div>
           )}
 
-          <div className="text-center space-y-1.5">
-            <h1 className={`font-semibold text-gray-900 ${isEmbedMode ? "text-lg" : "text-xl"}`}>{survey.title}</h1>
-            {survey.description && (
-              <p className={`text-gray-500 ${isEmbedMode ? "text-xs" : "text-sm"}`}>{survey.description}</p>
-            )}
-          </div>
+          {!hideHeader && (
+            <div className="text-center space-y-1.5">
+              <h1 className={`font-semibold text-gray-900 ${isEmbedMode ? "text-lg" : "text-xl"}`}>{survey.title}</h1>
+              {survey.description && (
+                <p className={`text-gray-500 ${isEmbedMode ? "text-xs" : "text-sm"}`}>{survey.description}</p>
+              )}
+            </div>
+          )}
 
           <QuestionRenderer node={currentNode} onAnswer={handleAnswer} totalScore={totalScore} brandColor={brand.brandColor || undefined} />
 

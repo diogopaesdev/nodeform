@@ -740,6 +740,7 @@ export default function SurveyDetailPage({
   const [copied, setCopied] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
+  const [embedShowHeader, setEmbedShowHeader] = useState(true);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis" | "bonus" | "collaborators">("analytics");
   const [isOwner, setIsOwner] = useState(true);
@@ -842,9 +843,10 @@ export default function SurveyDetailPage({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getEmbedCode = () => {
+  const getEmbedCode = (showHeader = embedShowHeader) => {
     const url = getSurveyUrl();
-    return `<iframe\n  id="surveyflow-survey"\n  src="${url}?embed=true"\n  frameborder="0"\n  style="width: 100%; border: none; overflow: hidden;"\n  scrolling="no"\n></iframe>\n<script>\nwindow.addEventListener("message", function(e) {\n  if (e.data && e.data.type === "surveyflow-resize") {\n    document.getElementById("surveyflow-survey").style.height = e.data.height + "px";\n  }\n});\n</script>`;
+    const params = ["embed=true", ...(!showHeader ? ["hide_header=true"] : [])].join("&");
+    return `<iframe\n  id="surveyflow-survey"\n  src="${url}?${params}"\n  frameborder="0"\n  style="width: 100%; border: none; overflow: hidden;"\n  scrolling="no"\n></iframe>\n<script>\nwindow.addEventListener("message", function(e) {\n  if (e.data && e.data.type === "surveyflow-resize") {\n    document.getElementById("surveyflow-survey").style.height = e.data.height + "px";\n  }\n});\n</script>`;
   };
 
   const handleCopyEmbed = async () => {
@@ -1040,6 +1042,25 @@ export default function SurveyDetailPage({
             </div>
           </div>
           <div className="px-5 py-4 space-y-4">
+            {/* Embed options */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div>
+                <p className="text-xs font-medium text-gray-800">Mostrar logo e cabeçalho</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">Exibe o logo da marca e o título da pesquisa no embed</p>
+              </div>
+              <button
+                role="switch"
+                aria-checked={embedShowHeader}
+                onClick={() => setEmbedShowHeader((v) => !v)}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${embedShowHeader ? "bg-gray-900" : "bg-gray-300"}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${embedShowHeader ? "translate-x-4" : "translate-x-0"}`}
+                />
+              </button>
+            </div>
+
+            {/* Code block */}
             <div className="relative">
               <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs overflow-x-auto">
                 <code>{getEmbedCode()}</code>
