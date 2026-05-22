@@ -234,7 +234,7 @@ export default function SurveyPage({
 
   if (isCompleted) {
     return (
-      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
+      <div className={`flex items-center justify-center ${isEmbedMode ? "min-h-screen bg-white py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3">
           <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
           <p className="text-sm text-gray-500">Finalizando pesquisa...</p>
@@ -245,7 +245,7 @@ export default function SurveyPage({
 
   if (isLoading || authStatus === "loading") {
     return (
-      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
+      <div className={`flex items-center justify-center ${isEmbedMode ? "min-h-screen bg-white py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3">
           <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
           <p className="text-sm text-gray-500">Carregando pesquisa...</p>
@@ -256,7 +256,7 @@ export default function SurveyPage({
 
   if (error) {
     return (
-      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
+      <div className={`flex items-center justify-center ${isEmbedMode ? "min-h-screen bg-white py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3 p-6 bg-white rounded-xl border border-gray-200 max-w-sm">
           <p className="text-sm text-gray-500">{error}</p>
           <button
@@ -283,7 +283,7 @@ export default function SurveyPage({
 
   if (authStatus === "already_completed") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className={`min-h-screen flex items-center justify-center px-4 ${isEmbedMode ? "bg-white" : "bg-gray-50"}`}>
         <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
           <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
           <div className="space-y-1">
@@ -299,7 +299,7 @@ export default function SurveyPage({
 
   if (authStatus === "ineligible") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className={`min-h-screen flex items-center justify-center px-4 ${isEmbedMode ? "bg-white" : "bg-gray-50"}`}>
         <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
           <ShieldX className="w-10 h-10 text-amber-500 mx-auto" />
           <div className="space-y-1">
@@ -334,7 +334,7 @@ export default function SurveyPage({
     };
 
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className={`min-h-screen flex items-center justify-center px-4 ${isEmbedMode ? "bg-white" : "bg-gray-50"}`}>
         <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-6">
           <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto">
             <RotateCcw className="w-6 h-6 text-blue-600" />
@@ -369,7 +369,7 @@ export default function SurveyPage({
 
   if (!survey || !currentNodeId) {
     return (
-      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"}`}>
+      <div className={`flex items-center justify-center ${isEmbedMode ? "min-h-screen bg-white py-12" : "min-h-screen bg-gray-50"}`}>
         <div className="text-center space-y-3">
           <p className="text-sm text-gray-500">Erro ao carregar pesquisa</p>
           <button onClick={() => window.close()} className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors">
