@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
       { price: mainPriceId, quantity: 1 },
       ...addonLineItems,
     ],
+    allow_promotion_codes: true,
     ...(alreadyHadTrial ? {} : {
       subscription_data: {
         trial_period_days: 7,

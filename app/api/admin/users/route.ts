@@ -5,6 +5,19 @@ import { getAllPlans } from "@/lib/services/plans-firestore";
 
 const BASE_PLAN_IDS = ["growth", "pro", "enterprise"];
 const VALID_STATUSES = ["active", "trialing", "past_due", "inactive", null];
+const VALID_ADDON_IDS = ["respondents", "surveyProgress"] as const;
+
+type AddonsFlags = Partial<Record<(typeof VALID_ADDON_IDS)[number], boolean>>;
+
+// Flatten the stored addons map into a simple { addonId: active } object
+function flattenAddons(addons: unknown): AddonsFlags {
+  const map = (addons as Record<string, { active?: boolean }>) ?? {};
+  const result: AddonsFlags = {};
+  for (const id of VALID_ADDON_IDS) {
+    result[id] = map[id]?.active === true;
+  }
+  return result;
+}
 
 // GET /api/admin/users?q=email — search users (max 20)
 export async function GET(req: NextRequest) {
@@ -23,6 +36,7 @@ export async function GET(req: NextRequest) {
     planId: string | null;
     subscriptionStatus: string | null;
     trialEnd: string | null;
+    addons: AddonsFlags;
   }[] = [];
 
   if (q) {
@@ -38,6 +52,7 @@ export async function GET(req: NextRequest) {
           planId: data.planId ?? null,
           subscriptionStatus: data.subscriptionStatus ?? null,
           trialEnd: data.trialEnd ?? null,
+          addons: flattenAddons(data.addons),
         };
       })
       .filter((u) => u.email?.toLowerCase().includes(q))
@@ -53,6 +68,7 @@ export async function GET(req: NextRequest) {
         planId: data.planId ?? null,
         subscriptionStatus: data.subscriptionStatus ?? null,
         trialEnd: data.trialEnd ?? null,
+        addons: flattenAddons(data.addons),
       };
     });
   }
@@ -66,7 +82,7 @@ export async function PATCH(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
 
   const body = await req.json();
-  const { userId, planId, subscriptionStatus } = body;
+  const { userId, planId, subscriptionStatus, addons } = body;
 
   if (!userId || typeof userId !== "string") {
     return NextResponse.json({ error: "userId é obrigatório" }, { status: 400 });
@@ -93,10 +109,43 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
+  // Validate addons flags
+  if (addons !== undefined) {
+    if (typeof addons !== "object" || addons === null || Array.isArray(addons)) {
+      return NextResponse.json({ error: "addons inválido" }, { status: 400 });
+    }
+    for (const key of Object.keys(addons)) {
+      if (!VALID_ADDON_IDS.includes(key as (typeof VALID_ADDON_IDS)[number])) {
+        return NextResponse.json(
+          { error: `addon inválido: ${key}. Valores permitidos: ${VALID_ADDON_IDS.join(", ")}` },
+          { status: 400 }
+        );
+      }
+      if (typeof addons[key] !== "boolean") {
+        return NextResponse.json({ error: `addon "${key}" deve ser boolean` }, { status: 400 });
+      }
+    }
+  }
+
   const { db } = getFirebaseAdmin();
   const update: Record<string, unknown> = { updatedAt: new Date().toISOString() };
   if (planId !== undefined) update.planId = planId;
   if (subscriptionStatus !== undefined) update.subscriptionStatus = subscriptionStatus;
+
+  // Admin override: toggle addons directly, bypassing the plan restrictions
+  // that apply to self-service Stripe purchases.
+  if (addons !== undefined) {
+    const now = new Date().toISOString();
+    for (const id of VALID_ADDON_IDS) {
+      const active = (addons as AddonsFlags)[id];
+      if (active === undefined) continue;
+      if (active) {
+        update[`addons.${id}`] = { id, active: true, activatedAt: now };
+      } else {
+        update[`addons.${id}.active`] = false;
+      }
+    }
+  }
 
   await db.collection("users").doc(userId).update(update);
 

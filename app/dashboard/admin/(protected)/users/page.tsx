@@ -10,11 +10,14 @@ interface AdminUser {
   planId: string | null;
   subscriptionStatus: string | null;
   trialEnd: string | null;
+  addons: { respondents?: boolean; surveyProgress?: boolean };
 }
 
 interface RowState {
   planId: string;
   subscriptionStatus: string;
+  addonRespondents: boolean;
+  addonSurveyProgress: boolean;
   saving: boolean;
   saved: boolean;
   error: string | null;
@@ -22,6 +25,10 @@ interface RowState {
 
 const PLAN_OPTIONS = ["growth", "pro", "enterprise"];
 const STATUS_OPTIONS = ["active", "trialing", "past_due", "inactive"];
+const ADDON_LABELS: { id: "respondents" | "surveyProgress"; label: string }[] = [
+  { id: "respondents", label: "Respondentes" },
+  { id: "surveyProgress", label: "Salvar progresso" },
+];
 
 export default function AdminUsersPage() {
   const [query, setQuery] = useState("");
@@ -33,6 +40,8 @@ export default function AdminUsersPage() {
   const buildRowState = (u: AdminUser): RowState => ({
     planId: u.planId ?? "growth",
     subscriptionStatus: u.subscriptionStatus ?? "inactive",
+    addonRespondents: u.addons?.respondents === true,
+    addonSurveyProgress: u.addons?.surveyProgress === true,
     saving: false,
     saved: false,
     error: null,
@@ -83,6 +92,10 @@ export default function AdminUsersPage() {
           userId,
           planId: row.planId,
           subscriptionStatus: row.subscriptionStatus === "inactive" ? "inactive" : row.subscriptionStatus,
+          addons: {
+            respondents: row.addonRespondents,
+            surveyProgress: row.addonSurveyProgress,
+          },
         }),
       });
 
@@ -176,6 +189,7 @@ export default function AdminUsersPage() {
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Email</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Plano</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Status</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Módulos</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Ações</th>
                   </tr>
                 </thead>
@@ -222,6 +236,29 @@ export default function AdminUsersPage() {
                               <option key={s} value={s}>{s}</option>
                             ))}
                           </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-1.5">
+                            {ADDON_LABELS.map(({ id, label }) => {
+                              const field = id === "respondents" ? "addonRespondents" : "addonSurveyProgress";
+                              return (
+                                <label key={id} className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={row[field]}
+                                    onChange={(e) =>
+                                      setRowStates((prev) => ({
+                                        ...prev,
+                                        [user.id]: { ...prev[user.id], [field]: e.target.checked, saved: false },
+                                      }))
+                                    }
+                                    className="w-3.5 h-3.5 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                                  />
+                                  {label}
+                                </label>
+                              );
+                            })}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
