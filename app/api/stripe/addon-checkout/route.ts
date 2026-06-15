@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: [{ price: priceId, quantity: 1 }],
+    allow_promotion_codes: true,
     metadata: { type: "addon", addonId, userId: session.user.id },
     success_url: `${appUrl}/dashboard/settings/integrations?addon_success=true`,
     cancel_url: `${appUrl}/dashboard/settings/integrations`,
