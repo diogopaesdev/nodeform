@@ -80,6 +80,12 @@ Check addon status via `hasAddon(workspaceId, addonId)` ([lib/services/addons.ts
 
 External platforms call `POST /api/sso/token` with a `Bearer nfk_...` API key and respondent data. NodeForm returns a one-time token (5 min TTL). The client then redirects the user to `/survey/[id]?sso_token=[token]`, which exchanges it for a respondent session cookie.
 
+The survey page (`app/survey/[id]/page.tsx`) detects `?sso_token=` on load, calls `GET /api/respondent/auth/sso?token=...&surveyId=...` client-side, removes the token from the URL via `history.replaceState`, and starts the survey authenticated — the respondent never sees a login screen.
+
+**Embed / iframe mode:** Add `?embed=true` to the survey URL to suppress the header and enable cross-origin cookie support. In embed mode the auth route sets `SameSite=None; Secure` on the `respondent-session` cookie instead of `lax`, which is required for the cookie to be accepted inside a cross-origin iframe. `SameSite=None` requires HTTPS — it will not work on plain HTTP (localhost). The SSO token URL for embed: `/survey/[id]?sso_token=[token]&embed=true`.
+
+If the SSO token is invalid or expired, the page falls back to `checkRespondentAuth` — which either finds an existing session cookie or shows the manual OTP login gate.
+
 ### AI credits
 
 10 free credits per month per workspace (auto-reset on the 1st of each month). Consumed transactionally in [lib/credits.ts](lib/credits.ts) before each call to `POST /api/surveys/generate`.

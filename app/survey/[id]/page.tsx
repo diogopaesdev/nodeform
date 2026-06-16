@@ -121,7 +121,8 @@ export default function SurveyPage({
   };
 
   const handleSSOLogin = async (token: string, surveyData: Survey) => {
-    const res = await fetch(`/api/respondent/auth/sso?token=${token}&surveyId=${id}`);
+    const embedParam = isEmbedMode ? "&embed=true" : "";
+    const res = await fetch(`/api/respondent/auth/sso?token=${token}&surveyId=${id}${embedParam}`);
     const data = await res.json();
 
     if (!res.ok) {

@@ -266,6 +266,35 @@ app.get("/survey/:surveyId", requireAuth, async (req, res) => {
         </Callout>
       </Step>
 
+      {/* Embed / iframe */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-gray-900">
+          {isEn ? "Embedding surveys in your platform (iframe)" : "Incorporando pesquisas na sua plataforma (iframe)"}
+        </h2>
+        <p className="text-sm text-gray-600 leading-relaxed">
+          {isEn
+            ? "If you want the survey to appear inside your own page without any redirect, embed it in an iframe. Add ?embed=true to the survey URL — this hides the header and enables cross-origin cookie support so SSO works correctly inside the iframe."
+            : "Se você quer que a pesquisa apareça dentro da sua própria página sem nenhum redirect, incorpore-a num iframe. Adicione ?embed=true à URL da pesquisa — isso oculta o cabeçalho e habilita o suporte a cookie cross-origin para que o SSO funcione corretamente dentro do iframe."}
+        </p>
+        <CodeBlock
+          code={`// ${isEn ? "1. Backend: generate the SSO token as usual, then build the embed URL" : "1. Backend: gere o token SSO normalmente, depois monte a URL do embed"}
+const { token } = await r.json();
+const embedUrl = \`${BASE_URL}/survey/\${surveyId}?sso_token=\${token}&embed=true\`;
+
+// ${isEn ? "2. Frontend: render the iframe" : "2. Frontend: renderize o iframe"}
+<iframe
+  src={embedUrl}
+  style={{ width: "100%", height: "600px", border: "none" }}
+  allow="clipboard-write"
+/>`}
+        />
+        <Callout variant="warning">
+          {isEn
+            ? "The embed iframe requires HTTPS on both sides. The cross-origin cookie (SameSite=None; Secure) will not be set over plain HTTP, so SSO won't work on localhost without HTTPS. For local testing, use a tunnel (e.g. ngrok) or test in production."
+            : "O iframe de embed exige HTTPS nos dois lados. O cookie cross-origin (SameSite=None; Secure) não é aceito em HTTP simples, então o SSO não funciona em localhost sem HTTPS. Para testes locais, use um túnel (ex.: ngrok) ou teste em produção."}
+        </Callout>
+      </section>
+
       {/* Step 4 — Sync */}
       <Step index={4} icon={RefreshCw} title={isEn ? "Keep profiles in sync (optional)" : "Mantenha os perfis sincronizados (opcional)"}>
         <p>
@@ -388,6 +417,7 @@ curl -X PATCH '${BASE_URL}/api/surveys/{surveyId}/participations/{participationI
                 "Tested a full flow with a real user",
                 "Verified expired-token fallback (OTP login)",
                 "Verified a respondent can't answer twice",
+                "If using iframe embed: HTTPS on both sides and ?embed=true in the URL",
               ]
             : [
                 "Módulo Respondentes ativo no workspace",
@@ -397,6 +427,7 @@ curl -X PATCH '${BASE_URL}/api/surveys/{surveyId}/participations/{participationI
                 "Fluxo completo testado com um usuário real",
                 "Fallback de token expirado verificado (login por OTP)",
                 "Verificado que um respondente não responde duas vezes",
+                "Se usando iframe embed: HTTPS nos dois lados e ?embed=true na URL",
               ]
           ).map((item) => (
             <li key={item} className="flex items-start gap-2">
@@ -420,12 +451,14 @@ curl -X PATCH '${BASE_URL}/api/surveys/{surveyId}/participations/{participationI
                 ["What if the SSO token expires before the click?", "SurveyFlow shows the e-mail OTP login. The user enters their e-mail, gets a 6-digit code and accesses normally."],
                 ["Can someone answer the same survey twice?", "No. Participation is bound to the respondent — any second attempt shows a “you already participated” screen."],
                 ["Is the profile field required?", "Optional but recommended — it powers eligibility rules. Without it the respondent only has name and e-mail."],
+                ["Can I embed the survey in an iframe?", "Yes. Add ?embed=true to the survey URL alongside the SSO token. This enables cross-origin cookie support (SameSite=None; Secure). Requires HTTPS on both sides — it won't work over plain HTTP."],
               ]
             : [
                 ["O respondente precisa de conta no SurveyFlow?", "Não. Ele existe apenas dentro do seu workspace, identificado pelo e-mail."],
                 ["E se o token SSO expirar antes do clique?", "O SurveyFlow exibe o login por OTP via e-mail. O usuário digita o e-mail, recebe um código de 6 dígitos e acessa normalmente."],
                 ["Alguém pode responder a mesma pesquisa duas vezes?", "Não. A participação é vinculada ao respondente — qualquer nova tentativa mostra uma tela de “você já participou”."],
                 ["O campo profile é obrigatório?", "Opcional, mas recomendado — é o que alimenta as regras de elegibilidade. Sem ele o respondente tem apenas nome e e-mail."],
+                ["Posso incorporar a pesquisa num iframe?", "Sim. Adicione ?embed=true à URL da pesquisa junto com o token SSO. Isso habilita o suporte a cookie cross-origin (SameSite=None; Secure). Exige HTTPS nos dois lados — não funciona em HTTP simples."],
               ]
           ).map(([q, a]) => (
             <div key={q}>

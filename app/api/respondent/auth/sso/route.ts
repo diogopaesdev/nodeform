@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token");
     const surveyId = searchParams.get("surveyId");
+    const isEmbed = searchParams.get("embed") === "true";
 
     if (!token || !surveyId) {
       return NextResponse.json({ error: "Token ou surveyId ausente" }, { status: 400 });
@@ -56,7 +57,8 @@ export async function GET(request: NextRequest) {
     cookieStore.set(SESSION_COOKIE, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      // SameSite=none required for cross-origin iframes (embed mode)
+      sameSite: isEmbed ? "none" : "lax",
       maxAge: SESSION_TTL_SECONDS,
       path: "/",
     });
