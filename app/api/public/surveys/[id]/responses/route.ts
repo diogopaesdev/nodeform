@@ -108,6 +108,7 @@ export async function POST(
       }
 
       const session = await getRespondentSession(token);
+
       if (!session) {
         return NextResponse.json({ error: "Sessão inválida ou expirada" }, { status: 401 });
       }

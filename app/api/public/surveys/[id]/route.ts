@@ -37,6 +37,10 @@ export async function GET(
         nodes: survey.nodes,
         edges: survey.edges,
         enableScoring: survey.enableScoring,
+        requiresRespondentLogin: survey.requiresRespondentLogin ?? false,
+        eligibilityRules: survey.eligibilityRules ?? [],
+        timeLimit: survey.timeLimit ?? null,
+        prize: survey.prize ?? null,
       },
       brand,
     });
