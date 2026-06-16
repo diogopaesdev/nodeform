@@ -648,7 +648,7 @@ export const pt = {
         },
         surveys: {
           summary: "Lista pesquisas do workspace",
-          description: "Retorna todas as pesquisas do workspace autenticado com status e contagem de respostas.",
+          description: "Retorna todas as pesquisas do workspace autenticado com status e contagem de respostas. Filtre por status com ?status=published | draft | finished.",
         },
         survey: {
           summary: "Busca pesquisa por ID",

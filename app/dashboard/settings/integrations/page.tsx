@@ -480,7 +480,7 @@ function ApiReferenceSection({ apiKeyPrefix }: { apiKeyPrefix?: string }) {
                 path="/api/surveys"
                 summary={t.integrations.apiRef.endpoints.surveys.summary}
                 description={t.integrations.apiRef.endpoints.surveys.description}
-                snippets={makePlatformSnippets("GET", "/api/surveys", key)}
+                snippets={makePlatformSnippets("GET", "/api/surveys?status=published", key)}
                 response={`{\n  "surveys": [\n    { "id": "abc123", "title": "Pesquisa de Satisfação", "status": "published", "responseCount": 42 }\n  ]\n}`}
               />
               <ApiEndpointCard

@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const includeStats = searchParams.get("stats") === "true";
+    const statusFilter = searchParams.get("status");
 
     const ownedSurveys = await getUserSurveys(auth.workspaceId);
 
@@ -34,10 +35,10 @@ export async function GET(req: NextRequest) {
       collaboratedSurveys = fetched.filter(Boolean) as typeof ownedSurveys;
     }
 
-    const surveys = [
-      ...ownedSurveys,
-      ...collaboratedSurveys,
-    ];
+    const allSurveys = [...ownedSurveys, ...collaboratedSurveys];
+    const surveys = statusFilter
+      ? allSurveys.filter((s) => s.status === statusFilter)
+      : allSurveys;
 
     if (includeStats && auth.source === "session") {
       const stats = await getDashboardStats(auth.workspaceId);
