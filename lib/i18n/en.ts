@@ -563,6 +563,8 @@ export const en: Translations = {
     back: "Settings",
     title: "Integrations",
     subtitle: "Connect your platform to SurveyFlow to authenticate respondents via SSO.",
+    docsLink: "Full integration guide",
+    docsLinkDesc: "Step-by-step to integrate your platform from scratch to SSO.",
     syncing: "Activating module, please wait...",
     addonActivated: "Module activated successfully!",
     respondentsAddon: {

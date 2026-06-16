@@ -869,6 +869,21 @@ function IntegrationsContent() {
       {/* API Keys section */}
       {hasAddon && (
         <div className="space-y-4">
+          {/* Integration guide link */}
+          <Link
+            href="/dashboard/settings/integrations/docs"
+            className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-colors group"
+          >
+            <div className="w-9 h-9 bg-gray-900 rounded-lg flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900">{t.integrations.docsLink}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t.integrations.docsLinkDesc}</p>
+            </div>
+            <ChevronLeft className="w-4 h-4 text-gray-300 rotate-180 group-hover:text-gray-500 transition-colors" />
+          </Link>
+
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold text-gray-900">{t.integrations.apiKeys.title}</h2>

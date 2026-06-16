@@ -561,6 +561,8 @@ export const pt = {
     back: "Configurações",
     title: "Integrações",
     subtitle: "Conecte sua plataforma ao SurveyFlow para autenticar respondentes via SSO.",
+    docsLink: "Guia de integração completo",
+    docsLinkDesc: "Passo a passo para integrar sua plataforma do zero ao SSO.",
     syncing: "Ativando módulo, aguarde...",
     addonActivated: "Módulo ativado com sucesso!",
     respondentsAddon: {
