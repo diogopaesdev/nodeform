@@ -86,6 +86,7 @@ export interface TextInputData {
   isLong?: boolean;
   placeholder?: string;
   required?: boolean;
+  mask?: string;
   eligibilityRules?: EligibilityRule[];
   [key: string]: unknown;
 }
