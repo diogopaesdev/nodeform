@@ -563,6 +563,8 @@ export const en: Translations = {
     back: "Settings",
     title: "Integrations",
     subtitle: "Connect your platform to SurveyFlow to authenticate respondents via SSO.",
+    docsLink: "Full integration guide",
+    docsLinkDesc: "Step-by-step to integrate your platform from scratch to SSO.",
     syncing: "Activating module, please wait...",
     addonActivated: "Module activated successfully!",
     respondentsAddon: {
@@ -648,7 +650,7 @@ export const en: Translations = {
         },
         surveys: {
           summary: "List workspace surveys",
-          description: "Returns all surveys in the authenticated workspace with status and response count.",
+          description: "Returns all surveys in the authenticated workspace with status and response count. Filter by status with ?status=published | draft | finished.",
         },
         survey: {
           summary: "Get survey by ID",

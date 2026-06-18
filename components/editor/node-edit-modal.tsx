@@ -86,12 +86,21 @@ const endScreenSchema = baseSchema.extend({
   redirectDelay: z.number().optional(),
 });
 
+export const INPUT_MASKS = [
+  { value: "phone",   label: "Telefone",  preview: "(11) 9 0000-0000",   pattern: "(##) # ####-####" },
+  { value: "cpf",     label: "CPF",       preview: "000.000.000-00",     pattern: "###.###.###-##" },
+  { value: "cnpj",    label: "CNPJ",      preview: "00.000.000/0000-00", pattern: "##.###.###/####-##" },
+  { value: "cep",     label: "CEP",       preview: "00000-000",          pattern: "#####-###" },
+  { value: "date",    label: "Data",      preview: "00/00/0000",         pattern: "##/##/####" },
+] as const;
+
 // Schema para textInput
 const textInputSchema = baseSchema.extend({
   type: z.literal("textInput"),
   isLong: z.boolean().optional(),
   placeholder: z.string().optional(),
   required: z.boolean().optional(),
+  mask: z.string().optional(),
 });
 
 type FormData = z.infer<typeof presentationSchema> | z.infer<typeof choiceSchema> | z.infer<typeof ratingSchema> | z.infer<typeof endScreenSchema> | z.infer<typeof textInputSchema>;
@@ -195,7 +204,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
     }
 
     if (type === "textInput") {
-      const textData = node.data as { isLong?: boolean; placeholder?: string; required?: boolean };
+      const textData = node.data as { isLong?: boolean; placeholder?: string; required?: boolean; mask?: string };
       return {
         type: "textInput",
         title: node.data.title,
@@ -204,6 +213,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
         isLong: textData.isLong || false,
         placeholder: textData.placeholder || "",
         required: textData.required || false,
+        mask: textData.mask || "",
       };
     }
 
@@ -780,6 +790,32 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                       </FormItem>
                     )}
                   />
+
+                  {!form.watch("isLong") && (
+                    <FormField
+                      control={form.control}
+                      name="mask"
+                      render={({ field }) => (
+                        <FormItem>
+                          <label className="text-xs font-medium text-gray-700">Máscara de entrada</label>
+                          <FormControl>
+                            <select
+                              value={field.value ?? ""}
+                              onChange={field.onChange}
+                              className="w-full h-9 px-3 text-sm border border-gray-200 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                            >
+                              <option value="">Sem máscara</option>
+                              {INPUT_MASKS.map((m) => (
+                                <option key={m.value} value={m.value}>
+                                  {m.label} — {m.preview}
+                                </option>
+                              ))}
+                            </select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <FormField

@@ -561,6 +561,8 @@ export const pt = {
     back: "Configurações",
     title: "Integrações",
     subtitle: "Conecte sua plataforma ao SurveyFlow para autenticar respondentes via SSO.",
+    docsLink: "Guia de integração completo",
+    docsLinkDesc: "Passo a passo para integrar sua plataforma do zero ao SSO.",
     syncing: "Ativando módulo, aguarde...",
     addonActivated: "Módulo ativado com sucesso!",
     respondentsAddon: {
@@ -646,7 +648,7 @@ export const pt = {
         },
         surveys: {
           summary: "Lista pesquisas do workspace",
-          description: "Retorna todas as pesquisas do workspace autenticado com status e contagem de respostas.",
+          description: "Retorna todas as pesquisas do workspace autenticado com status e contagem de respostas. Filtre por status com ?status=published | draft | finished.",
         },
         survey: {
           summary: "Busca pesquisa por ID",

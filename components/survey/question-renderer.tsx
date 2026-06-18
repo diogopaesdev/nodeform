@@ -3,7 +3,21 @@
 import { useState, useEffect } from "react";
 import { Star, Check, ArrowRight, User, Mail, Trophy, ExternalLink } from "lucide-react";
 import type { SurveyNode, PresentationData, EndScreenData, TextInputData } from "@/types";
+import { INPUT_MASKS } from "@/components/editor/node-edit-modal";
 import DOMPurify from "dompurify";
+
+function applyInputMask(raw: string, maskKey: string): string {
+  const def = INPUT_MASKS.find((m) => m.value === maskKey);
+  if (!def) return raw;
+  const digits = raw.replace(/\D/g, "");
+  const pattern = def.pattern;
+  let result = "";
+  let di = 0;
+  for (let i = 0; i < pattern.length && di < digits.length; i++) {
+    result += pattern[i] === "#" ? digits[di++] : pattern[i];
+  }
+  return result;
+}
 
 function HtmlDescription({ html, className }: { html: string; className?: string }) {
   const clean = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
@@ -475,8 +489,14 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
             <input
               type="text"
               value={textValue}
-              onChange={(e) => setTextValue(e.target.value)}
+              onChange={(e) => {
+                const val = textData.mask
+                  ? applyInputMask(e.target.value, textData.mask)
+                  : e.target.value;
+                setTextValue(val);
+              }}
               placeholder={textData.placeholder || "Digite sua resposta aqui..."}
+              inputMode={textData.mask ? "numeric" : undefined}
               className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-colors"
             />
           )}

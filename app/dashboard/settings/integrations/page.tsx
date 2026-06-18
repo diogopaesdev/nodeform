@@ -280,6 +280,7 @@ function ApiEndpointCard({
   description,
   snippets,
   response,
+  queryParams,
   footer,
 }: {
   method: string;
@@ -288,6 +289,7 @@ function ApiEndpointCard({
   description: string;
   snippets: Record<Lang, string>;
   response: string;
+  queryParams?: { name: string; type: string; description: string }[];
   footer?: React.ReactNode;
 }) {
   const { t } = useI18n();
@@ -310,6 +312,32 @@ function ApiEndpointCard({
       {open && (
         <div className="border-t border-gray-100 divide-y divide-gray-100">
           <p className="px-4 py-3 text-xs text-gray-500 leading-relaxed">{description}</p>
+
+          {queryParams && queryParams.length > 0 && (
+            <div className="px-4 py-3 space-y-2">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Query params</p>
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 text-gray-500">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-semibold">Parâmetro</th>
+                      <th className="text-left px-3 py-2 font-semibold">Tipo</th>
+                      <th className="text-left px-3 py-2 font-semibold">Descrição</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-gray-600">
+                    {queryParams.map((p) => (
+                      <tr key={p.name}>
+                        <td className="px-3 py-2 font-mono text-gray-800">{p.name}</td>
+                        <td className="px-3 py-2 text-gray-400">{p.type}</td>
+                        <td className="px-3 py-2">{p.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <div className="px-4 py-3 space-y-2">
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{t.integrations.apiRef.request}</p>
@@ -391,7 +419,8 @@ function EndpointGroup({ label, desc, children }: { label: string; desc: string;
 }
 
 function ApiReferenceSection({ apiKeyPrefix }: { apiKeyPrefix?: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const isEn = locale === "en";
   const [open, setOpen] = useState(true);
   const key = apiKeyPrefix ?? "nfk_sua_chave_aqui";
 
@@ -480,8 +509,17 @@ function ApiReferenceSection({ apiKeyPrefix }: { apiKeyPrefix?: string }) {
                 path="/api/surveys"
                 summary={t.integrations.apiRef.endpoints.surveys.summary}
                 description={t.integrations.apiRef.endpoints.surveys.description}
-                snippets={makePlatformSnippets("GET", "/api/surveys", key)}
+                snippets={makePlatformSnippets("GET", "/api/surveys?status=published", key)}
                 response={`{\n  "surveys": [\n    { "id": "abc123", "title": "Pesquisa de Satisfação", "status": "published", "responseCount": 42 }\n  ]\n}`}
+                queryParams={[
+                  {
+                    name: "status",
+                    type: "string",
+                    description: isEn
+                      ? "Filter by status: published | draft | finished. Omit to return all."
+                      : "Filtra por status: published | draft | finished. Omita para retornar todas.",
+                  },
+                ]}
               />
               <ApiEndpointCard
                 method="GET"
@@ -869,6 +907,21 @@ function IntegrationsContent() {
       {/* API Keys section */}
       {hasAddon && (
         <div className="space-y-4">
+          {/* Integration guide link */}
+          <Link
+            href="/dashboard/settings/integrations/docs"
+            className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-colors group"
+          >
+            <div className="w-9 h-9 bg-gray-900 rounded-lg flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900">{t.integrations.docsLink}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t.integrations.docsLinkDesc}</p>
+            </div>
+            <ChevronLeft className="w-4 h-4 text-gray-300 rotate-180 group-hover:text-gray-500 transition-colors" />
+          </Link>
+
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold text-gray-900">{t.integrations.apiKeys.title}</h2>

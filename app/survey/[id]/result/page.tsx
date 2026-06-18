@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useRef } from "react";
+import { useEffect, useState, use, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Trophy, Star, RotateCcw, X, Loader2 } from "lucide-react";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
@@ -21,50 +21,58 @@ export default function ResultPage({
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const hasSaved = useRef(false);
 
   useEmbedResize(isEmbedMode);
 
+  const saveResponseToFirebase = useCallback(async () => {
+    if (!isCompleted || !survey) return;
+
+    hasSaved.current = true;
+    setIsSaving(true);
+    setSaveError(null);
+    setSessionExpired(false);
+
+    try {
+      const presentationAnswer = answers.find(
+        (a) => a.respondentName || a.respondentEmail
+      );
+
+      const response = await fetch(`/api/public/surveys/${id}/responses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          answers,
+          totalScore,
+          path: visitedNodeIds,
+          respondentName: presentationAnswer?.respondentName,
+          respondentEmail: presentationAnswer?.respondentEmail,
+        }),
+      });
+
+      if (response.status === 401) {
+        setSessionExpired(true);
+        hasSaved.current = false;
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Falha ao salvar resposta");
+      }
+    } catch (error) {
+      console.error("Error saving response:", error);
+      setSaveError("Não foi possível salvar sua resposta");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isCompleted, survey, answers, totalScore, visitedNodeIds, id]);
+
   // Salvar resposta no Firebase
   useEffect(() => {
-    const saveResponseToFirebase = async () => {
-      if (!isCompleted || !survey || hasSaved.current) return;
-
-      hasSaved.current = true;
-      setIsSaving(true);
-      setSaveError(null);
-
-      try {
-        // Extrair nome e email das respostas (da tela de apresentação)
-        const presentationAnswer = answers.find(
-          (a) => a.respondentName || a.respondentEmail
-        );
-
-        const response = await fetch(`/api/public/surveys/${id}/responses`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            answers,
-            totalScore,
-            path: visitedNodeIds,
-            respondentName: presentationAnswer?.respondentName,
-            respondentEmail: presentationAnswer?.respondentEmail,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Falha ao salvar resposta");
-        }
-      } catch (error) {
-        console.error("Error saving response:", error);
-        setSaveError("Não foi possível salvar sua resposta");
-      } finally {
-        setIsSaving(false);
-      }
-    };
-
+    if (!isCompleted || !survey || hasSaved.current) return;
     saveResponseToFirebase();
-  }, [isCompleted, survey, answers, totalScore, visitedNodeIds, id]);
+  }, [isCompleted, survey, saveResponseToFirebase]);
 
   useEffect(() => {
     if (!isCompleted) {
@@ -242,8 +250,27 @@ export default function ResultPage({
               <span>Salvando resposta...</span>
             </div>
           )}
+          {sessionExpired && (
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-xs text-amber-600">Sua sessão expirou. Faça login novamente para salvar sua resposta.</p>
+              <button
+                onClick={() => router.push(`/survey/${id}`)}
+                className="text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 px-3 py-1.5 rounded-md transition-colors"
+              >
+                Fazer login
+              </button>
+            </div>
+          )}
           {saveError && (
-            <p className="text-xs text-red-500">{saveError}</p>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-xs text-red-500">{saveError}</p>
+              <button
+                onClick={saveResponseToFirebase}
+                className="text-xs font-medium text-gray-600 hover:text-gray-900 underline transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
           )}
           <p className="text-[11px] text-gray-400">
             Criado com SurveyFlow
