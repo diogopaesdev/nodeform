@@ -21,7 +21,7 @@ function getTextLength(el: HTMLElement) {
   return (el.textContent || "").length;
 }
 
-export function RichTextEditor({ value = "", onChange, placeholder, maxLength = 500 }: RichTextEditorProps) {
+export function RichTextEditor({ value = "", onChange, placeholder, maxLength = 2000 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [charCount, setCharCount] = useState(0);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
