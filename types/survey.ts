@@ -215,6 +215,14 @@ export interface RuntimeState {
 /**
  * Resposta completa de uma pesquisa (salva no Firebase)
  */
+export interface NodeSnapshot {
+  type: string;
+  title: string;
+  options?: { id: string; label: string }[];
+  minValue?: number;
+  maxValue?: number;
+}
+
 export interface SurveyResponse {
   id: string;
   surveyId: string;
@@ -225,6 +233,7 @@ export interface SurveyResponse {
   respondentEmail?: string;
   respondentId?: string;
   profile?: Record<string, unknown>;
+  nodeSnapshot?: Record<string, NodeSnapshot>;
   completedAt: string;
   createdAt: string;
 }

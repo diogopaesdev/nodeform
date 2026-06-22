@@ -175,6 +175,7 @@ export async function saveResponse(
     respondentName?: string;
     respondentEmail?: string;
     respondentId?: string;
+    nodeSnapshot?: Record<string, { type: string; title: string; options?: { id: string; label: string }[]; minValue?: number; maxValue?: number }>;
   }
 ): Promise<SurveyResponse> {
   const { db, FieldValue } = getFirebaseAdmin();
@@ -206,6 +207,7 @@ export async function saveResponse(
   if (data.respondentName) response.respondentName = data.respondentName;
   if (data.respondentEmail) response.respondentEmail = data.respondentEmail;
   if (data.respondentId) response.respondentId = data.respondentId;
+  if (data.nodeSnapshot) response.nodeSnapshot = data.nodeSnapshot;
 
   const batch = db.batch();
   batch.set(responseRef, response);

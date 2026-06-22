@@ -56,7 +56,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Survey, SurveyResponse, ChoiceOption } from "@/types/survey";
+import { Survey, SurveyResponse, ChoiceOption, NodeSnapshot } from "@/types/survey";
 import { ParticipationWithRespondent } from "@/types/respondent";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
@@ -906,26 +906,43 @@ export default function SurveyDetailPage({
     setTimeout(() => setCopiedEmbed(false), 2000);
   };
 
-  const getAnswerLabel = (node: Survey["nodes"][0], answer: SurveyResponse["answers"][0]): string => {
-    const data = node.data;
-    if (data.type === "presentation") {
+  // Returns NodeSnapshot for an answer: prefers the saved snapshot (historical accuracy)
+  // and falls back to the current survey node (for responses saved before snapshots were added).
+  const getNodeData = (nodeId: string, response: SurveyResponse): NodeSnapshot | null => {
+    if (response.nodeSnapshot?.[nodeId]) return response.nodeSnapshot[nodeId];
+    const live = survey?.nodes.find((n) => n.id === nodeId);
+    if (!live) return null;
+    const d = live.data;
+    const snap: NodeSnapshot = { type: d.type, title: (d.title as string) ?? "" };
+    if (d.type === "singleChoice" || d.type === "multipleChoice") {
+      snap.options = (d as { options: { id: string; label: string }[] }).options.map((o) => ({ id: o.id, label: o.label }));
+    }
+    if (d.type === "rating") {
+      snap.minValue = (d as { minValue?: number }).minValue;
+      snap.maxValue = (d as { maxValue?: number }).maxValue;
+    }
+    return snap;
+  };
+
+  const getAnswerLabel = (node: NodeSnapshot, answer: SurveyResponse["answers"][0]): string => {
+    if (node.type === "presentation") {
       const parts = [];
       if (answer.respondentName) parts.push(`${t.surveyDetail.getAnswerLabel.namePrefix}${answer.respondentName}`);
       if (answer.respondentEmail) parts.push(`${t.surveyDetail.getAnswerLabel.emailPrefix}${answer.respondentEmail}`);
       return parts.length > 0 ? parts.join(" | ") : t.surveyDetail.getAnswerLabel.startedSurvey;
     }
-    if (data.type === "singleChoice" && answer.selectedOptionId) {
-      const option = data.options.find((o) => o.id === answer.selectedOptionId);
+    if (node.type === "singleChoice" && answer.selectedOptionId) {
+      const option = node.options?.find((o) => o.id === answer.selectedOptionId);
       return option?.label || t.surveyDetail.getAnswerLabel.optionNotFound;
     }
-    if (data.type === "multipleChoice" && answer.selectedOptionIds) {
-      const labels = answer.selectedOptionIds.map((optId) => data.options.find((o) => o.id === optId)?.label).filter(Boolean);
+    if (node.type === "multipleChoice" && answer.selectedOptionIds) {
+      const labels = answer.selectedOptionIds.map((optId) => node.options?.find((o) => o.id === optId)?.label).filter(Boolean);
       return labels.join(", ") || t.surveyDetail.getAnswerLabel.noOptionSelected;
     }
-    if (data.type === "rating" && answer.ratingValue !== undefined) {
-      return `${answer.ratingValue} ${t.surveyDetail.getAnswerLabel.ratingOf} ${data.maxValue}`;
+    if (node.type === "rating" && answer.ratingValue !== undefined) {
+      return `${answer.ratingValue} ${t.surveyDetail.getAnswerLabel.ratingOf} ${node.maxValue}`;
     }
-    if (data.type === "textInput" && answer.textValue !== undefined) {
+    if (node.type === "textInput" && answer.textValue !== undefined) {
       return answer.textValue;
     }
     return t.surveyDetail.getAnswerLabel.noAnswer;
@@ -941,7 +958,8 @@ export default function SurveyDetailPage({
       esc(response.respondentEmail || ""),
       ...questionNodes.map((node) => {
         const answer = response.answers.find((a) => a.nodeId === node.id);
-        return esc(answer ? getAnswerLabel(node, answer) : "");
+        const nodeData = getNodeData(node.id, response);
+        return esc(answer && nodeData ? getAnswerLabel(nodeData, answer) : "");
       }),
       ...(survey.enableScoring ? [String(response.totalScore)] : []),
       formatDate(response.completedAt),
@@ -966,7 +984,8 @@ export default function SurveyDetailPage({
       response.respondentEmail || "",
       ...questionNodes.map((node) => {
         const answer = response.answers.find((a) => a.nodeId === node.id);
-        return answer ? getAnswerLabel(node, answer) : "";
+        const nodeData = getNodeData(node.id, response);
+        return answer && nodeData ? getAnswerLabel(nodeData, answer) : "";
       }),
       ...(survey.enableScoring ? [response.totalScore] : []),
       formatDate(response.completedAt),
@@ -1441,16 +1460,16 @@ export default function SurveyDetailPage({
                         )}
                         <div className="grid sm:grid-cols-2 gap-2">
                           {response.answers.map((answer, i) => {
-                            const node = survey.nodes.find((n) => n.id === answer.nodeId);
-                            if (!node) return null;
+                            const nodeData = getNodeData(answer.nodeId, response);
+                            if (!nodeData) return null;
                             return (
                               <div key={i} className="bg-white border border-gray-200 rounded-lg p-3">
                                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
-                                  {node.data.type === "presentation"
+                                  {nodeData.type === "presentation"
                                     ? t.surveyDetail.responses.identification
-                                    : node.data.title || t.surveyDetail.responses.questionLabel.replace("{n}", String(i + 1))}
+                                    : nodeData.title || t.surveyDetail.responses.questionLabel.replace("{n}", String(i + 1))}
                                 </p>
-                                <p className="text-xs text-gray-800">{getAnswerLabel(node, answer)}</p>
+                                <p className="text-xs text-gray-800">{getAnswerLabel(nodeData, answer)}</p>
                               </div>
                             );
                           })}
