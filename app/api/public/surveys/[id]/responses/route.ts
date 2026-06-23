@@ -19,6 +19,7 @@ const AnswerSchema = z.object({
   selectedOptionId: z.string().max(100).optional(),
   selectedOptionIds: z.array(z.string().max(100)).max(50).optional(),
   ratingValue: z.number().int().min(0).max(100).optional(),
+  textValue: z.string().max(5000).optional(),
   respondentName: z.string().max(200).optional(),
   respondentEmail: z.string().max(200).optional(),
   answeredAt: z.union([z.string(), z.date()]).transform((v) => new Date(v)),
@@ -127,6 +128,24 @@ export async function POST(
       }
     }
 
+    // Build a compact snapshot of all survey nodes at time of submission
+    // so historical responses remain accurate even if the survey is edited later
+    const nodeSnapshot: Record<string, { type: string; title: string; options?: { id: string; label: string }[]; minValue?: number; maxValue?: number }> = {};
+    for (const node of survey.nodes) {
+      const { type } = node.data;
+      const compact: (typeof nodeSnapshot)[string] = { type, title: (node.data.title as string) ?? "" };
+      if (type === "singleChoice" || type === "multipleChoice") {
+        const d = node.data as { options: { id: string; label: string }[] };
+        compact.options = d.options.map((o) => ({ id: o.id, label: o.label }));
+      }
+      if (type === "rating") {
+        const d = node.data as { minValue?: number; maxValue?: number };
+        compact.minValue = d.minValue ?? 1;
+        compact.maxValue = d.maxValue ?? 5;
+      }
+      nodeSnapshot[node.id] = compact;
+    }
+
     let response;
     try {
       response = await saveResponse(surveyId, {
@@ -136,6 +155,7 @@ export async function POST(
         respondentName,
         respondentEmail,
         respondentId,
+        nodeSnapshot,
       });
     } catch (err) {
       if (err instanceof Error && err.message === "QUOTA_EXCEEDED") {

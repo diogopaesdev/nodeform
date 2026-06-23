@@ -275,9 +275,15 @@ Transições de status também disponíveis diretamente pelo dropdown no dashboa
 
 Base da plataforma com editor visual, dashboard, exportação, lógica condicional, geração por IA, embed e customização de marca. Inclui 7 dias de trial gratuito na primeira contratação.
 
-### Módulo Respondentes — R$ 449,90/mês
+### Proposta de Desenvolvimento dos Módulos
 
-Necessário para a integração com a MOC. Inclui:
+| Módulo | Escopo | Horas | Valor |
+|--------|--------|-------|-------|
+| **Módulo Respondentes** | Login OTP/SSO, elegibilidade, cota, perfil de respondentes, API Keys e painel de bonificação | 20h | R$ 1.767,00 |
+| **Módulo Progresso** | Progresso automático entre sessões e retomada em qualquer device | 4h | R$ 353,00 |
+| **Total** | | **24h** | **R$ 2.120,00** |
+
+**Módulo Respondentes** — inclui:
 
 - Login obrigatório para respondentes (OTP e SSO)
 - SSO transparente — usuários da MOC entram sem nova tela de login
@@ -289,9 +295,7 @@ Necessário para a integração com a MOC. Inclui:
 - API Keys seguras para integração server-to-server
 - Painel de bonificação pós-participação
 
-### Módulo Progresso — R$ 129,90/mês
-
-Funcionalidade adicional para pesquisas longas:
+**Módulo Progresso** — inclui:
 
 - Progresso salvo automaticamente após cada resposta
 - Retomada em qualquer device ou sessão

@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { getSurvey, getSurveyResponses, deleteResponse } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { getCollaboratorAccessForUser } from "@/lib/services/collaborators";
+import { getRespondentById } from "@/lib/services/respondents";
+import { getProfileSchema } from "@/lib/services/profile-schema";
 
 // GET - Buscar respostas de uma pesquisa
 export async function GET(
@@ -27,7 +29,42 @@ export async function GET(
 
     const responses = await getSurveyResponses(surveyId);
 
-    return NextResponse.json({ responses });
+    if (!survey.requiresRespondentLogin) {
+      return NextResponse.json({ responses });
+    }
+
+    const profileSchema = await getProfileSchema(survey.userId);
+
+    type RespondentCacheEntry = { profile: Record<string, unknown>; name?: string; email?: string };
+    const respondentCache = new Map<string, RespondentCacheEntry>();
+
+    const enriched = await Promise.all(
+      responses.map(async (r) => {
+        if (!r.respondentId) return r;
+        if (!respondentCache.has(r.respondentId)) {
+          const resp = await getRespondentById(r.respondentId);
+          if (resp) {
+            const { id: _id, workspaceId: _wid, loginCode: _lc, loginCodeExpiresAt: _lce, createdAt: _ca, updatedAt: _ua, name, email, ...rest } = resp;
+            const profile: Record<string, unknown> = {};
+            for (const [k, v] of Object.entries(rest)) {
+              if (v !== undefined && v !== null && v !== "") profile[k] = v;
+            }
+            respondentCache.set(r.respondentId, { profile, name, email });
+          } else {
+            respondentCache.set(r.respondentId, { profile: {} });
+          }
+        }
+        const cached = respondentCache.get(r.respondentId)!;
+        return {
+          ...r,
+          respondentName: r.respondentName || cached.name,
+          respondentEmail: r.respondentEmail || cached.email,
+          profile: cached.profile,
+        };
+      })
+    );
+
+    return NextResponse.json({ responses: enriched, profileSchema });
   } catch (error) {
     console.error("Error fetching responses:", error);
     return NextResponse.json(

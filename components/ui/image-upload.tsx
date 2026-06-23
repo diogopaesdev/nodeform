@@ -9,9 +9,9 @@ interface ImageUploadProps {
   surveyId: string;
 }
 
-const MAX_WIDTH = 1200;
-const MAX_HEIGHT = 800;
-const QUALITY = 0.8;
+const MAX_WIDTH = 1920;
+const MAX_HEIGHT = 1080;
+const QUALITY = 0.85;
 
 function compressImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -82,7 +82,7 @@ export function ImageUpload({ value, onChange, surveyId }: ImageUploadProps) {
   if (value) {
     return (
       <div className="relative group rounded-lg overflow-hidden border border-gray-200">
-        <img src={value} alt="" className="w-full h-32 object-cover" />
+        <img src={value} alt="" className="w-full h-48 object-cover" />
         <button
           type="button"
           onClick={handleRemove}

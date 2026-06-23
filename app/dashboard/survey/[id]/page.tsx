@@ -33,6 +33,7 @@ import {
   RotateCcw,
   Loader2,
   AlertCircle,
+  CopyPlus,
 } from "lucide-react";
 import {
   BarChart,
@@ -55,7 +56,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Survey, SurveyResponse, ChoiceOption } from "@/types/survey";
+import { Survey, SurveyResponse, ChoiceOption, NodeSnapshot } from "@/types/survey";
 import { ParticipationWithRespondent } from "@/types/respondent";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
@@ -735,6 +736,7 @@ export default function SurveyDetailPage({
   const hasRespondentsAddon = session?.user?.addons?.respondents?.active === true;
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
+  const [profileSchema, setProfileSchema] = useState<{ key: string; label: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingResponses, setLoadingResponses] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -773,6 +775,7 @@ export default function SurveyDetailPage({
       if (!res.ok) { router.push("/dashboard"); return; }
       const data = await res.json();
       setSurvey(data.survey);
+      setShareToken(data.survey.shareToken ?? null);
       if (data.isCollaborator) {
         setIsOwner(false);
         setCollaboratorRole(data.collaboratorRole ?? null);
@@ -791,6 +794,7 @@ export default function SurveyDetailPage({
       if (res.ok) {
         const data = await res.json();
         setResponses(data.responses || []);
+        if (data.profileSchema) setProfileSchema(data.profileSchema);
       }
     } catch (error) {
       console.error("Error fetching responses:", error);
@@ -815,6 +819,53 @@ export default function SurveyDetailPage({
     } catch (error) {
       console.error("Error deleting response:", error);
       setDeleteResponseModal((m) => ({ ...m, loading: false }));
+    }
+  };
+
+  const [duplicating, setDuplicating] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [sharingAnalysis, setSharingAnalysis] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
+
+  const handleDuplicate = async () => {
+    if (!survey || duplicating) return;
+    setDuplicating(true);
+    try {
+      const res = await fetch(`/api/surveys/${id}/duplicate`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        router.push(`/editor/${data.survey.id}`);
+      }
+    } catch (error) {
+      console.error("Error duplicating survey:", error);
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  const handleShareAnalysis = async () => {
+    if (sharingAnalysis) return;
+    let token = shareToken;
+    if (!token) {
+      setSharingAnalysis(true);
+      try {
+        const res = await fetch(`/api/surveys/${id}/share`, { method: "POST" });
+        if (res.ok) {
+          const data = await res.json();
+          token = data.shareToken;
+          setShareToken(token);
+        }
+      } catch (error) {
+        console.error("Error generating share token:", error);
+      } finally {
+        setSharingAnalysis(false);
+      }
+    }
+    if (token) {
+      const url = `${window.location.origin}/share/${token}`;
+      await navigator.clipboard.writeText(url);
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2000);
     }
   };
 
@@ -855,26 +906,43 @@ export default function SurveyDetailPage({
     setTimeout(() => setCopiedEmbed(false), 2000);
   };
 
-  const getAnswerLabel = (node: Survey["nodes"][0], answer: SurveyResponse["answers"][0]): string => {
-    const data = node.data;
-    if (data.type === "presentation") {
+  // Returns NodeSnapshot for an answer: prefers the saved snapshot (historical accuracy)
+  // and falls back to the current survey node (for responses saved before snapshots were added).
+  const getNodeData = (nodeId: string, response: SurveyResponse): NodeSnapshot | null => {
+    if (response.nodeSnapshot?.[nodeId]) return response.nodeSnapshot[nodeId];
+    const live = survey?.nodes.find((n) => n.id === nodeId);
+    if (!live) return null;
+    const d = live.data;
+    const snap: NodeSnapshot = { type: d.type, title: (d.title as string) ?? "" };
+    if (d.type === "singleChoice" || d.type === "multipleChoice") {
+      snap.options = (d as { options: { id: string; label: string }[] }).options.map((o) => ({ id: o.id, label: o.label }));
+    }
+    if (d.type === "rating") {
+      snap.minValue = (d as { minValue?: number }).minValue;
+      snap.maxValue = (d as { maxValue?: number }).maxValue;
+    }
+    return snap;
+  };
+
+  const getAnswerLabel = (node: NodeSnapshot, answer: SurveyResponse["answers"][0]): string => {
+    if (node.type === "presentation") {
       const parts = [];
       if (answer.respondentName) parts.push(`${t.surveyDetail.getAnswerLabel.namePrefix}${answer.respondentName}`);
       if (answer.respondentEmail) parts.push(`${t.surveyDetail.getAnswerLabel.emailPrefix}${answer.respondentEmail}`);
       return parts.length > 0 ? parts.join(" | ") : t.surveyDetail.getAnswerLabel.startedSurvey;
     }
-    if (data.type === "singleChoice" && answer.selectedOptionId) {
-      const option = data.options.find((o) => o.id === answer.selectedOptionId);
+    if (node.type === "singleChoice" && answer.selectedOptionId) {
+      const option = node.options?.find((o) => o.id === answer.selectedOptionId);
       return option?.label || t.surveyDetail.getAnswerLabel.optionNotFound;
     }
-    if (data.type === "multipleChoice" && answer.selectedOptionIds) {
-      const labels = answer.selectedOptionIds.map((optId) => data.options.find((o) => o.id === optId)?.label).filter(Boolean);
+    if (node.type === "multipleChoice" && answer.selectedOptionIds) {
+      const labels = answer.selectedOptionIds.map((optId) => node.options?.find((o) => o.id === optId)?.label).filter(Boolean);
       return labels.join(", ") || t.surveyDetail.getAnswerLabel.noOptionSelected;
     }
-    if (data.type === "rating" && answer.ratingValue !== undefined) {
-      return `${answer.ratingValue} ${t.surveyDetail.getAnswerLabel.ratingOf} ${data.maxValue}`;
+    if (node.type === "rating" && answer.ratingValue !== undefined) {
+      return `${answer.ratingValue} ${t.surveyDetail.getAnswerLabel.ratingOf} ${node.maxValue}`;
     }
-    if (data.type === "textInput" && answer.textValue !== undefined) {
+    if (node.type === "textInput" && answer.textValue !== undefined) {
       return answer.textValue;
     }
     return t.surveyDetail.getAnswerLabel.noAnswer;
@@ -890,7 +958,8 @@ export default function SurveyDetailPage({
       esc(response.respondentEmail || ""),
       ...questionNodes.map((node) => {
         const answer = response.answers.find((a) => a.nodeId === node.id);
-        return esc(answer ? getAnswerLabel(node, answer) : "");
+        const nodeData = getNodeData(node.id, response);
+        return esc(answer && nodeData ? getAnswerLabel(nodeData, answer) : "");
       }),
       ...(survey.enableScoring ? [String(response.totalScore)] : []),
       formatDate(response.completedAt),
@@ -915,7 +984,8 @@ export default function SurveyDetailPage({
       response.respondentEmail || "",
       ...questionNodes.map((node) => {
         const answer = response.answers.find((a) => a.nodeId === node.id);
-        return answer ? getAnswerLabel(node, answer) : "";
+        const nodeData = getNodeData(node.id, response);
+        return answer && nodeData ? getAnswerLabel(nodeData, answer) : "";
       }),
       ...(survey.enableScoring ? [response.totalScore] : []),
       formatDate(response.completedAt),
@@ -1015,6 +1085,19 @@ export default function SurveyDetailPage({
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors"
             >
               <Code className="w-3.5 h-3.5" />{t.common.embed}
+            </button>
+          )}
+          {isOwner && (
+            <button
+              onClick={handleDuplicate}
+              disabled={duplicating}
+              title="Duplicar pesquisa"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50"
+            >
+              {duplicating
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <CopyPlus className="w-3.5 h-3.5" />}
+              Duplicar
             </button>
           )}
           {(isOwner || collaboratorRole === "editor") && (
@@ -1223,10 +1306,28 @@ export default function SurveyDetailPage({
               ))}
             </div>
           ) : analytics.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-4">
-              {analytics.map((item) => (
-                <QuestionAnalyticsCard key={item.node.id} item={item} />
-              ))}
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <button
+                  onClick={handleShareAnalysis}
+                  disabled={sharingAnalysis}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50"
+                >
+                  {sharingAnalysis ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : copiedShare ? (
+                    <Check className="w-3.5 h-3.5 text-green-600" />
+                  ) : (
+                    <LinkIcon className="w-3.5 h-3.5" />
+                  )}
+                  {copiedShare ? "Link copiado!" : shareToken ? "Copiar link da análise" : "Compartilhar análise"}
+                </button>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {analytics.map((item) => (
+                  <QuestionAnalyticsCard key={item.node.id} item={item} />
+                ))}
+              </div>
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl">
@@ -1326,22 +1427,53 @@ export default function SurveyDetailPage({
 
                   {/* Expanded answers */}
                   {expandedResponse === response.id && (
-                    <div className="px-5 pb-4 pt-1 bg-gray-50 border-t border-gray-100">
-                      <div className="grid sm:grid-cols-2 gap-2 mt-2">
-                        {response.answers.map((answer, i) => {
-                          const node = survey.nodes.find((n) => n.id === answer.nodeId);
-                          if (!node) return null;
-                          return (
-                            <div key={i} className="bg-white border border-gray-200 rounded-lg p-3">
-                              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
-                                {node.data.type === "presentation"
-                                  ? t.surveyDetail.responses.identification
-                                  : node.data.title || t.surveyDetail.responses.questionLabel.replace("{n}", String(i + 1))}
-                              </p>
-                              <p className="text-xs text-gray-800">{getAnswerLabel(node, answer)}</p>
-                            </div>
-                          );
-                        })}
+                    <div className="px-5 pb-4 pt-3 bg-gray-50 border-t border-gray-100 space-y-3">
+                      {/* Profile fields from respondent schema */}
+                      {response.profile && Object.keys(response.profile).length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                            Perfil do respondente
+                          </p>
+                          <div className="grid sm:grid-cols-2 gap-2">
+                            {Object.entries(response.profile).map(([key, value]) => {
+                              const schemaField = profileSchema.find((f) => f.key === key);
+                              const label = schemaField?.label ?? key.replace(/_/g, " ");
+                              return (
+                                <div key={key} className="bg-white border border-blue-100 rounded-lg p-3">
+                                  <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wide mb-1">
+                                    {label}
+                                  </p>
+                                  <p className="text-xs text-gray-800">{String(value)}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Survey answers */}
+                      <div>
+                        {(response.profile && Object.keys(response.profile).length > 0) && (
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                            Respostas da pesquisa
+                          </p>
+                        )}
+                        <div className="grid sm:grid-cols-2 gap-2">
+                          {response.answers.map((answer, i) => {
+                            const nodeData = getNodeData(answer.nodeId, response);
+                            if (!nodeData) return null;
+                            return (
+                              <div key={i} className="bg-white border border-gray-200 rounded-lg p-3">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                                  {nodeData.type === "presentation"
+                                    ? t.surveyDetail.responses.identification
+                                    : nodeData.title || t.surveyDetail.responses.questionLabel.replace("{n}", String(i + 1))}
+                                </p>
+                                <p className="text-xs text-gray-800">{getAnswerLabel(nodeData, answer)}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
