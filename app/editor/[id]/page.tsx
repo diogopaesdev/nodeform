@@ -201,7 +201,7 @@ export default function EditorPage({
     }
     // Salvar antes de testar
     handleSave();
-    window.open(`/survey/${id}`, "_blank");
+    window.open(`/survey/${id}?preview=true`, "_blank");
   };
 
   const handleClearSurvey = () => {
