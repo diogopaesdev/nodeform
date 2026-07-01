@@ -355,11 +355,45 @@ const embedUrl = \`${BASE_URL}/survey/\${surveyId}?sso_token=\${token}&embed=tru
 curl '${BASE_URL}/api/surveys/{surveyId}/participations' \\
   -H 'Authorization: Bearer nfk_sua_chave_aqui'
 
-# ${isEn ? "Mark a bonus as released" : "Marcar bonificação como liberada"}
+# ${isEn ? "Response — each participation object" : "Resposta — cada objeto de participação"}
+{
+  "participations": [
+    {
+      "id": "abc123",
+      "respondentId": "resp_xyz",
+      "responseId": "resp_789",
+      "name": "João Silva",
+      "email": "joao@exemplo.com",
+      "completedAt": "2026-07-01T10:00:00.000Z",
+      "bonusStatus": "pending",       ${isEn ? "// pending | released | ineligible" : "// pending | released | ineligible"}
+      "bonusReleasedAt": null,
+      "bonusCouponCode": null,        ${isEn ? "// set when a coupon bonus is released" : "// preenchido quando bônus de cupom é liberado"}
+      "totalScore": 42,
+      "profile": { "specialty": "oncologia", "crm": "12345" }
+    }
+  ]
+}`}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          {isEn
+            ? "bonusStatus can be automatically set to \"ineligible\" by the system if bonus eligibility rules are configured in the Bonus tab."
+            : "O bonusStatus pode ser automaticamente definido como \"ineligible\" pelo sistema se regras de elegibilidade de bonificação estiverem configuradas na aba Bonificação."}
+        </p>
+        <CodeBlock
+          code={`# ${isEn ? "Release a bonus (returns assigned coupon code if configured)" : "Liberar bonificação (retorna cupom atribuído se configurado)"}
 curl -X PATCH '${BASE_URL}/api/surveys/{surveyId}/participations/{participationId}' \\
   -H 'Authorization: Bearer nfk_sua_chave_aqui' \\
   -H 'Content-Type: application/json' \\
-  -d '{ "bonusStatus": "released" }'`}
+  -d '{ "bonusStatus": "released" }'
+
+# ${isEn ? "Response" : "Resposta"}
+{ "success": true, "bonusCouponCode": "PROMO042" }   ${isEn ? "// null if no coupon configured" : "// null se sem cupom configurado"}
+
+# ${isEn ? "Mark as ineligible" : "Marcar como inelegível"}
+curl -X PATCH '${BASE_URL}/api/surveys/{surveyId}/participations/{participationId}' \\
+  -H 'Authorization: Bearer nfk_sua_chave_aqui' \\
+  -H 'Content-Type: application/json' \\
+  -d '{ "bonusStatus": "ineligible" }'`}
         />
       </Step>
 
@@ -381,7 +415,7 @@ curl -X PATCH '${BASE_URL}/api/surveys/{surveyId}/participations/{participationI
               <tr><td className="px-3 py-2 font-mono">401</td><td className="px-3 py-2">{isEn ? "Missing or invalid API key" : "API key ausente ou inválida"}</td></tr>
               <tr><td className="px-3 py-2 font-mono">403</td><td className="px-3 py-2">{isEn ? "Respondents Module not active" : "Módulo Respondentes não ativo"}</td></tr>
               <tr><td className="px-3 py-2 font-mono">404</td><td className="px-3 py-2">{isEn ? "Survey not found or not in this workspace" : "Pesquisa não encontrada ou fora deste workspace"}</td></tr>
-              <tr><td className="px-3 py-2 font-mono">400</td><td className="px-3 py-2">{isEn ? "Invalid payload (bad e-mail, missing fields)" : "Payload inválido (e-mail malformado, campos faltando)"}</td></tr>
+              <tr><td className="px-3 py-2 font-mono">400</td><td className="px-3 py-2">{isEn ? "Invalid payload (bad e-mail, missing fields, or no coupons available to assign)" : "Payload inválido (e-mail malformado, campos faltando, ou sem cupons disponíveis para atribuir)"}</td></tr>
             </tbody>
           </table>
         </div>
