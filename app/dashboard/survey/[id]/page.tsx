@@ -59,7 +59,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Survey, SurveyResponse, ChoiceOption, NodeSnapshot, BonusConfig, BonusCoupon } from "@/types/survey";
+import { Survey, SurveyResponse, ChoiceOption, NodeSnapshot, BonusConfig, BonusCoupon, EligibilityRule } from "@/types/survey";
+import { EligibilityRuleBuilder } from "@/components/editor/eligibility-rule-builder";
 import { ParticipationWithRespondent } from "@/types/respondent";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
@@ -503,6 +504,7 @@ function BonusConfigSection({
   const [couponInput, setCouponInput] = useState("");
   const [sharedCode, setSharedCode] = useState(existing?.type === "shared_coupon" ? existing.code : "");
   const [sharedMaxQty, setSharedMaxQty] = useState(existing?.type === "shared_coupon" ? String(existing.maxQty) : "");
+  const [eligibilityRules, setEligibilityRules] = useState<EligibilityRule[]>(existing?.bonusEligibilityRules ?? []);
   const [saving, setSaving] = useState(false);
 
   const coupons: BonusCoupon[] = existing?.type === "coupons" ? existing.coupons : [];
@@ -518,17 +520,19 @@ function BonusConfigSection({
     onSurveyChange({ ...survey, bonusConfig: bonusConfig ?? undefined });
   };
 
+  const rules = eligibilityRules.length > 0 ? eligibilityRules : undefined;
+
   const saveConfig = async () => {
     setSaving(true);
     try {
       let cfg: BonusConfig | null = null;
       if (type === "value") {
-        cfg = { type: "value", value: parseFloat(valueAmount) || 0, description: description || undefined };
+        cfg = { type: "value", value: parseFloat(valueAmount) || 0, description: description || undefined, bonusEligibilityRules: rules };
       } else if (type === "coupons") {
-        cfg = { type: "coupons", coupons, description: description || undefined };
+        cfg = { type: "coupons", coupons, description: description || undefined, bonusEligibilityRules: rules };
       } else if (type === "shared_coupon") {
         const usedQty = existing?.type === "shared_coupon" ? (existing.usedQty ?? 0) : 0;
-        cfg = { type: "shared_coupon", code: sharedCode, maxQty: parseInt(sharedMaxQty) || 0, usedQty, description: description || undefined };
+        cfg = { type: "shared_coupon", code: sharedCode, maxQty: parseInt(sharedMaxQty) || 0, usedQty, description: description || undefined, bonusEligibilityRules: rules };
       }
       await patchBonusConfig(cfg);
       setOpen(false);
@@ -546,7 +550,7 @@ function BonusConfigSection({
     setSaving(true);
     try {
       const merged: BonusCoupon[] = [...coupons, ...newCodes.map((code) => ({ code }))];
-      const cfg: BonusConfig = { type: "coupons", coupons: merged, description: description || undefined };
+      const cfg: BonusConfig = { type: "coupons", coupons: merged, description: description || undefined, bonusEligibilityRules: rules };
       await patchBonusConfig(cfg);
       setCouponInput("");
     } finally {
@@ -556,15 +560,23 @@ function BonusConfigSection({
 
   const removeCoupon = async (code: string) => {
     const updated = coupons.filter((c) => c.code !== code);
-    const cfg: BonusConfig = { type: "coupons", coupons: updated, description: existing?.type === "coupons" ? existing.description : undefined };
+    const cfg: BonusConfig = {
+      type: "coupons",
+      coupons: updated,
+      description: existing?.type === "coupons" ? existing.description : undefined,
+      bonusEligibilityRules: existing?.type === "coupons" ? existing.bonusEligibilityRules : undefined,
+    };
     await patchBonusConfig(cfg);
   };
 
   const getSummary = () => {
     if (!existing) return "Nenhum bônus configurado";
-    if (existing.type === "value") return `R$ ${existing.value.toFixed(2)} por respondente${existing.description ? ` · ${existing.description}` : ""}`;
-    if (existing.type === "coupons") return `${availableCount} disponível${availableCount !== 1 ? "s" : ""} · ${assignedCount} atribuído${assignedCount !== 1 ? "s" : ""}`;
-    if (existing.type === "shared_coupon") return `${existing.code} · ${existing.usedQty ?? 0}/${existing.maxQty} usos`;
+    const rulesSuffix = (existing.bonusEligibilityRules?.length ?? 0) > 0
+      ? ` · ${existing.bonusEligibilityRules!.length} regra${existing.bonusEligibilityRules!.length !== 1 ? "s" : ""} de elegibilidade`
+      : "";
+    if (existing.type === "value") return `R$ ${existing.value.toFixed(2)} por respondente${existing.description ? ` · ${existing.description}` : ""}${rulesSuffix}`;
+    if (existing.type === "coupons") return `${availableCount} disponível${availableCount !== 1 ? "s" : ""} · ${assignedCount} atribuído${assignedCount !== 1 ? "s" : ""}${rulesSuffix}`;
+    if (existing.type === "shared_coupon") return `${existing.code} · ${existing.usedQty ?? 0}/${existing.maxQty} usos${rulesSuffix}`;
     return "";
   };
 
@@ -722,6 +734,19 @@ function BonusConfigSection({
             </div>
           )}
 
+          {/* Bonus eligibility rules */}
+          {type !== "none" && (
+            <div className="pt-2 border-t border-gray-100">
+              <EligibilityRuleBuilder
+                workspaceUserId={survey.userId}
+                rules={eligibilityRules}
+                onChange={setEligibilityRules}
+                label="Elegibilidade para bonificação"
+                hint="Regras AND — respondente deve atender a todas para receber o bônus automaticamente."
+              />
+            </div>
+          )}
+
           {/* Save button */}
           {type !== "coupons" && (
             <div className="flex justify-end pt-1">
@@ -735,7 +760,7 @@ function BonusConfigSection({
               </button>
             </div>
           )}
-          {type === "coupons" && description !== (existing?.description ?? "") && (
+          {type === "coupons" && (
             <div className="flex justify-end pt-1">
               <button
                 onClick={saveConfig}
@@ -743,7 +768,7 @@ function BonusConfigSection({
                 className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg transition-colors"
               >
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                Salvar descrição
+                Salvar configuração
               </button>
             </div>
           )}

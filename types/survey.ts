@@ -1,5 +1,6 @@
 import { Node, Edge } from "@xyflow/react";
 import { EligibilityRule } from "./addon";
+export type { EligibilityRule };
 
 /**
  * Tipos de nós suportados no editor
@@ -139,9 +140,9 @@ export interface BonusCoupon {
 }
 
 export type BonusConfig =
-  | { type: "value"; value: number; description?: string }
-  | { type: "coupons"; coupons: BonusCoupon[]; description?: string }
-  | { type: "shared_coupon"; code: string; maxQty: number; usedQty?: number; description?: string };
+  | { type: "value"; value: number; description?: string; bonusEligibilityRules?: EligibilityRule[] }
+  | { type: "coupons"; coupons: BonusCoupon[]; description?: string; bonusEligibilityRules?: EligibilityRule[] }
+  | { type: "shared_coupon"; code: string; maxQty: number; usedQty?: number; description?: string; bonusEligibilityRules?: EligibilityRule[] };
 
 /**
  * Pesquisa completa (salva no Firebase)

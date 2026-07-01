@@ -212,7 +212,8 @@ export async function createParticipation(
 export async function completeParticipation(
   respondentId: string,
   surveyId: string,
-  responseId: string
+  responseId: string,
+  initialBonusStatus?: "pending" | "ineligible"
 ): Promise<void> {
   const { db } = getFirebaseAdmin();
 
@@ -225,11 +226,14 @@ export async function completeParticipation(
 
   if (snapshot.empty) return;
 
-  await snapshot.docs[0].ref.update({
+  const update: Record<string, unknown> = {
     status: "completed",
     responseId,
     completedAt: new Date().toISOString(),
-  });
+  };
+  if (initialBonusStatus) update.bonusStatus = initialBonusStatus;
+
+  await snapshot.docs[0].ref.update(update);
 }
 
 // ==================== PROGRESSO PARCIAL ====================
