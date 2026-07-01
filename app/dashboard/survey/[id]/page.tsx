@@ -34,6 +34,9 @@ import {
   Loader2,
   AlertCircle,
   CopyPlus,
+  Tag,
+  Plus,
+  Banknote,
 } from "lucide-react";
 import {
   BarChart,
@@ -56,7 +59,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Survey, SurveyResponse, ChoiceOption, NodeSnapshot } from "@/types/survey";
+import { Survey, SurveyResponse, ChoiceOption, NodeSnapshot, BonusConfig, BonusCoupon } from "@/types/survey";
 import { ParticipationWithRespondent } from "@/types/respondent";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
@@ -483,6 +486,273 @@ const BONUS_STATUS_META = {
   ineligible: { label: "Inelegível", badge: "bg-red-100 text-red-600" },
 };
 
+function BonusConfigSection({
+  survey,
+  surveyId,
+  onSurveyChange,
+}: {
+  survey: Survey;
+  surveyId: string;
+  onSurveyChange: (s: Survey) => void;
+}) {
+  const existing = survey.bonusConfig;
+  const [open, setOpen] = useState(!existing);
+  const [type, setType] = useState<"none" | "value" | "coupons" | "shared_coupon">(existing?.type ?? "none");
+  const [description, setDescription] = useState(existing?.description ?? "");
+  const [valueAmount, setValueAmount] = useState(existing?.type === "value" ? String(existing.value) : "");
+  const [couponInput, setCouponInput] = useState("");
+  const [sharedCode, setSharedCode] = useState(existing?.type === "shared_coupon" ? existing.code : "");
+  const [sharedMaxQty, setSharedMaxQty] = useState(existing?.type === "shared_coupon" ? String(existing.maxQty) : "");
+  const [saving, setSaving] = useState(false);
+
+  const coupons: BonusCoupon[] = existing?.type === "coupons" ? existing.coupons : [];
+  const availableCount = coupons.filter((c) => !c.participationId).length;
+  const assignedCount = coupons.filter((c) => c.participationId).length;
+
+  const patchBonusConfig = async (bonusConfig: BonusConfig | null) => {
+    await fetch(`/api/surveys/${surveyId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bonusConfig }),
+    });
+    onSurveyChange({ ...survey, bonusConfig: bonusConfig ?? undefined });
+  };
+
+  const saveConfig = async () => {
+    setSaving(true);
+    try {
+      let cfg: BonusConfig | null = null;
+      if (type === "value") {
+        cfg = { type: "value", value: parseFloat(valueAmount) || 0, description: description || undefined };
+      } else if (type === "coupons") {
+        cfg = { type: "coupons", coupons, description: description || undefined };
+      } else if (type === "shared_coupon") {
+        const usedQty = existing?.type === "shared_coupon" ? (existing.usedQty ?? 0) : 0;
+        cfg = { type: "shared_coupon", code: sharedCode, maxQty: parseInt(sharedMaxQty) || 0, usedQty, description: description || undefined };
+      }
+      await patchBonusConfig(cfg);
+      setOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addCoupons = async () => {
+    const newCodes = couponInput
+      .split("\n")
+      .map((c) => c.trim().toUpperCase())
+      .filter((c) => c.length > 0 && !coupons.some((ex) => ex.code === c));
+    if (newCodes.length === 0) return;
+    setSaving(true);
+    try {
+      const merged: BonusCoupon[] = [...coupons, ...newCodes.map((code) => ({ code }))];
+      const cfg: BonusConfig = { type: "coupons", coupons: merged, description: description || undefined };
+      await patchBonusConfig(cfg);
+      setCouponInput("");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeCoupon = async (code: string) => {
+    const updated = coupons.filter((c) => c.code !== code);
+    const cfg: BonusConfig = { type: "coupons", coupons: updated, description: existing?.type === "coupons" ? existing.description : undefined };
+    await patchBonusConfig(cfg);
+  };
+
+  const getSummary = () => {
+    if (!existing) return "Nenhum bônus configurado";
+    if (existing.type === "value") return `R$ ${existing.value.toFixed(2)} por respondente${existing.description ? ` · ${existing.description}` : ""}`;
+    if (existing.type === "coupons") return `${availableCount} disponível${availableCount !== 1 ? "s" : ""} · ${assignedCount} atribuído${assignedCount !== 1 ? "s" : ""}`;
+    if (existing.type === "shared_coupon") return `${existing.code} · ${existing.usedQty ?? 0}/${existing.maxQty} usos`;
+    return "";
+  };
+
+  const TYPE_OPTIONS = [
+    { value: "none" as const, label: "Nenhum", icon: XCircle },
+    { value: "value" as const, label: "Valor (R$)", icon: Banknote },
+    { value: "coupons" as const, label: "Cupons únicos", icon: Tag },
+    { value: "shared_coupon" as const, label: "Cupom c/ limite", icon: Hash },
+  ];
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Gift className="w-4 h-4 text-gray-500 shrink-0" />
+          <span className="text-sm font-semibold text-gray-900">Configuração do Bônus</span>
+          {!open && (
+            <span className="text-xs text-gray-400 truncate ml-1">{getSummary()}</span>
+          )}
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
+          {/* Type selector */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {TYPE_OPTIONS.map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                onClick={() => setType(value)}
+                className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border text-xs font-medium transition-colors ${
+                  type === value
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Description (all types except none) */}
+          {type !== "none" && (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Descrição <span className="text-gray-400">(opcional)</span></label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: 20% de desconto na renovação"
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              />
+            </div>
+          )}
+
+          {/* Value fields */}
+          {type === "value" && (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Valor por respondente (R$)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={valueAmount}
+                onChange={(e) => setValueAmount(e.target.value)}
+                placeholder="50.00"
+                className="w-48 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              />
+            </div>
+          )}
+
+          {/* Shared coupon fields */}
+          {type === "shared_coupon" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Código do cupom</label>
+                <input
+                  type="text"
+                  value={sharedCode}
+                  onChange={(e) => setSharedCode(e.target.value.toUpperCase())}
+                  placeholder="DESCONTO20"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Quantidade máxima de usos</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={sharedMaxQty}
+                  onChange={(e) => setSharedMaxQty(e.target.value)}
+                  placeholder="50"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+                {existing?.type === "shared_coupon" && (
+                  <p className="text-[11px] text-gray-400 mt-1">{existing.usedQty ?? 0} uso{(existing.usedQty ?? 0) !== 1 ? "s" : ""} realizados</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Unique coupons fields */}
+          {type === "coupons" && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Adicionar códigos <span className="text-gray-400">(um por linha)</span></label>
+                <textarea
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value)}
+                  placeholder={"PROMO001\nPROMO002\nPROMO003"}
+                  rows={3}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent font-mono resize-none"
+                />
+                <button
+                  onClick={addCoupons}
+                  disabled={!couponInput.trim() || saving}
+                  className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-40 rounded-lg transition-colors"
+                >
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  Adicionar Cupons
+                </button>
+              </div>
+
+              {coupons.length > 0 && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                    <span className="text-xs font-medium text-gray-600">
+                      {coupons.length} cupom{coupons.length !== 1 ? "s" : ""} · {availableCount} disponível{availableCount !== 1 ? "s" : ""} · {assignedCount} atribuído{assignedCount !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-gray-100 max-h-48 overflow-y-auto">
+                    {coupons.map((c) => (
+                      <div key={c.code} className="flex items-center justify-between px-3 py-2">
+                        <span className="text-xs font-mono text-gray-900">{c.code}</span>
+                        {c.participationId ? (
+                          <span className="text-[11px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Atribuído</span>
+                        ) : (
+                          <button
+                            onClick={() => removeCoupon(c.code)}
+                            className="text-gray-300 hover:text-red-500 transition-colors"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Save button */}
+          {type !== "coupons" && (
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={saveConfig}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg transition-colors"
+              >
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                Salvar configuração
+              </button>
+            </div>
+          )}
+          {type === "coupons" && description !== (existing?.description ?? "") && (
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={saveConfig}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 rounded-lg transition-colors"
+              >
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                Salvar descrição
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BonusPanel({ surveyId, survey, onSurveyChange }: {
   surveyId: string;
   survey: Survey;
@@ -515,6 +785,7 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
   ) => {
     setUpdating(participationId);
     try {
+      const prevP = participations.find((p) => p.id === participationId);
       const res = await fetch(
         `/api/surveys/${surveyId}/participations/${participationId}`,
         {
@@ -523,7 +794,15 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
           body: JSON.stringify({ bonusStatus }),
         }
       );
-      if (!res.ok) return;
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (err.error) alert(err.error);
+        return;
+      }
+
+      const data = await res.json();
+      const assignedCoupon: string | undefined = data.bonusCouponCode;
 
       setParticipations((prev) =>
         prev.map((p) =>
@@ -531,16 +810,36 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
             ? {
                 ...p,
                 bonusStatus,
-                bonusReleasedAt: bonusStatus === "released" ? new Date().toISOString() : p.bonusReleasedAt,
+                bonusReleasedAt: bonusStatus === "released" ? new Date().toISOString() : bonusStatus === "pending" ? undefined : p.bonusReleasedAt,
+                bonusCouponCode: bonusStatus === "released" ? (assignedCoupon ?? p.bonusCouponCode) : bonusStatus === "pending" ? undefined : p.bonusCouponCode,
               }
             : p
         )
       );
 
-      // Reflect quota changes on survey object
-      const prev = participations.find((p) => p.id === participationId);
-      if (prev) {
-        const wasIneligible = prev.bonusStatus === "ineligible";
+      // Update local survey bonusConfig to reflect coupon changes
+      const cfg = survey.bonusConfig;
+      if (cfg?.type === "coupons" && assignedCoupon && bonusStatus === "released") {
+        const updatedCoupons = cfg.coupons.map((c) =>
+          c.code === assignedCoupon ? { ...c, participationId, assignedAt: new Date().toISOString() } : c
+        );
+        onSurveyChange({ ...survey, bonusConfig: { ...cfg, coupons: updatedCoupons } });
+      } else if (cfg?.type === "coupons" && prevP?.bonusCouponCode && bonusStatus === "pending") {
+        const updatedCoupons = cfg.coupons.map((c) =>
+          c.code === prevP.bonusCouponCode ? { code: c.code } : c
+        );
+        onSurveyChange({ ...survey, bonusConfig: { ...cfg, coupons: updatedCoupons } });
+      } else if (cfg?.type === "shared_coupon") {
+        if (bonusStatus === "released") {
+          onSurveyChange({ ...survey, bonusConfig: { ...cfg, usedQty: (cfg.usedQty ?? 0) + 1 } });
+        } else if (bonusStatus === "pending" && prevP?.bonusCouponCode) {
+          onSurveyChange({ ...survey, bonusConfig: { ...cfg, usedQty: Math.max(0, (cfg.usedQty ?? 0) - 1) } });
+        }
+      }
+
+      // Quota management
+      if (prevP) {
+        const wasIneligible = prevP.bonusStatus === "ineligible";
         const becomingIneligible = bonusStatus === "ineligible";
         if (!wasIneligible && becomingIneligible) {
           const newCount = survey.responseCount - 1;
@@ -568,18 +867,30 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
     ineligible: participations.filter((p) => p.bonusStatus === "ineligible").length,
   }), [participations]);
 
+  const canRelease = (p: ParticipationWithRespondent): boolean => {
+    const cfg = survey.bonusConfig;
+    if (!cfg) return true;
+    if (cfg.type === "coupons") return cfg.coupons.some((c) => !c.participationId);
+    if (cfg.type === "shared_coupon") return (cfg.usedQty ?? 0) < cfg.maxQty;
+    return true;
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+      <div className="space-y-4">
+        <BonusConfigSection survey={survey} surveyId={surveyId} onSurveyChange={onSurveyChange} />
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+        </div>
       </div>
     );
   }
 
   if (participations.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl">
-        <div className="text-center py-16">
+      <div className="space-y-4">
+        <BonusConfigSection survey={survey} surveyId={surveyId} onSurveyChange={onSurveyChange} />
+        <div className="bg-white border border-gray-200 rounded-xl text-center py-16">
           <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
             <Gift className="w-6 h-6 text-gray-400" />
           </div>
@@ -594,6 +905,9 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
 
   return (
     <div className="space-y-4">
+      {/* Bonus config section */}
+      <BonusConfigSection survey={survey} surveyId={surveyId} onSurveyChange={onSurveyChange} />
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
@@ -609,6 +923,18 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
         ))}
       </div>
 
+      {/* Financial summary for value type */}
+      {survey.bonusConfig?.type === "value" && (
+        <div className="flex items-center gap-4 px-4 py-3 bg-white border border-gray-200 rounded-xl text-xs text-gray-600">
+          <Banknote className="w-4 h-4 text-gray-400 shrink-0" />
+          <span>
+            <span className="font-semibold text-amber-600">R$ {(counts.pending * survey.bonusConfig.value).toFixed(2)}</span> pendente ·{" "}
+            <span className="font-semibold text-green-600">R$ {(counts.released * survey.bonusConfig.value).toFixed(2)}</span> liberado
+            {survey.bonusConfig.description && <span className="text-gray-400"> · {survey.bonusConfig.description}</span>}
+          </span>
+        </div>
+      )}
+
       {/* List */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
@@ -622,6 +948,7 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
             const profileEntries = Object.entries(p.profile).filter(
               ([, v]) => v !== undefined && v !== null && v !== ""
             );
+            const releaseBlocked = p.bonusStatus !== "released" && !canRelease(p);
 
             return (
               <div key={p.id} className="px-5 py-4">
@@ -659,6 +986,17 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
                           Liberado em {formatDate(p.bonusReleasedAt)}
                         </span>
                       )}
+                      {p.bonusCouponCode && (
+                        <span className="flex items-center gap-1 text-[11px] font-mono font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                          <Tag className="w-3 h-3" />
+                          {p.bonusCouponCode}
+                        </span>
+                      )}
+                      {survey.bonusConfig?.type === "value" && p.bonusStatus === "released" && (
+                        <span className="text-[11px] font-semibold text-green-600">
+                          R$ {survey.bonusConfig.value.toFixed(2)}
+                        </span>
+                      )}
                     </div>
 
                     {profileEntries.length > 0 && (
@@ -677,8 +1015,9 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
                     {p.bonusStatus !== "released" && (
                       <button
                         onClick={() => updateBonus(p.id, "released")}
-                        disabled={isUpdating}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors"
+                        disabled={isUpdating || releaseBlocked}
+                        title={releaseBlocked ? "Sem bônus disponíveis" : undefined}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
                       >
                         {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Gift className="w-3.5 h-3.5" />}
                         Liberar

@@ -3,6 +3,7 @@ import { getSurvey } from "@/lib/services/surveys";
 import { updateParticipationBonus } from "@/lib/services/respondents";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { SurveyParticipation } from "@/types/respondent";
+import { BonusCoupon } from "@/types/survey";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { hasAddon } from "@/lib/services/addons";
 
@@ -36,7 +37,6 @@ export async function PATCH(
 
     const { db, FieldValue } = getFirebaseAdmin();
 
-    // Fetch current participation to detect status transitions
     const participationDoc = await db.collection("surveyParticipations").doc(participationId).get();
     if (!participationDoc.exists) {
       return NextResponse.json({ error: "Participação não encontrada" }, { status: 404 });
@@ -49,12 +49,75 @@ export async function PATCH(
 
     const wasIneligible = current.bonusStatus === "ineligible";
     const becomingIneligible = bonusStatus === "ineligible";
+    const wasReleased = current.bonusStatus === "released";
+    const becomingPending = bonusStatus === "pending";
 
-    await updateParticipationBonus(participationId, bonusStatus, bonusNotes);
+    // ── Coupon assignment on release ────────────────────────────────────────
+    let assignedCouponCode: string | undefined;
+    let couponToClear: string | null | undefined;
 
-    // Handle quota exclusion: adjust responseCount when eligibility changes
+    if (bonusStatus === "released" && survey.bonusConfig) {
+      const config = survey.bonusConfig;
+
+      if (config.type === "coupons") {
+        const available = config.coupons.find((c: BonusCoupon) => !c.participationId);
+        if (!available) {
+          return NextResponse.json({ error: "Sem cupons disponíveis para atribuir" }, { status: 400 });
+        }
+        const updatedCoupons = config.coupons.map((c: BonusCoupon) =>
+          c.code === available.code
+            ? { ...c, participationId, assignedAt: new Date().toISOString() }
+            : c
+        );
+        await db.collection("surveys").doc(surveyId).update({
+          "bonusConfig.coupons": updatedCoupons,
+          updatedAt: new Date().toISOString(),
+        });
+        assignedCouponCode = available.code;
+
+      } else if (config.type === "shared_coupon") {
+        const used = config.usedQty ?? 0;
+        if (used >= config.maxQty) {
+          return NextResponse.json({ error: "Quantidade máxima de usos atingida" }, { status: 400 });
+        }
+        await db.collection("surveys").doc(surveyId).update({
+          "bonusConfig.usedQty": FieldValue.increment(1),
+          updatedAt: new Date().toISOString(),
+        });
+        assignedCouponCode = config.code;
+      }
+    }
+
+    // ── Coupon un-assignment on revert to pending ───────────────────────────
+    if (wasReleased && becomingPending && current.bonusCouponCode && survey.bonusConfig) {
+      const config = survey.bonusConfig;
+      if (config.type === "coupons") {
+        const updatedCoupons = config.coupons.map((c: BonusCoupon) =>
+          c.code === current.bonusCouponCode ? { code: c.code } : c
+        );
+        await db.collection("surveys").doc(surveyId).update({
+          "bonusConfig.coupons": updatedCoupons,
+          updatedAt: new Date().toISOString(),
+        });
+        couponToClear = null;
+      } else if (config.type === "shared_coupon") {
+        await db.collection("surveys").doc(surveyId).update({
+          "bonusConfig.usedQty": FieldValue.increment(-1),
+          updatedAt: new Date().toISOString(),
+        });
+        couponToClear = null;
+      }
+    }
+
+    await updateParticipationBonus(
+      participationId,
+      bonusStatus,
+      bonusNotes,
+      assignedCouponCode !== undefined ? assignedCouponCode : couponToClear
+    );
+
+    // ── Quota adjustments ───────────────────────────────────────────────────
     if (!wasIneligible && becomingIneligible) {
-      // Marking as ineligible: decrement count, potentially reopen survey
       const surveyRef = db.collection("surveys").doc(surveyId);
       const newCount = survey.responseCount - 1;
       const update: Record<string, unknown> = { responseCount: FieldValue.increment(-1) };
@@ -63,7 +126,6 @@ export async function PATCH(
       }
       await surveyRef.update(update);
     } else if (wasIneligible && !becomingIneligible) {
-      // Restoring from ineligible: increment count, potentially close survey
       const surveyRef = db.collection("surveys").doc(surveyId);
       const newCount = survey.responseCount + 1;
       const update: Record<string, unknown> = { responseCount: FieldValue.increment(1) };
@@ -73,7 +135,7 @@ export async function PATCH(
       await surveyRef.update(update);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, bonusCouponCode: assignedCouponCode });
   } catch (error) {
     console.error("Error updating participation bonus:", error);
     return NextResponse.json({ error: "Erro ao atualizar bonificação" }, { status: 500 });

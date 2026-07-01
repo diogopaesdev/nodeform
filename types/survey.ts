@@ -132,6 +132,17 @@ export interface EdgeData {
  */
 export type SurveyEdge = Edge<EdgeData>;
 
+export interface BonusCoupon {
+  code: string;
+  participationId?: string;
+  assignedAt?: string;
+}
+
+export type BonusConfig =
+  | { type: "value"; value: number; description?: string }
+  | { type: "coupons"; coupons: BonusCoupon[]; description?: string }
+  | { type: "shared_coupon"; code: string; maxQty: number; usedQty?: number; description?: string };
+
 /**
  * Pesquisa completa (salva no Firebase)
  */
@@ -153,6 +164,7 @@ export interface Survey {
   maxResponses?: number;
   eligibilityRules?: EligibilityRule[]; // survey-level: block ineligible respondents
   shareToken?: string;
+  bonusConfig?: BonusConfig;
   // Collaboration metadata (populated at API response time, not stored in Firestore)
   isCollaborator?: boolean;
   collaboratorRole?: "editor" | "viewer";
