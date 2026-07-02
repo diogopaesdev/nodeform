@@ -35,6 +35,7 @@ export interface SurveyParticipation {
   bonusStatus?: "pending" | "released" | "ineligible";
   bonusReleasedAt?: string;
   bonusNotes?: string;
+  bonusCouponCode?: string;
 }
 
 export interface ParticipationWithRespondent {
@@ -49,4 +50,5 @@ export interface ParticipationWithRespondent {
   bonusStatus: "pending" | "released" | "ineligible";
   bonusReleasedAt?: string;
   bonusNotes?: string;
+  bonusCouponCode?: string;
 }

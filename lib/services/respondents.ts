@@ -212,7 +212,8 @@ export async function createParticipation(
 export async function completeParticipation(
   respondentId: string,
   surveyId: string,
-  responseId: string
+  responseId: string,
+  initialBonusStatus?: "pending" | "ineligible"
 ): Promise<void> {
   const { db } = getFirebaseAdmin();
 
@@ -225,11 +226,14 @@ export async function completeParticipation(
 
   if (snapshot.empty) return;
 
-  await snapshot.docs[0].ref.update({
+  const update: Record<string, unknown> = {
     status: "completed",
     responseId,
     completedAt: new Date().toISOString(),
-  });
+  };
+  if (initialBonusStatus) update.bonusStatus = initialBonusStatus;
+
+  await snapshot.docs[0].ref.update(update);
 }
 
 // ==================== PROGRESSO PARCIAL ====================
@@ -348,6 +352,7 @@ export async function getSurveyParticipations(
         bonusStatus: p.bonusStatus ?? "pending",
         bonusReleasedAt: p.bonusReleasedAt,
         bonusNotes: p.bonusNotes,
+        bonusCouponCode: p.bonusCouponCode,
       } as ParticipationWithRespondent;
     })
   );
@@ -360,12 +365,17 @@ export async function getSurveyParticipations(
 export async function updateParticipationBonus(
   participationId: string,
   bonusStatus: "pending" | "released" | "ineligible",
-  bonusNotes?: string
+  bonusNotes?: string,
+  bonusCouponCode?: string | null
 ): Promise<void> {
-  const { db } = getFirebaseAdmin();
+  const { db, FieldValue } = getFirebaseAdmin();
   const now = new Date().toISOString();
   const update: Record<string, unknown> = { bonusStatus };
   if (bonusStatus === "released") update.bonusReleasedAt = now;
+  if (bonusStatus === "pending") update.bonusReleasedAt = FieldValue.delete();
   if (bonusNotes !== undefined) update.bonusNotes = bonusNotes;
+  if (bonusCouponCode !== undefined) {
+    update.bonusCouponCode = bonusCouponCode === null ? FieldValue.delete() : bonusCouponCode;
+  }
   await db.collection("surveyParticipations").doc(participationId).update(update);
 }

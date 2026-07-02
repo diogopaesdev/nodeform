@@ -1,5 +1,6 @@
 import { Node, Edge } from "@xyflow/react";
 import { EligibilityRule } from "./addon";
+export type { EligibilityRule };
 
 /**
  * Tipos de nós suportados no editor
@@ -132,6 +133,17 @@ export interface EdgeData {
  */
 export type SurveyEdge = Edge<EdgeData>;
 
+export interface BonusCoupon {
+  code: string;
+  participationId?: string;
+  assignedAt?: string;
+}
+
+export type BonusConfig =
+  | { type: "value"; value: number; description?: string; bonusEligibilityRules?: EligibilityRule[] }
+  | { type: "coupons"; coupons: BonusCoupon[]; description?: string; bonusEligibilityRules?: EligibilityRule[] }
+  | { type: "shared_coupon"; code: string; maxQty: number; usedQty?: number; description?: string; bonusEligibilityRules?: EligibilityRule[] };
+
 /**
  * Pesquisa completa (salva no Firebase)
  */
@@ -153,6 +165,7 @@ export interface Survey {
   maxResponses?: number;
   eligibilityRules?: EligibilityRule[]; // survey-level: block ineligible respondents
   shareToken?: string;
+  bonusConfig?: BonusConfig;
   // Collaboration metadata (populated at API response time, not stored in Firestore)
   isCollaborator?: boolean;
   collaboratorRole?: "editor" | "viewer";

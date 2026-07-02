@@ -42,6 +42,7 @@ export default function SurveyPage({
   const hideHeader = searchParams.get("hide_header") === "true";
   const fromList = searchParams.get("from_list");
   const ssoToken = searchParams.get("sso_token");
+  const isPreviewMode = searchParams.get("preview") === "true";
 
   const {
     survey,
@@ -154,13 +155,15 @@ export default function SurveyPage({
   };
 
   const proceedAfterAuth = async (resp: RespondentInfo, surveyData: Survey) => {
-    // Check participation
-    const statusRes = await fetch(`/api/respondent/survey/${id}/status`);
-    const statusData = await statusRes.json();
+    // Check participation (skip in preview/test mode)
+    if (!isPreviewMode) {
+      const statusRes = await fetch(`/api/respondent/survey/${id}/status`);
+      const statusData = await statusRes.json();
 
-    if (statusData.status === "completed") {
-      setAuthStatus("already_completed");
-      return;
+      if (statusData.status === "completed") {
+        setAuthStatus("already_completed");
+        return;
+      }
     }
 
     // Check survey-level eligibility

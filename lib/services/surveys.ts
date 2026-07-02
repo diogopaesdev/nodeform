@@ -1,5 +1,5 @@
 import { getFirebaseAdmin } from "../firebase-admin";
-import { Survey, DashboardStats, SurveyNode, SurveyEdge, SurveyResponse, NodeAnswer } from "@/types/survey";
+import { Survey, DashboardStats, SurveyNode, SurveyEdge, SurveyResponse, NodeAnswer, BonusConfig } from "@/types/survey";
 
 // Criar nova pesquisa
 export async function createSurvey(
@@ -65,17 +65,18 @@ export async function updateSurvey(
       Survey,
       "title" | "description" | "nodes" | "edges" | "enableScoring" | "status" | "timeLimit" | "prize"
     >
-  >
+  > & { bonusConfig?: BonusConfig | null }
 ): Promise<void> {
-  const { db } = getFirebaseAdmin();
+  const { db, FieldValue } = getFirebaseAdmin();
 
-  await db
-    .collection("surveys")
-    .doc(surveyId)
-    .update({
-      ...data,
-      updatedAt: new Date().toISOString(),
-    });
+  const { bonusConfig, ...rest } = data;
+  const update: Record<string, unknown> = { ...rest, updatedAt: new Date().toISOString() };
+
+  if ("bonusConfig" in data) {
+    update.bonusConfig = bonusConfig === null ? FieldValue.delete() : bonusConfig;
+  }
+
+  await db.collection("surveys").doc(surveyId).update(update);
 }
 
 // Salvar nodes e edges da pesquisa

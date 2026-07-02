@@ -10,7 +10,9 @@ import {
   checkParticipation,
   completeParticipation,
   createParticipation,
+  getRespondentById,
 } from "@/lib/services/respondents";
+import { evaluateEligibility } from "@/lib/utils/eligibility";
 
 const SESSION_COOKIE = "respondent-session";
 
@@ -167,9 +169,19 @@ export async function POST(
       throw err;
     }
 
+    // Evaluate bonus eligibility rules (if configured) before marking complete
+    let initialBonusStatus: "pending" | "ineligible" | undefined;
+    if (respondentId && survey.bonusConfig?.bonusEligibilityRules?.length) {
+      const respondent = await getRespondentById(respondentId);
+      if (respondent) {
+        const result = evaluateEligibility(respondent, survey.bonusConfig.bonusEligibilityRules);
+        if (!result.eligible) initialBonusStatus = "ineligible";
+      }
+    }
+
     // Marcar participação como concluída
     if (respondentId) {
-      await completeParticipation(respondentId, surveyId, response.id);
+      await completeParticipation(respondentId, surveyId, response.id, initialBonusStatus);
     }
 
     return NextResponse.json({ response }, { status: 201 });
