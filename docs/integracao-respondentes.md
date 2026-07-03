@@ -265,6 +265,40 @@ def acessar_pesquisa(survey_id):
 
 > ℹ️ Ao gerar um token SSO, o SurveyFlow automaticamente cria ou atualiza o perfil do respondente com os dados enviados no campo `profile`. Não é necessário sincronizar separadamente.
 
+### Entrega da pesquisa: redirect ou iframe (embed)
+
+O **passo 5** do fluxo (levar o usuário até a pesquisa com o token) pode ser entregue de duas formas. A geração do token (passos 3–4) é idêntica nos dois casos — muda apenas como a URL final é apresentada ao usuário.
+
+**Opção A — Redirect de página inteira** (padrão, mais simples)
+
+O backend responde com um redirect (HTTP 302) do navegador para a URL da pesquisa. É o que os exemplos de código acima fazem. A pesquisa ocupa a tela inteira em `surveyflowapp.com`.
+
+**Opção B — Embed via iframe** (pesquisa dentro da sua própria página)
+
+A pesquisa é exibida dentro de um `<iframe>` na sua página, mantendo o layout do seu site ao redor. Para isso:
+
+1. Gere o token SSO no **backend** (igual à Opção A — a API Key nunca vai para o frontend).
+2. Renderize a página com o `<iframe>` já contendo o token na `src`, adicionando `&embed=true`:
+
+```html
+<!-- src montado no servidor, com o token recém-gerado -->
+<iframe
+  src="https://surveyflowapp.com/survey/{surveyId}?sso_token={token}&embed=true"
+  style="width: 100%; height: 800px; border: 0;"
+  allow="clipboard-write">
+</iframe>
+```
+
+O parâmetro `&embed=true` faz duas coisas:
+- **oculta o cabeçalho** da pesquisa, para ela caber melhor dentro do seu layout;
+- faz o cookie de sessão do respondente ser emitido como `SameSite=None; Secure`, necessário para ser aceito dentro de um iframe de **origem diferente** (cross-origin).
+
+> ⚠️ **A página que contém o iframe precisa ser servida por HTTPS.** O cookie `SameSite=None; Secure` exige HTTPS — em `http://localhost` o navegador rejeita o cookie e a sessão do respondente não é criada. Teste o embed sempre em HTTPS (use um túnel como ngrok/Cloudflare Tunnel em desenvolvimento, se necessário).
+
+> ℹ️ As rotas de pesquisa (`/survey/*`) são **explicitamente liberadas para embed em qualquer origem** — o SurveyFlow não envia `X-Frame-Options` nessas rotas e permite framing via CSP `frame-ancestors *`. Você não precisa solicitar liberação do seu domínio. (As demais páginas do SurveyFlow — dashboard, editor — continuam bloqueadas para iframe.)
+
+> ⚠️ O token continua sendo de **uso único e 5 min de validade**. Gere um token novo a cada carregamento da página que contém o iframe; **não** faça cache do HTML com o token embutido. Se o iframe recarregar após o token já ter sido usado, o respondente cai na tela de login por OTP.
+
 ---
 
 ## 5. Sync de Perfil em Massa
@@ -615,6 +649,13 @@ Para o desenvolvedor responsável pela integração na plataforma cliente:
 - [ ] Redirecionar o navegador do usuário para a URL com `?sso_token=`
 - [ ] Testar com usuário de teste em ambiente de desenvolvimento
 
+### Se for usar embed via iframe (opcional)
+
+- [ ] Servir a página que contém o iframe por **HTTPS** (obrigatório para o cookie de sessão)
+- [ ] Montar a `src` do iframe no servidor, incluindo `sso_token` e `&embed=true`
+- [ ] Gerar um token novo a cada carregamento (não cachear o HTML com token embutido)
+- [ ] Confirmar que a pesquisa aparece dentro do iframe (sem erro de `X-Frame-Options` no console)
+
 ### Sync de perfil (recomendado)
 
 - [ ] Implementar job de sync diário ou por evento de atualização
@@ -658,6 +699,15 @@ R: Não há limite de respondentes armazenados. O limite que importa é o `maxRe
 
 **P: Os dados dos respondentes ficam armazenados no SurveyFlow permanentemente?**  
 R: Sim, enquanto o workspace existir. Em caso de cancelamento do Módulo Respondentes, os dados são mantidos mas o acesso às funcionalidades é suspenso.
+
+**P: Posso exibir a pesquisa dentro de um iframe no meu site?**  
+R: Sim. Use a URL `https://surveyflowapp.com/survey/{surveyId}?sso_token={token}&embed=true` como `src` do iframe. As rotas `/survey/*` são liberadas para embed em qualquer origem. Requisito: a página que contém o iframe precisa ser HTTPS (o cookie de sessão exige `Secure`). Veja a seção 4 → "Entrega da pesquisa: redirect ou iframe (embed)".
+
+**P: O console mostra "Refused to display ... 'X-Frame-Options' to 'deny'". O que houve?**  
+R: Esse erro significa que a URL dentro do iframe **não** é uma rota `/survey/*` liberada — normalmente porque a `src` do iframe está apontando para a raiz do domínio (`https://surveyflowapp.com/`) ou para uma página que não é de pesquisa. Confirme que a `src` do iframe é exatamente `.../survey/{surveyId}?sso_token={token}&embed=true`. Em geral isso acontece quando a geração do token falhou (ver pergunta abaixo) e a `src` acabou incompleta.
+
+**P: A chamada a `/api/sso/token` retorna 401. Por quê?**  
+R: O endpoint retorna 401 quando a API Key está ausente, malformada ou inválida. Verifique: (1) o header é `Authorization: Bearer nfk_...` (com o prefixo `Bearer ` e a chave começando em `nfk_`); (2) a chave não foi revogada nem pertence a outro ambiente/workspace; (3) a chave está sendo lida corretamente da variável de ambiente. Se a chave for válida mas o Módulo Respondentes não estiver ativo, o retorno é **403** ("Módulo Respondentes não ativo").
 
 ---
 
