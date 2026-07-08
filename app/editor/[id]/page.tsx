@@ -321,7 +321,7 @@ export default function EditorPage({
                 placeholder="Ex: Pesquisa de Satisfação do Cliente"
                 value={configTitle}
                 onChange={(e) => setConfigTitle(e.target.value)}
-                className="h-9 text-sm"
+                className="h-9 text-sm placeholder:text-gray-300"
                 autoFocus
               />
             </div>
@@ -333,7 +333,7 @@ export default function EditorPage({
                 placeholder="Descreva brevemente o objetivo da pesquisa..."
                 value={configDescription}
                 onChange={(e) => setConfigDescription(e.target.value)}
-                className="text-sm min-h-[60px] resize-none"
+                className="text-sm min-h-[60px] resize-none placeholder:text-gray-300"
                 rows={2}
               />
             </div>
@@ -352,7 +352,7 @@ export default function EditorPage({
                     min="1"
                     value={configTimeLimit}
                     onChange={(e) => setConfigTimeLimit(e.target.value)}
-                    className="h-9 text-sm pr-16"
+                    className="h-9 text-sm pr-16 placeholder:text-gray-300"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                     minutos
@@ -370,7 +370,7 @@ export default function EditorPage({
                   placeholder="Ex: R$ 50"
                   value={configPrize}
                   onChange={(e) => setConfigPrize(e.target.value)}
-                  className="h-9 text-sm"
+                  className="h-9 text-sm placeholder:text-gray-300"
                 />
               </div>
             </div>
@@ -415,7 +415,7 @@ export default function EditorPage({
                       min="1"
                       value={configMaxResponses}
                       onChange={(e) => setConfigMaxResponses(e.target.value)}
-                      className="h-9 text-sm pr-28"
+                      className="h-9 text-sm pr-28 placeholder:text-gray-300"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                       respostas máx.
