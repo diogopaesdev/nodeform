@@ -199,7 +199,7 @@ export function EligibilityRuleBuilder({
                 {schema.length > 0 ? (
                   <select
                     value={rule.field}
-                    onChange={(e) => updateRule(rule.id, { field: e.target.value, value: "" })}
+                    onChange={(e) => updateRule(rule.id, { field: e.target.value, subField: undefined, value: "" })}
                     className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 bg-white"
                   >
                     <option value="">Campo...</option>
@@ -216,6 +216,24 @@ export function EligibilityRuleBuilder({
                     className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 bg-white w-40"
                   />
                 )}
+
+                {/* Sub-campo (apenas para campos do tipo array) */}
+                {(() => {
+                  const f = getField(rule.field);
+                  if (f?.type !== "array" || !f.itemFields?.length) return null;
+                  return (
+                    <select
+                      value={rule.subField ?? ""}
+                      onChange={(e) => updateRule(rule.id, { subField: e.target.value, value: "" })}
+                      className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 bg-white"
+                    >
+                      <option value="">Sub-campo...</option>
+                      {f.itemFields.map((sf) => (
+                        <option key={sf.key} value={sf.key}>{sf.label} ({sf.key})</option>
+                      ))}
+                    </select>
+                  );
+                })()}
 
                 {/* Operador */}
                 <select

@@ -7,14 +7,20 @@ import { hasAddon } from "@/lib/services/addons";
 import { getSurvey } from "@/lib/services/surveys";
 import { upsertRespondent } from "@/lib/services/respondents";
 
+// A profile value is a scalar or an array of objects (array field, e.g. institutions)
+const ProfileValue = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))).max(100),
+]);
+
 // Server-to-server endpoint: MOC backend calls this to get a one-time SSO token
 const Schema = z.object({
   surveyId: z.string().min(1).max(100),
   email: z.string().email(),
   name: z.string().min(1).max(200),
-  profile: z
-    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
-    .optional(),
+  profile: z.record(z.string(), ProfileValue).optional(),
 });
 
 const TOKEN_TTL_MS = 5 * 60 * 1000; // 5 minutes, single-use

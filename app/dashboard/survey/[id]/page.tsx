@@ -89,6 +89,22 @@ function getInitials(name?: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+// Render a profile value (scalar or array-of-objects field) as readable text.
+// Ex: [{nome:"Hospital X", tipo:"publico"}] -> "Hospital X / publico"
+function formatProfileValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) =>
+        item && typeof item === "object"
+          ? Object.values(item as Record<string, unknown>).filter((x) => x !== undefined && x !== null && x !== "").join(" / ")
+          : String(item)
+      )
+      .filter(Boolean)
+      .join("; ");
+  }
+  return String(value);
+}
+
 // ─── Question analytics ────────────────────────────────────────────────────────
 
 function useQuestionAnalytics(survey: Survey | null, responses: SurveyResponse[]) {
@@ -1028,7 +1044,7 @@ function BonusPanel({ surveyId, survey, onSurveyChange }: {
                       <div className="flex flex-wrap gap-2 mt-2">
                         {profileEntries.map(([k, v]) => (
                           <span key={k} className="text-[11px] bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5 text-gray-600">
-                            <span className="font-medium text-gray-400">{k}:</span> {String(v)}
+                            <span className="font-medium text-gray-400">{k}:</span> {formatProfileValue(v)}
                           </span>
                         ))}
                       </div>
@@ -1807,7 +1823,7 @@ export default function SurveyDetailPage({
                                   <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wide mb-1">
                                     {label}
                                   </p>
-                                  <p className="text-xs text-gray-800">{String(value)}</p>
+                                  <p className="text-xs text-gray-800">{formatProfileValue(value)}</p>
                                 </div>
                               );
                             })}

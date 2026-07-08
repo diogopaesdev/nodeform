@@ -4,6 +4,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getProfileSchema, setProfileSchema } from "@/lib/services/profile-schema";
 
+const SubFieldSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-z_][a-z0-9_]*$/, "Use apenas letras minúsculas, números e _"),
+  label: z.string().min(1).max(80),
+});
+
 const FieldSchema = z.object({
   key: z
     .string()
@@ -11,8 +20,9 @@ const FieldSchema = z.object({
     .max(50)
     .regex(/^[a-z_][a-z0-9_]*$/, "Use apenas letras minúsculas, números e _"),
   label: z.string().min(1).max(80),
-  type: z.enum(["string", "enum"]),
+  type: z.enum(["string", "enum", "array"]),
   options: z.array(z.string().min(1).max(100)).max(50).optional(),
+  itemFields: z.array(SubFieldSchema).max(20).optional(),
   description: z.string().max(200).optional(),
 });
 
@@ -44,11 +54,17 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  // Validate enum fields have options
+  // Validate enum fields have options and array fields have sub-fields
   for (const field of parsed.data.schema) {
     if (field.type === "enum" && (!field.options || field.options.length === 0)) {
       return NextResponse.json(
         { error: `Campo "${field.key}" é do tipo enum mas não tem opções definidas` },
+        { status: 400 }
+      );
+    }
+    if (field.type === "array" && (!field.itemFields || field.itemFields.length === 0)) {
+      return NextResponse.json(
+        { error: `Campo "${field.key}" é do tipo array mas não tem sub-campos definidos` },
         { status: 400 }
       );
     }
