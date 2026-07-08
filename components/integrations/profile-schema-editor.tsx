@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Trash2, ChevronDown, ChevronUp, Loader2, Save, X } from "lucide-react";
-import { ProfileField, ProfileSchema } from "@/types/addon";
+import { ProfileField, ProfileSchema, ProfileSubField } from "@/types/addon";
 
 interface Props {
   disabled?: boolean;
@@ -11,7 +11,62 @@ interface Props {
 const OPERATOR_LABELS: Record<string, string> = {
   string: "Texto livre",
   enum: "Lista de opções",
+  array: "Lista de itens (array)",
 };
+
+// Editor for the sub-fields of an array field item (all free text). Ex: nome, tipo
+function ItemFieldsEditor({
+  value,
+  onChange,
+}: {
+  value: ProfileSubField[];
+  onChange: (v: ProfileSubField[]) => void;
+}) {
+  const update = (i: number, patch: Partial<ProfileSubField>) =>
+    onChange(value.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
+  const add = () => onChange([...value, { key: "", label: "" }]);
+  const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-medium text-gray-700">
+        Sub-campos do item <span className="text-red-500">*</span>
+      </label>
+      {value.length === 0 && (
+        <p className="text-xs text-gray-400">Adicione ao menos um sub-campo (ex: nome, tipo).</p>
+      )}
+      {value.map((sf, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="chave (ex: tipo)"
+            value={sf.key}
+            onChange={(e) => update(i, { key: e.target.value.toLowerCase().replace(/\s/g, "_") })}
+            className="w-1/3 px-2.5 py-1.5 text-xs font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 bg-white"
+          />
+          <input
+            type="text"
+            placeholder="Nome amigável (ex: Tipo)"
+            value={sf.label}
+            onChange={(e) => update(i, { label: e.target.value })}
+            className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 bg-white"
+          />
+          <button type="button" onClick={() => remove(i)} className="text-gray-400 hover:text-red-500 transition-colors">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={add}
+        className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
+      >
+        <Plus className="w-3 h-3" />
+        Adicionar sub-campo
+      </button>
+    </div>
+  );
+}
 
 export function ProfileSchemaEditor({ disabled }: Props) {
   const [schema, setSchema] = useState<ProfileSchema>([]);
@@ -24,9 +79,10 @@ export function ProfileSchemaEditor({ disabled }: Props) {
   // New field form state
   const [newKey, setNewKey] = useState("");
   const [newLabel, setNewLabel] = useState("");
-  const [newType, setNewType] = useState<"string" | "enum">("string");
+  const [newType, setNewType] = useState<"string" | "enum" | "array">("string");
   const [newDescription, setNewDescription] = useState("");
   const [newOptions, setNewOptions] = useState(""); // comma-separated
+  const [newItemFields, setNewItemFields] = useState<ProfileSubField[]>([]);
   const [keyError, setKeyError] = useState("");
 
   useEffect(() => {
@@ -77,6 +133,11 @@ export function ProfileSchemaEditor({ disabled }: Props) {
     if (!newLabel.trim()) return;
     if (newType === "enum" && !newOptions.trim()) return;
 
+    const cleanItemFields = newItemFields
+      .map((f) => ({ key: f.key.trim(), label: f.label.trim() }))
+      .filter((f) => f.key && f.label);
+    if (newType === "array" && cleanItemFields.length === 0) return;
+
     const field: ProfileField = {
       key: newKey.trim(),
       label: newLabel.trim(),
@@ -85,6 +146,7 @@ export function ProfileSchemaEditor({ disabled }: Props) {
       options: newType === "enum"
         ? newOptions.split(",").map((o) => o.trim()).filter(Boolean)
         : undefined,
+      itemFields: newType === "array" ? cleanItemFields : undefined,
     };
 
     const updated = [...schema, field];
@@ -92,7 +154,7 @@ export function ProfileSchemaEditor({ disabled }: Props) {
 
     // Reset form
     setNewKey(""); setNewLabel(""); setNewType("string");
-    setNewDescription(""); setNewOptions(""); setKeyError("");
+    setNewDescription(""); setNewOptions(""); setNewItemFields([]); setKeyError("");
     setShowAddForm(false);
   };
 
@@ -180,11 +242,12 @@ export function ProfileSchemaEditor({ disabled }: Props) {
               <label className="text-xs font-medium text-gray-700">Tipo</label>
               <select
                 value={newType}
-                onChange={(e) => setNewType(e.target.value as "string" | "enum")}
+                onChange={(e) => setNewType(e.target.value as "string" | "enum" | "array")}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 bg-white"
               >
                 <option value="string">Texto livre</option>
                 <option value="enum">Lista de opções fixas</option>
+                <option value="array">Lista de itens (array)</option>
               </select>
             </div>
 
@@ -216,13 +279,26 @@ export function ProfileSchemaEditor({ disabled }: Props) {
             </div>
           )}
 
+          {newType === "array" && (
+            <div className="rounded-lg border border-gray-200 bg-white p-3">
+              <ItemFieldsEditor value={newItemFields} onChange={setNewItemFields} />
+              <p className="text-xs text-gray-400 mt-2">
+                Cada respondente pode ter vários itens; cada item terá esses sub-campos (texto livre).
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-1">
             <button onClick={() => setShowAddForm(false)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">
               Cancelar
             </button>
             <button
               onClick={handleAddField}
-              disabled={saving || !newKey || !newLabel || (newType === "enum" && !newOptions)}
+              disabled={
+                saving || !newKey || !newLabel ||
+                (newType === "enum" && !newOptions) ||
+                (newType === "array" && newItemFields.filter((f) => f.key && f.label).length === 0)
+              }
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-lg disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -256,6 +332,15 @@ export function ProfileSchemaEditor({ disabled }: Props) {
                     <div className="flex flex-wrap gap-1 mt-1">
                       {field.options.map((opt) => (
                         <span key={opt} className="px-1.5 py-0.5 text-xs bg-blue-50 text-blue-700 rounded">{opt}</span>
+                      ))}
+                    </div>
+                  )}
+                  {field.type === "array" && field.itemFields && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {field.itemFields.map((sf) => (
+                        <span key={sf.key} className="px-1.5 py-0.5 text-xs bg-purple-50 text-purple-700 rounded">
+                          {sf.label || sf.key}
+                        </span>
                       ))}
                     </div>
                   )}
@@ -312,6 +397,13 @@ export function ProfileSchemaEditor({ disabled }: Props) {
                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 bg-white"
                       />
                     </div>
+                  )}
+
+                  {field.type === "array" && (
+                    <ItemFieldsEditor
+                      value={field.itemFields ?? []}
+                      onChange={(v) => handleUpdateField(field.key, { itemFields: v })}
+                    />
                   )}
                 </div>
               )}
