@@ -134,7 +134,18 @@ export default function ResultPage({
     }
   };
 
-  const resultData = getResultMessage(totalScore, survey?.enableScoring ?? true);
+  // A tela final (nó endScreen) alcançada controla se a pontuação aparece no resultado.
+  // Fallback para enableScoring quando a pesquisa não tem nó de tela final (fluxo legado).
+  const reachedEndScreen = survey?.nodes.find(
+    (n) => n.data.type === "endScreen" && visitedNodeIds.includes(n.id)
+  );
+  const showFinalScore =
+    (survey?.enableScoring ?? true) &&
+    (reachedEndScreen
+      ? !!(reachedEndScreen.data as { showScore?: boolean }).showScore
+      : true);
+
+  const resultData = getResultMessage(totalScore, showFinalScore);
   const ResultIcon = resultData.icon;
 
   const handleRestart = () => {
@@ -186,7 +197,7 @@ export default function ResultPage({
           </div>
 
           {/* Score */}
-          {(survey?.enableScoring ?? true) && (
+          {showFinalScore && (
             <div className={`text-center ${isEmbedMode ? "py-3" : "py-6"} border-y border-gray-100`}>
               <div className="space-y-1">
                 <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">

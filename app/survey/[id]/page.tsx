@@ -466,7 +466,7 @@ export default function SurveyPage({
             </div>
           )}
 
-          {survey?.enableScoring && !isEmbedMode && (
+          {survey?.enableScoring && !isEmbedMode && currentNode.data.type !== "endScreen" && (
             <div className="text-center text-xs text-gray-400">
               <p>Pontuação atual: {totalScore} pontos</p>
             </div>
