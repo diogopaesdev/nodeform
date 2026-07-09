@@ -22,6 +22,8 @@ export default function ResultPage({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [saveSucceeded, setSaveSucceeded] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
   const hasSaved = useRef(false);
 
   useEmbedResize(isEmbedMode);
@@ -60,6 +62,7 @@ export default function ResultPage({
       if (!response.ok) {
         throw new Error("Falha ao salvar resposta");
       }
+      setSaveSucceeded(true);
     } catch (error) {
       console.error("Error saving response:", error);
       setSaveError("Não foi possível salvar sua resposta");
@@ -83,6 +86,48 @@ export default function ResultPage({
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 3000);
   }, [isCompleted, router, id, isEmbedMode]);
+
+  // End-screen redirect: if the reached end screen has a redirect URL, go there after saving
+  const reachedEndScreenNode = survey?.nodes.find(
+    (n) => n.data.type === "endScreen" && visitedNodeIds.includes(n.id)
+  );
+  const endRedirectUrl =
+    (reachedEndScreenNode?.data as { redirectUrl?: string } | undefined)?.redirectUrl || null;
+  const endRedirectDelay =
+    (reachedEndScreenNode?.data as { redirectDelay?: number } | undefined)?.redirectDelay ?? 3;
+  // When set, skip the completion screen: just save and redirect immediately
+  const endRedirectSkipResult =
+    !!(reachedEndScreenNode?.data as { redirectSkipResult?: boolean } | undefined)?.redirectSkipResult
+    && !!endRedirectUrl;
+
+  useEffect(() => {
+    if (saveSucceeded && endRedirectUrl && redirectCountdown === null) {
+      setRedirectCountdown(endRedirectSkipResult ? 0 : endRedirectDelay);
+    }
+  }, [saveSucceeded, endRedirectUrl, endRedirectDelay, endRedirectSkipResult, redirectCountdown]);
+
+  useEffect(() => {
+    if (redirectCountdown === null || !endRedirectUrl) return;
+    if (redirectCountdown <= 0) {
+      window.location.href = endRedirectUrl;
+      return;
+    }
+    const timer = setTimeout(() => setRedirectCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    return () => clearTimeout(timer);
+  }, [redirectCountdown, endRedirectUrl]);
+
+  // "Pular tela de conclusão": mostra apenas um loader enquanto salva e redireciona.
+  // Em caso de erro/sessão expirada, cai no card completo para exibir o erro e permitir retry.
+  if (endRedirectSkipResult && !saveError && !sessionExpired) {
+    return (
+      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"} px-4`}>
+        <div className="text-center space-y-3">
+          <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
+          <p className="text-sm text-gray-500">Salvando e redirecionando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!survey || !isCompleted) {
     return (
@@ -178,7 +223,7 @@ export default function ResultPage({
         </div>
       )}
 
-      <div className={`mx-auto ${isEmbedMode ? "space-y-4" : "max-w-md space-y-6"} relative z-10`}>
+      <div className={`mx-auto max-w-md ${isEmbedMode ? "space-y-4" : "space-y-6"} relative z-10`}>
         {/* Result Card */}
         <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm ${isEmbedMode ? "p-6 space-y-4" : "p-8 space-y-6"}`}>
           {/* Icon */}
@@ -250,6 +295,19 @@ export default function ResultPage({
               </button>
             )}
           </div>
+
+          {/* Redirecionamento automático (configurado na tela final) */}
+          {redirectCountdown !== null && endRedirectUrl && (
+            <div className="text-center space-y-1 pt-1">
+              <p className="text-xs text-gray-500">Redirecionando em {redirectCountdown}s...</p>
+              <a
+                href={endRedirectUrl}
+                className="text-xs text-blue-600 underline hover:text-blue-700"
+              >
+                Clique aqui se não for redirecionado
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Survey Info */}

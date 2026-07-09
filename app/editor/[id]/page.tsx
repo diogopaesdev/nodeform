@@ -295,12 +295,12 @@ export default function EditorPage({
       <Dialog open={showConfigModal || !isConfigured} onOpenChange={(open) => {
         if (isConfigured) setShowConfigModal(open);
       }}>
-        <DialogContent className="sm:max-w-md p-0 gap-0" onPointerDownOutside={(e) => {
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col p-0 gap-0" onPointerDownOutside={(e) => {
           if (!isConfigured) e.preventDefault();
         }}>
           <DialogTitle className="sr-only">Configurar Pesquisa</DialogTitle>
           {/* Header */}
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 shrink-0">
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <FileText className="w-4 h-4 text-blue-600" />
             </div>
@@ -311,7 +311,7 @@ export default function EditorPage({
           </div>
 
           {/* Body */}
-          <div className="px-5 py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-700">
                 Nome da Pesquisa <span className="text-red-500">*</span>
@@ -438,7 +438,7 @@ export default function EditorPage({
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 shrink-0">
             <button
               onClick={handleSaveConfig}
               disabled={!configTitle.trim()}
