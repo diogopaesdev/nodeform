@@ -127,7 +127,7 @@ export default function SurveyPage() {
           </div>
 
           {/* Question */}
-          <QuestionRenderer node={currentNode} onAnswer={handleAnswer} />
+          <QuestionRenderer key={currentNode.id} node={currentNode} onAnswer={handleAnswer} />
 
           {/* Back Button */}
           {canGoBack() && (

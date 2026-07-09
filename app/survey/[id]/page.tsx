@@ -452,7 +452,7 @@ export default function SurveyPage({
             </div>
           )}
 
-          <QuestionRenderer node={currentNode} onAnswer={handleAnswer} totalScore={totalScore} brandColor={brand.brandColor || undefined} />
+          <QuestionRenderer key={currentNode.id} node={currentNode} onAnswer={handleAnswer} totalScore={totalScore} brandColor={brand.brandColor || undefined} />
 
           {canGoBack() && (
             <div className="flex justify-center">
