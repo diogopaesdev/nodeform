@@ -407,6 +407,15 @@ export default function SurveyPage({
 
   return (
     <div className={isEmbedMode ? "min-h-screen bg-white" : "min-h-screen bg-gray-50"}>
+      {isPreviewMode && survey.requiresRespondentLogin && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5">
+          <p className="text-xs text-amber-800 text-center max-w-3xl mx-auto">
+            <strong>Modo teste · login obrigatório ativado.</strong> No preview o login é pulado e a resposta{" "}
+            <strong>não é salva</strong> (sem sessão de respondente), então o redirect após salvar não funciona aqui.
+            Teste como respondente real para validar o fluxo completo.
+          </p>
+        </div>
+      )}
       {!isEmbedMode && (
         <div className="absolute top-4 right-4 z-10">
           <button
