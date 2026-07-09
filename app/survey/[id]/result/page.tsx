@@ -95,12 +95,16 @@ export default function ResultPage({
     (reachedEndScreenNode?.data as { redirectUrl?: string } | undefined)?.redirectUrl || null;
   const endRedirectDelay =
     (reachedEndScreenNode?.data as { redirectDelay?: number } | undefined)?.redirectDelay ?? 3;
+  // When set, skip the completion screen: just save and redirect immediately
+  const endRedirectSkipResult =
+    !!(reachedEndScreenNode?.data as { redirectSkipResult?: boolean } | undefined)?.redirectSkipResult
+    && !!endRedirectUrl;
 
   useEffect(() => {
     if (saveSucceeded && endRedirectUrl && redirectCountdown === null) {
-      setRedirectCountdown(endRedirectDelay);
+      setRedirectCountdown(endRedirectSkipResult ? 0 : endRedirectDelay);
     }
-  }, [saveSucceeded, endRedirectUrl, endRedirectDelay, redirectCountdown]);
+  }, [saveSucceeded, endRedirectUrl, endRedirectDelay, endRedirectSkipResult, redirectCountdown]);
 
   useEffect(() => {
     if (redirectCountdown === null || !endRedirectUrl) return;
@@ -111,6 +115,19 @@ export default function ResultPage({
     const timer = setTimeout(() => setRedirectCountdown((c) => (c !== null ? c - 1 : null)), 1000);
     return () => clearTimeout(timer);
   }, [redirectCountdown, endRedirectUrl]);
+
+  // "Pular tela de conclusão": mostra apenas um loader enquanto salva e redireciona.
+  // Em caso de erro/sessão expirada, cai no card completo para exibir o erro e permitir retry.
+  if (endRedirectSkipResult && !saveError && !sessionExpired) {
+    return (
+      <div className={`flex items-center justify-center ${isEmbedMode ? "py-12" : "min-h-screen bg-gray-50"} px-4`}>
+        <div className="text-center space-y-3">
+          <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
+          <p className="text-sm text-gray-500">Salvando e redirecionando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!survey || !isCompleted) {
     return (

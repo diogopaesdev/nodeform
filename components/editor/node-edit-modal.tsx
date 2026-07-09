@@ -84,6 +84,7 @@ const endScreenSchema = baseSchema.extend({
   showScore: z.boolean().optional(),
   redirectUrl: z.string().optional(),
   redirectDelay: z.number().optional(),
+  redirectSkipResult: z.boolean().optional(),
 });
 
 export const INPUT_MASKS = [
@@ -191,7 +192,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
     }
 
     if (type === "endScreen") {
-      const endData = node.data as { showScore?: boolean; redirectUrl?: string; redirectDelay?: number };
+      const endData = node.data as { showScore?: boolean; redirectUrl?: string; redirectDelay?: number; redirectSkipResult?: boolean };
       return {
         type: "endScreen",
         title: node.data.title,
@@ -200,6 +201,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
         showScore: endData.showScore || false,
         redirectUrl: endData.redirectUrl || "",
         redirectDelay: endData.redirectDelay ?? 3,
+        redirectSkipResult: endData.redirectSkipResult || false,
       };
     }
 
@@ -901,25 +903,49 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                       )}
                     />
                     {form.watch("redirectUrl") && (
-                      <FormField
-                        control={form.control}
-                        name="redirectDelay"
-                        render={({ field }) => (
-                          <FormItem>
-                            <label className="text-xs text-gray-500">Aguardar (segundos)</label>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={30}
-                                className="h-8 text-sm w-24"
-                                {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                              />
-                            </FormControl>
-                          </FormItem>
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="redirectSkipResult"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center justify-between gap-3 pt-1">
+                              <div>
+                                <span className="text-sm font-medium text-gray-700">Pular tela de conclusão</span>
+                                <p className="text-xs text-gray-400 mt-0.5">Salva a resposta e redireciona direto, sem mostrar a tela de &quot;Concluído&quot;.</p>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  className="scale-90"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        {!form.watch("redirectSkipResult") && (
+                          <FormField
+                            control={form.control}
+                            name="redirectDelay"
+                            render={({ field }) => (
+                              <FormItem>
+                                <label className="text-xs text-gray-500">Aguardar (segundos)</label>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={30}
+                                    className="h-8 text-sm w-24"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
                         )}
-                      />
+                      </>
                     )}
                   </div>
                 </div>

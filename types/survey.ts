@@ -102,6 +102,7 @@ export interface EndScreenData {
   showScore?: boolean;
   redirectUrl?: string;
   redirectDelay?: number;
+  redirectSkipResult?: boolean; // quando redireciona: pula a tela de conclusão (apenas salva e redireciona)
   [key: string]: unknown;
 }
 
