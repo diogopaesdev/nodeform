@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Star, Check, ArrowRight, User, Mail, Trophy, ExternalLink } from "lucide-react";
 import type { SurveyNode, PresentationData, EndScreenData, TextInputData } from "@/types";
 import { INPUT_MASKS } from "@/components/editor/node-edit-modal";
@@ -67,18 +67,6 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
   const [respondentName, setRespondentName] = useState<string>("");
   const [respondentEmail, setRespondentEmail] = useState<string>("");
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (redirectCountdown === null) return;
-    if (redirectCountdown === 0) {
-      const endData = node.data as EndScreenData;
-      if (endData.redirectUrl) window.location.href = endData.redirectUrl;
-      return;
-    }
-    const timer = setTimeout(() => setRedirectCountdown((c) => (c !== null ? c - 1 : null)), 1000);
-    return () => clearTimeout(timer);
-  }, [redirectCountdown, node.data]);
 
   const handleSubmit = () => {
     if (node.data.type === "presentation") {
@@ -520,13 +508,10 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
   if (node.data.type === "endScreen") {
     const endData = node.data as EndScreenData;
     const hasRedirect = !!endData.redirectUrl;
-    const delay = endData.redirectDelay ?? 3;
 
+    // The actual redirect happens on the result screen after the response is saved.
     const handleFinalize = () => {
       onAnswer({});
-      if (hasRedirect) {
-        setRedirectCountdown(delay);
-      }
     };
 
     return (
@@ -552,31 +537,16 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           </div>
         )}
 
-        {redirectCountdown !== null ? (
-          <div className="space-y-3 py-2">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-              <ExternalLink className="w-4 h-4" />
-              <span>Redirecionando em {redirectCountdown}s...</span>
-            </div>
-            <a
-              href={endData.redirectUrl}
-              className="text-xs text-blue-600 underline hover:text-blue-700"
-            >
-              Clique aqui se não for redirecionado
-            </a>
-          </div>
-        ) : (
-          <div className="pt-4">
-            <button
-              onClick={handleFinalize}
-              style={brandColor ? { backgroundColor: brandColor } : undefined}
-              className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 rounded-lg transition-opacity"
-            >
-              Finalizar
-              {hasRedirect && <ExternalLink className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        )}
+        <div className="pt-4">
+          <button
+            onClick={handleFinalize}
+            style={brandColor ? { backgroundColor: brandColor } : undefined}
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gray-900 hover:opacity-90 rounded-lg transition-opacity"
+          >
+            Finalizar
+            {hasRedirect && <ExternalLink className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
     );
   }
