@@ -159,7 +159,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           {presentationData.description && (
             <HtmlDescription
               html={presentationData.description}
-              className="text-base text-gray-500 max-w-lg mx-auto [&>p]:mb-2 [&>br]:block"
+              className="text-base text-gray-500 max-w-lg mx-auto text-left [&>p]:mb-2 [&>br]:block"
             />
           )}
         </div>
@@ -523,7 +523,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           {endData.description && (
             <HtmlDescription
               html={endData.description}
-              className="text-base text-gray-500 max-w-lg mx-auto [&>p]:mb-2 [&>br]:block"
+              className="text-base text-gray-500 max-w-lg mx-auto text-left [&>p]:mb-2 [&>br]:block"
             />
           )}
         </div>
