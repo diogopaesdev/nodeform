@@ -102,7 +102,7 @@ export default function SurveyPage({
         return;
       }
 
-      if (surveyData.requiresRespondentLogin) {
+      if (surveyData.requiresRespondentLogin && !isPreviewMode) {
         // SSO auto-login via token from URL
         if (ssoToken) {
           await handleSSOLogin(ssoToken, surveyData);
@@ -110,6 +110,7 @@ export default function SurveyPage({
           await checkRespondentAuth(surveyData);
         }
       } else {
+        // Preview/test mode (from the editor) skips the respondent login gate
         setAuthStatus("authenticated");
         startSurvey(surveyData);
       }
