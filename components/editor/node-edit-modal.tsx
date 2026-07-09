@@ -324,6 +324,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="Digite uma descrição opcional..."
+                        maxLength={3000}
                       />
                     </FormControl>
                     <FormMessage className="text-xs" />
