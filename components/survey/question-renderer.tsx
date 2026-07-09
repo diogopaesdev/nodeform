@@ -153,7 +153,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
     return (
       <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 p-8 md:p-10 space-y-6 text-center">
         <div className="space-y-3">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+          <h1 className="text-[1.8rem] mb-[30px] font-bold text-gray-900">
             {presentationData.title}
           </h1>
           {presentationData.description && (
