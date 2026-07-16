@@ -299,6 +299,33 @@ O parâmetro `&embed=true` faz duas coisas:
 
 > ⚠️ O token continua sendo de **uso único e 5 min de validade**. Gere um token novo a cada carregamento da página que contém o iframe; **não** faça cache do HTML com o token embutido. Se o iframe recarregar após o token já ter sido usado, o respondente cai na tela de login por OTP.
 
+### Redirect da tela final dentro do embed
+
+O elemento **Tela Final** (endScreen) do editor pode ter uma **URL de redirect**: ao concluir a pesquisa, o respondente é levado a essa URL (com contagem regressiva ou imediatamente, se a opção "pular tela de conclusão" estiver marcada).
+
+Dentro de um iframe, esse redirect precisa navegar a **janela do topo** — caso contrário a página de destino carregaria _dentro_ da moldura do iframe, aninhada no seu layout. O SurveyFlow trata isso automaticamente quando a URL tem `&embed=true`:
+
+1. **Navega a janela do topo** (`window.top.location`) — o iframe é substituído e o navegador vai para a URL de destino na aba inteira. **Funciona sem nenhuma configuração** desde que o iframe **não** use o atributo `sandbox`.
+2. **Emite também** um `postMessage` para a página pai, como fallback para o caso de o iframe ter `sandbox` (que bloqueia a navegação do topo).
+
+Se o seu iframe **tiver** `sandbox`, escolha uma das opções:
+
+- adicionar `allow-top-navigation-by-user-activation` (ou `allow-top-navigation`) ao atributo `sandbox`; **ou**
+- escutar o `postMessage` na página pai e fazer o redirect você mesmo:
+
+```js
+// Na página do seu site que contém o iframe da pesquisa.
+// (mesmo lugar onde você já escuta "surveyflow-resize" para ajustar a altura)
+window.addEventListener("message", (event) => {
+  // Opcional, mas recomendado: valide event.origin === "https://surveyflowapp.com"
+  if (event.data?.type === "surveyflow-redirect" && event.data.url) {
+    window.location.href = event.data.url;
+  }
+});
+```
+
+> ℹ️ A mensagem enviada é `{ type: "surveyflow-redirect", url: "<url da tela final>" }`. Ela é disparada no mesmo instante em que o SurveyFlow tenta a navegação do topo, então os dois caminhos são complementares — o que ocorrer primeiro prevalece.
+
 ---
 
 ## 5. Sync de Perfil em Massa
@@ -655,6 +682,7 @@ Para o desenvolvedor responsável pela integração na plataforma cliente:
 - [ ] Montar a `src` do iframe no servidor, incluindo `sso_token` e `&embed=true`
 - [ ] Gerar um token novo a cada carregamento (não cachear o HTML com token embutido)
 - [ ] Confirmar que a pesquisa aparece dentro do iframe (sem erro de `X-Frame-Options` no console)
+- [ ] Se a Tela Final usa URL de redirect: confirmar que o iframe **não** tem `sandbox` (ou tratar o `postMessage` `surveyflow-redirect` no pai), para o destino abrir na aba inteira e não dentro do iframe
 
 ### Sync de perfil (recomendado)
 
@@ -705,6 +733,9 @@ R: Sim. Use a URL `https://surveyflowapp.com/survey/{surveyId}?sso_token={token}
 
 **P: O console mostra "Refused to display ... 'X-Frame-Options' to 'deny'". O que houve?**  
 R: Esse erro significa que a URL dentro do iframe **não** é uma rota `/survey/*` liberada — normalmente porque a `src` do iframe está apontando para a raiz do domínio (`https://surveyflowapp.com/`) ou para uma página que não é de pesquisa. Confirme que a `src` do iframe é exatamente `.../survey/{surveyId}?sso_token={token}&embed=true`. Em geral isso acontece quando a geração do token falhou (ver pergunta abaixo) e a `src` acabou incompleta.
+
+**P: No embed, ao concluir a pesquisa a página de redirect abre dentro do próprio iframe (aninhada). Como resolver?**  
+R: Isso acontece quando o iframe está com o atributo `sandbox`, que impede o SurveyFlow de navegar a janela do topo. Duas soluções: (1) remover o `sandbox` ou adicionar `allow-top-navigation-by-user-activation` a ele; ou (2) escutar o `postMessage` `surveyflow-redirect` na página pai e fazer `window.location.href = event.data.url`. Sem `sandbox`, o redirect da tela final já abre corretamente na aba inteira, sem nenhuma configuração extra. Veja a seção 4 → "Redirect da tela final dentro do embed".
 
 **P: A chamada a `/api/sso/token` retorna 401. Por quê?**  
 R: O endpoint retorna 401 quando a API Key está ausente, malformada ou inválida. Verifique: (1) o header é `Authorization: Bearer nfk_...` (com o prefixo `Bearer ` e a chave começando em `nfk_`); (2) a chave não foi revogada nem pertence a outro ambiente/workspace; (3) a chave está sendo lida corretamente da variável de ambiente. Se a chave for válida mas o Módulo Respondentes não estiver ativo, o retorno é **403** ("Módulo Respondentes não ativo").
