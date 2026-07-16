@@ -109,12 +109,27 @@ export default function ResultPage({
   useEffect(() => {
     if (redirectCountdown === null || !endRedirectUrl) return;
     if (redirectCountdown <= 0) {
-      window.location.href = endRedirectUrl;
+      // Em modo embed (iframe), navegar o frame atual carregaria a página de
+      // destino dentro da moldura embutida. Redirecionamos a janela do topo e,
+      // como fallback (iframe com sandbox), avisamos o pai via postMessage.
+      if (isEmbedMode && window.top && window.top !== window.self) {
+        window.parent.postMessage(
+          { type: "surveyflow-redirect", url: endRedirectUrl },
+          "*"
+        );
+        try {
+          window.top.location.href = endRedirectUrl;
+        } catch {
+          window.location.href = endRedirectUrl;
+        }
+      } else {
+        window.location.href = endRedirectUrl;
+      }
       return;
     }
     const timer = setTimeout(() => setRedirectCountdown((c) => (c !== null ? c - 1 : null)), 1000);
     return () => clearTimeout(timer);
-  }, [redirectCountdown, endRedirectUrl]);
+  }, [redirectCountdown, endRedirectUrl, isEmbedMode]);
 
   // "Pular tela de conclusão": mostra apenas um loader enquanto salva e redireciona.
   // Em caso de erro/sessão expirada, cai no card completo para exibir o erro e permitir retry.
