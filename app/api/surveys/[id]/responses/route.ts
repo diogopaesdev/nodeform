@@ -4,8 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { getSurvey, getSurveyResponses, deleteResponse } from "@/lib/services/surveys";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { getCollaboratorAccessForUser } from "@/lib/services/collaborators";
-import { getRespondentById } from "@/lib/services/respondents";
+import { getRespondentById, getParticipationByResponseId, deleteParticipation } from "@/lib/services/respondents";
 import { getProfileSchema } from "@/lib/services/profile-schema";
+import { getFirebaseAdmin } from "@/lib/firebase-admin";
+import { BonusCoupon } from "@/types/survey";
 
 // GET - Buscar respostas de uma pesquisa
 export async function GET(
@@ -109,8 +111,42 @@ export async function DELETE(
       return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
     }
 
-    // Deletar resposta
+    // Encontrar a participação vinculada ANTES de apagar a resposta
+    const participation = await getParticipationByResponseId(surveyId, responseId);
+
+    // Deletar resposta (decrementa responseCount)
     await deleteResponse(surveyId, responseId);
+
+    // Limpar a participação órfã: sem isso o cadastro continuaria aparecendo na
+    // aba de bonificação (sem correspondente em Respostas) e a pessoa seguiria
+    // bloqueada de responder novamente.
+    if (participation) {
+      // Devolver ao pool o cupom que já tinha sido atribuído a esta participação
+      if (
+        participation.bonusStatus === "released" &&
+        participation.bonusCouponCode &&
+        survey.bonusConfig
+      ) {
+        const config = survey.bonusConfig;
+        const { db, FieldValue } = getFirebaseAdmin();
+        const now = new Date().toISOString();
+        if (config.type === "coupons") {
+          const updatedCoupons = config.coupons.map((c: BonusCoupon) =>
+            c.code === participation.bonusCouponCode ? { code: c.code } : c
+          );
+          await db.collection("surveys").doc(surveyId).update({
+            "bonusConfig.coupons": updatedCoupons,
+            updatedAt: now,
+          });
+        } else if (config.type === "shared_coupon") {
+          await db.collection("surveys").doc(surveyId).update({
+            "bonusConfig.usedQty": FieldValue.increment(-1),
+            updatedAt: now,
+          });
+        }
+      }
+      await deleteParticipation(participation.id);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
