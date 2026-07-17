@@ -47,8 +47,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
     }
 
-    const wasIneligible = current.bonusStatus === "ineligible";
-    const becomingIneligible = bonusStatus === "ineligible";
     const wasReleased = current.bonusStatus === "released";
     const becomingPending = bonusStatus === "pending";
 
@@ -116,24 +114,9 @@ export async function PATCH(
       assignedCouponCode !== undefined ? assignedCouponCode : couponToClear
     );
 
-    // ── Quota adjustments ───────────────────────────────────────────────────
-    if (!wasIneligible && becomingIneligible) {
-      const surveyRef = db.collection("surveys").doc(surveyId);
-      const newCount = survey.responseCount - 1;
-      const update: Record<string, unknown> = { responseCount: FieldValue.increment(-1) };
-      if (survey.status === "finished" && survey.maxResponses && newCount < survey.maxResponses) {
-        update.status = "published";
-      }
-      await surveyRef.update(update);
-    } else if (wasIneligible && !becomingIneligible) {
-      const surveyRef = db.collection("surveys").doc(surveyId);
-      const newCount = survey.responseCount + 1;
-      const update: Record<string, unknown> = { responseCount: FieldValue.increment(1) };
-      if (survey.maxResponses && newCount >= survey.maxResponses) {
-        update.status = "finished";
-      }
-      await surveyRef.update(update);
-    }
+    // A bonificação NÃO altera o contador de respostas nem o status/quota da
+    // pesquisa. Elegibilidade de bônus é um conceito separado das respostas:
+    // marcar alguém como inelegível não remove a resposta dele.
 
     return NextResponse.json({ success: true, bonusCouponCode: assignedCouponCode });
   } catch (error) {

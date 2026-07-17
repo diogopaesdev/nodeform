@@ -1149,6 +1149,25 @@ export default function SurveyDetailPage({
     if (survey && survey.responseCount > 0) fetchResponses();
   }, [survey]);
 
+  // Reparo do contador: se o responseCount estiver corrompido (negativo por
+  // ações antigas de bonificação), o dono recalcula a partir das respostas reais.
+  useEffect(() => {
+    if (!survey || !isOwner || survey.responseCount >= 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/surveys/${id}/recount`, { method: "POST" });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setSurvey((s) => (s ? { ...s, responseCount: data.responseCount } : s));
+        }
+      } catch {
+        // silencioso: o reparo é best-effort
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [survey, isOwner, id]);
+
   const fetchSurvey = async () => {
     try {
       const res = await fetch(`/api/surveys/${id}`);
