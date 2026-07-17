@@ -283,3 +283,26 @@ export async function deleteResponse(
 
   await batch.commit();
 }
+
+// Recalcula responseCount a partir das respostas reais (reparo de drift do contador)
+// e reabre a pesquisa se ela estava "finished" mas caiu abaixo de maxResponses.
+export async function recountResponses(surveyId: string): Promise<number> {
+  const { db } = getFirebaseAdmin();
+
+  const countSnap = await db
+    .collection("surveys")
+    .doc(surveyId)
+    .collection("responses")
+    .count()
+    .get();
+  const count = countSnap.data().count;
+
+  const survey = await getSurvey(surveyId);
+  const update: Record<string, unknown> = { responseCount: count };
+  if (survey?.status === "finished" && survey.maxResponses && count < survey.maxResponses) {
+    update.status = "published";
+  }
+  await db.collection("surveys").doc(surveyId).update(update);
+
+  return count;
+}
