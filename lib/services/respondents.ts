@@ -2,6 +2,11 @@ import crypto from "crypto";
 import { getFirebaseAdmin } from "../firebase-admin";
 import { Respondent, RespondentSession, SurveyParticipation, ParticipationWithRespondent } from "@/types/respondent";
 
+// E-mails são a chave de identidade do respondente. Normalizamos (trim + lowercase)
+// em toda escrita e leitura para que SSO e login por OTP resolvam o MESMO documento,
+// evitando cadastros duplicados por diferença de caixa/espaços.
+export const normalizeEmail = (email: string): string => email.trim().toLowerCase();
+
 // ==================== RESPONDENTES ====================
 
 export async function getRespondentByEmail(
@@ -12,7 +17,7 @@ export async function getRespondentByEmail(
   const snapshot = await db
     .collection("respondents")
     .where("workspaceId", "==", workspaceId)
-    .where("email", "==", email)
+    .where("email", "==", normalizeEmail(email))
     .limit(1)
     .get();
 
@@ -40,7 +45,7 @@ export async function createRespondent(
     id: ref.id,
     workspaceId,
     name,
-    email,
+    email: normalizeEmail(email),
     createdAt: now,
     updatedAt: now,
     ...rest,
@@ -58,8 +63,9 @@ export async function upsertRespondent(
   const existing = await getRespondentByEmail(workspaceId, data.email);
   if (existing) {
     const { name, email, ...rest } = data;
-    await updateRespondentProfile(existing.id, { name, email, ...rest });
-    return { ...existing, name, email, ...rest };
+    const normalizedEmail = normalizeEmail(email);
+    await updateRespondentProfile(existing.id, { name, email: normalizedEmail, ...rest });
+    return { ...existing, name, email: normalizedEmail, ...rest };
   }
   return createRespondent(workspaceId, data);
 }
@@ -100,7 +106,7 @@ export async function verifyRespondentOTP(
   const snapshot = await db
     .collection("respondents")
     .where("workspaceId", "==", workspaceId)
-    .where("email", "==", email)
+    .where("email", "==", normalizeEmail(email))
     .limit(1)
     .get();
 
@@ -234,6 +240,28 @@ export async function completeParticipation(
   if (initialBonusStatus) update.bonusStatus = initialBonusStatus;
 
   await snapshot.docs[0].ref.update(update);
+}
+
+// Encontra a participação vinculada a uma resposta específica (para limpeza ao deletar a resposta)
+export async function getParticipationByResponseId(
+  surveyId: string,
+  responseId: string
+): Promise<SurveyParticipation | null> {
+  const { db } = getFirebaseAdmin();
+  const snapshot = await db
+    .collection("surveyParticipations")
+    .where("surveyId", "==", surveyId)
+    .where("responseId", "==", responseId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].data() as SurveyParticipation;
+}
+
+export async function deleteParticipation(participationId: string): Promise<void> {
+  const { db } = getFirebaseAdmin();
+  await db.collection("surveyParticipations").doc(participationId).delete();
 }
 
 // ==================== PROGRESSO PARCIAL ====================

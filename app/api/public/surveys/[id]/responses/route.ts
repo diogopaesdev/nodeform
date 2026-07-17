@@ -100,6 +100,7 @@ export async function POST(
     const { answers, totalScore, path, respondentName, respondentEmail } = parsed.data;
 
     let respondentId: string | undefined;
+    let hasParticipationRecord = false;
 
     // Se a pesquisa exige login, validar sessão e participação única
     if (survey.requiresRespondentLogin) {
@@ -123,11 +124,10 @@ export async function POST(
       }
 
       respondentId = session.respondent.id;
-
-      // Criar registro de participação se não existir
-      if (!existing) {
-        await createParticipation(respondentId, surveyId, survey.userId);
-      }
+      hasParticipationRecord = !!existing;
+      // A participação só é criada DEPOIS de a resposta ser salva com sucesso
+      // (ver bloco de conclusão abaixo), para não deixar registros "in_progress"
+      // órfãos quando o save falha, invisíveis no dashboard.
     }
 
     // Build a compact snapshot of all survey nodes at time of submission
@@ -179,8 +179,11 @@ export async function POST(
       }
     }
 
-    // Marcar participação como concluída
+    // Registrar/concluir participação — somente após o save ter sucesso
     if (respondentId) {
+      if (!hasParticipationRecord) {
+        await createParticipation(respondentId, surveyId, survey.userId);
+      }
       await completeParticipation(respondentId, surveyId, response.id, initialBonusStatus);
     }
 
