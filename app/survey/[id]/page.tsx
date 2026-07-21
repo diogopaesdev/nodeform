@@ -417,7 +417,7 @@ export default function SurveyPage({
   };
 
   return (
-    <div className={isEmbedMode ? "min-h-screen bg-white" : "min-h-screen bg-gray-50"}>
+    <div className={isEmbedMode ? "bg-white" : "min-h-screen bg-gray-50"}>
       {isPreviewMode && survey.requiresRespondentLogin && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5">
           <p className="text-xs text-amber-800 text-center max-w-3xl mx-auto">
