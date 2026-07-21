@@ -318,6 +318,26 @@ export async function deleteProgress(
   await db.collection("surveyProgress").doc(docId).delete();
 }
 
+// Apaga todo o progresso parcial de uma pesquisa (lista "começaram e não
+// concluíram"). Usado no "Limpar logs" para resetar dados de teste.
+// Retorna quantos documentos foram removidos.
+export async function deleteSurveyProgressForSurvey(surveyId: string): Promise<number> {
+  const { db } = getFirebaseAdmin();
+  const snap = await db
+    .collection("surveyProgress")
+    .where("surveyId", "==", surveyId)
+    .get();
+  if (snap.empty) return 0;
+
+  const docs = snap.docs;
+  for (let i = 0; i < docs.length; i += 450) {
+    const batch = db.batch();
+    docs.slice(i, i + 450).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  return docs.length;
+}
+
 export interface ProgressWithRespondent {
   respondentId: string;
   name: string;

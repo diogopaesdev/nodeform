@@ -2204,7 +2204,7 @@ export default function SurveyDetailPage({
         open={resetActivityModal.open}
         onOpenChange={(open) => !resetActivityModal.loading && setResetActivityModal((m) => ({ ...m, open }))}
         title="Limpar logs de atividade"
-        description="Isso apaga os registros de aberturas e de bloqueios por elegibilidade desta pesquisa. As respostas e participações não são afetadas. Útil para zerar dados de teste."
+        description="Isso apaga os registros de aberturas, bloqueios por elegibilidade e o progresso de quem começou e não concluiu. As respostas concluídas e participações não são afetadas. Útil para zerar dados de teste."
         onConfirm={confirmResetActivity}
         loading={resetActivityModal.loading}
         labels={{

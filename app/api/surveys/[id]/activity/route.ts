@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSurvey } from "@/lib/services/surveys";
 import { getSurveyEvents, deleteSurveyEvents } from "@/lib/services/survey-events";
-import { getSurveyProgressList } from "@/lib/services/respondents";
+import { getSurveyProgressList, deleteSurveyProgressForSurvey } from "@/lib/services/respondents";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { getCollaboratorAccessForUser } from "@/lib/services/collaborators";
 
@@ -92,8 +92,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
     }
 
-    const deleted = await deleteSurveyEvents(surveyId);
-    return NextResponse.json({ ok: true, deleted });
+    const [deletedEvents, deletedProgress] = await Promise.all([
+      deleteSurveyEvents(surveyId),
+      deleteSurveyProgressForSurvey(surveyId),
+    ]);
+    return NextResponse.json({ ok: true, deletedEvents, deletedProgress });
   } catch (error) {
     console.error("Error resetting survey activity:", error);
     return NextResponse.json({ error: "Erro ao resetar atividades" }, { status: 500 });
