@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getRespondentSession } from "@/lib/services/respondents";
 import { getSurvey } from "@/lib/services/surveys";
 import { evaluateEligibility } from "@/lib/utils/eligibility";
+import { logSurveyEvent } from "@/lib/services/survey-events";
 
 const SESSION_COOKIE = "respondent-session";
 
@@ -31,6 +32,20 @@ export async function GET(
     }
 
     const result = evaluateEligibility(session.respondent, survey.eligibilityRules);
+
+    // Registra o bloqueio para aparecer na aba de Atividades (antes não deixava
+    // rastro nenhum). Não bloqueia a resposta se a telemetria falhar.
+    if (!result.eligible) {
+      logSurveyEvent({
+        surveyId,
+        workspaceId: survey.userId,
+        type: "blocked_ineligible",
+        respondentId: session.respondent.id,
+        respondentName: session.respondent.name,
+        respondentEmail: session.respondent.email,
+        reason: result.failedRule?.label ?? result.failedRule?.field,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       eligible: result.eligible,

@@ -245,6 +245,9 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "options" as never,
+    // keyName padrão é "id", que colidiria com o `id` das opções e faria o
+    // react-hook-form sobrescrever nosso id estável. Renomeamos para preservá-lo.
+    keyName: "_key" as never,
   });
 
   useEffect(() => {
@@ -271,7 +274,7 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
 
   const addOption = () => {
     append({
-      id: `opt_${Date.now()}`,
+      id: `opt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       label: `Opção ${fields.length + 1}`,
       score: 0,
     });
@@ -606,9 +609,13 @@ export function NodeEditModal({ node, isOpen, onClose }: NodeEditModalProps) {
                   <div className="space-y-2">
                     {fields.map((field, index) => (
                       <div
-                        key={field.id}
+                        key={(field as { _key: string })._key}
                         className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200"
                       >
+                        {/* Preserva o id estável da opção: respostas antigas apontam
+                            para ele, então editar o texto nunca deve trocá-lo. */}
+                        <input type="hidden" {...form.register(`options.${index}.id`)} />
+
                         <GripVertical className="w-3.5 h-3.5 text-gray-300 cursor-grab" />
 
                         <FormField

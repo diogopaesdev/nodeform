@@ -3,9 +3,12 @@ import type { Survey, RuntimeState, NodeAnswer, SurveyResult } from "@/types";
 import type { Respondent } from "@/types/respondent";
 import { isNodeVisibleToRespondent } from "@/lib/utils/eligibility";
 
+export type SaveOutcome = "saved" | "session_expired" | "error";
+
 interface RuntimeStoreState extends RuntimeState {
   survey: Survey | null;
   respondent: Respondent | null;
+  responseSaved: boolean;
 
   // Actions
   setRespondent: (respondent: Respondent | null) => void;
@@ -15,6 +18,9 @@ interface RuntimeStoreState extends RuntimeState {
   goToNode: (nodeId: string) => void;
   goBack: () => void;
   completeSurvey: () => void;
+  // Persiste a resposta no backend. Idempotente: chamada por reaching-endScreen
+  // (survey page) e pela tela de resultado — só faz um POST de verdade.
+  submitResponse: (surveyId: string) => Promise<SaveOutcome>;
   resetSurvey: () => void;
 
   // Helpers
@@ -24,6 +30,11 @@ interface RuntimeStoreState extends RuntimeState {
   canGoBack: () => boolean;
 }
 
+// Promessa do POST em andamento, compartilhada entre as duas telas que podem
+// disparar o save (survey page ao alcançar a tela final, e a tela de resultado).
+// Fora do estado para não recriar a cada render e garantir dedupe real.
+let saveInFlight: Promise<SaveOutcome> | null = null;
+
 export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
   survey: null,
   respondent: null,
@@ -32,11 +43,13 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
   totalScore: 0,
   visitedNodeIds: [],
   isCompleted: false,
+  responseSaved: false,
 
   setRespondent: (respondent) => set({ respondent }),
 
   // Restaurar progresso salvo
   restoreSurvey: (survey, state) => {
+    saveInFlight = null;
     set({
       survey,
       currentNodeId: state.currentNodeId,
@@ -44,6 +57,7 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
       totalScore: state.totalScore,
       visitedNodeIds: state.visitedNodeIds,
       isCompleted: false,
+      responseSaved: false,
     });
   },
 
@@ -53,6 +67,7 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
     const targetNodeIds = new Set(survey.edges.map((edge) => edge.target));
     const firstNode = survey.nodes.find((node) => !targetNodeIds.has(node.id)) || survey.nodes[0];
 
+    saveInFlight = null;
     set({
       survey,
       currentNodeId: firstNode?.id || null,
@@ -60,6 +75,7 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
       totalScore: 0,
       visitedNodeIds: firstNode ? [firstNode.id] : [],
       isCompleted: false,
+      responseSaved: false,
     });
   },
 
@@ -182,8 +198,48 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
     set({ isCompleted: true, currentNodeId: null });
   },
 
+  // Persistir resposta (idempotente)
+  submitResponse: async (surveyId) => {
+    // Já salvo nesta sessão: nada a fazer.
+    if (get().responseSaved) return "saved";
+    // POST já em andamento: reaproveita a mesma promessa (evita duplicidade).
+    if (saveInFlight) return saveInFlight;
+
+    const run = (async (): Promise<SaveOutcome> => {
+      const state = get();
+      const presentationAnswer = state.answers.find(
+        (a) => a.respondentName || a.respondentEmail
+      );
+      try {
+        const res = await fetch(`/api/public/surveys/${surveyId}/responses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            answers: state.answers,
+            totalScore: state.totalScore,
+            path: state.visitedNodeIds,
+            respondentName: presentationAnswer?.respondentName,
+            respondentEmail: presentationAnswer?.respondentEmail,
+          }),
+        });
+        if (res.status === 401) return "session_expired";
+        if (!res.ok) return "error";
+        set({ responseSaved: true });
+        return "saved";
+      } catch {
+        return "error";
+      } finally {
+        saveInFlight = null;
+      }
+    })();
+
+    saveInFlight = run;
+    return run;
+  },
+
   // Resetar pesquisa
   resetSurvey: () => {
+    saveInFlight = null;
     set({
       survey: null,
       respondent: null,
@@ -192,6 +248,7 @@ export const useRuntimeStore = create<RuntimeStoreState>((set, get) => ({
       totalScore: 0,
       visitedNodeIds: [],
       isCompleted: false,
+      responseSaved: false,
     });
   },
 

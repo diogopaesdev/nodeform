@@ -37,6 +37,9 @@ import {
   Tag,
   Plus,
   Banknote,
+  Activity,
+  Eye,
+  ShieldX,
 } from "lucide-react";
 import {
   BarChart,
@@ -65,6 +68,35 @@ import { ParticipationWithRespondent } from "@/types/respondent";
 import { useI18n } from "@/lib/i18n";
 import { DeleteConfirmModal } from "@/components/ui/delete-confirm-modal";
 import { CollaboratorsPanel } from "@/components/dashboard/collaborators-panel";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+interface ActivityData {
+  counts: {
+    opened: number;
+    ineligiblePeople: number;
+    ineligibleAttempts: number;
+    inProgress: number;
+    completed: number;
+  };
+  ineligible: {
+    respondentId?: string;
+    name: string;
+    email: string;
+    reason?: string;
+    attempts: number;
+    lastAt: string;
+  }[];
+  inProgress: {
+    respondentId: string;
+    name: string;
+    email: string;
+    currentNodeId: string;
+    answeredCount: number;
+    visitedCount: number;
+    savedAt: string;
+  }[];
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1124,12 +1156,14 @@ export default function SurveyDetailPage({
   const [embedModalOpen, setEmbedModalOpen] = useState(false);
   const [embedShowHeader, setEmbedShowHeader] = useState(true);
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis" | "bonus" | "collaborators">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "responses" | "crossanalysis" | "bonus" | "collaborators" | "activity">("analytics");
   const [isOwner, setIsOwner] = useState(true);
   const [collaboratorRole, setCollaboratorRole] = useState<"editor" | "viewer" | null>(null);
   const [deleteResponseModal, setDeleteResponseModal] = useState<{ open: boolean; responseId: string; loading: boolean }>({
     open: false, responseId: "", loading: false,
   });
+  const [activity, setActivity] = useState<ActivityData | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   // STATUS_META built inside component so labels are translated
   const STATUS_META: Record<Survey["status"], { label: string; badge: string }> = {
@@ -1148,6 +1182,18 @@ export default function SurveyDetailPage({
   useEffect(() => {
     if (survey && survey.responseCount > 0) fetchResponses();
   }, [survey]);
+
+  useEffect(() => {
+    if (activeTab !== "activity" || !survey) return;
+    let cancelled = false;
+    setActivityLoading(true);
+    fetch(`/api/surveys/${id}/activity`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (!cancelled && data) setActivity(data as ActivityData); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setActivityLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTab, survey, id]);
 
   // Reparo do contador: se o responseCount estiver corrompido (negativo por
   // ações antigas de bonificação), o dono recalcula a partir das respostas reais.
@@ -1347,14 +1393,27 @@ export default function SurveyDetailPage({
     return t.surveyDetail.getAnswerLabel.noAnswer;
   };
 
+  // Nome e e-mail já são colunas fixas (e a API os remove do objeto `profile`),
+  // então um campo de schema com essas keys só geraria uma coluna vazia duplicada.
+  const exportProfileFields = profileSchema.filter((f) => f.key !== "name" && f.key !== "email");
+
+  // Uma célula por campo do schema de perfil (exceto os reservados), na ordem do
+  // schema. Campos ausentes na resposta viram string vazia (não "undefined").
+  const profileCols = (response: SurveyResponse) =>
+    exportProfileFields.map((f) => {
+      const v = response.profile?.[f.key];
+      return v === undefined || v === null || v === "" ? "" : formatProfileValue(v);
+    });
+
   const handleExportCSV = () => {
     if (!survey || responses.length === 0) return;
     const esc = (v: string) => (v.includes(",") || v.includes('"') || v.includes("\n") ? `"${v.replace(/"/g, '""')}"` : v);
     const questionNodes = survey.nodes.filter((n) => n.data.type !== "presentation" && n.data.type !== "endScreen");
-    const headers = [t.surveyDetail.csv.name, t.surveyDetail.csv.email, ...questionNodes.map((n) => n.data.title || t.surveyDetail.csv.question), ...(survey.enableScoring ? [t.surveyDetail.csv.score] : []), t.surveyDetail.csv.date];
+    const headers = [t.surveyDetail.csv.name, t.surveyDetail.csv.email, ...exportProfileFields.map((f) => f.label), ...questionNodes.map((n) => n.data.title || t.surveyDetail.csv.question), ...(survey.enableScoring ? [t.surveyDetail.csv.score] : []), t.surveyDetail.csv.date];
     const rows = responses.map((response) => [
       esc(response.respondentName || ""),
       esc(response.respondentEmail || ""),
+      ...profileCols(response).map(esc),
       ...questionNodes.map((node) => {
         const answer = response.answers.find((a) => a.nodeId === node.id);
         const nodeData = getNodeData(node.id, response);
@@ -1377,10 +1436,11 @@ export default function SurveyDetailPage({
     if (!survey || responses.length === 0) return;
     const XLSX = await import("xlsx");
     const questionNodes = survey.nodes.filter((n) => n.data.type !== "presentation" && n.data.type !== "endScreen");
-    const headers = [t.surveyDetail.csv.name, t.surveyDetail.csv.email, ...questionNodes.map((n) => n.data.title || t.surveyDetail.csv.question), ...(survey.enableScoring ? [t.surveyDetail.csv.score] : []), t.surveyDetail.csv.date];
+    const headers = [t.surveyDetail.csv.name, t.surveyDetail.csv.email, ...exportProfileFields.map((f) => f.label), ...questionNodes.map((n) => n.data.title || t.surveyDetail.csv.question), ...(survey.enableScoring ? [t.surveyDetail.csv.score] : []), t.surveyDetail.csv.date];
     const rows = responses.map((response) => [
       response.respondentName || "",
       response.respondentEmail || "",
+      ...profileCols(response),
       ...questionNodes.map((node) => {
         const answer = response.answers.find((a) => a.nodeId === node.id);
         const nodeData = getNodeData(node.id, response);
@@ -1671,6 +1731,17 @@ export default function SurveyDetailPage({
             </span>
           </button>
           </>)}
+          {(isOwner || collaboratorRole) && (
+            <button
+              onClick={() => setActiveTab("activity")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "activity" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5" />
+                Atividades
+              </span>
+            </button>
+          )}
           {isOwner && (
             <button
               onClick={() => setActiveTab("collaborators")}
@@ -1686,7 +1757,7 @@ export default function SurveyDetailPage({
       )}
 
       {/* ── Analytics Tab ───────────────────────────────────────────────────── */}
-      {(activeTab === "analytics" || survey.responseCount === 0) && activeTab !== "collaborators" && (
+      {(activeTab === "analytics" || survey.responseCount === 0) && activeTab !== "collaborators" && activeTab !== "activity" && (
         <>
           {survey.responseCount === 0 ? (
             <div className="bg-white border border-gray-200 rounded-xl">
@@ -1954,6 +2025,121 @@ export default function SurveyDetailPage({
       )}
 
       {/* ── Collaborators Tab ───────────────────────────────────────────────── */}
+      {/* ── Activity Tab ────────────────────────────────────────────────────── */}
+      {activeTab === "activity" && (() => {
+        const totalQuestions = survey.nodes.filter((n) =>
+          ["singleChoice", "multipleChoice", "rating", "textInput"].includes(n.data.type)
+        ).length;
+        const c = activity?.counts;
+        const funnel = [
+          { label: "Aberturas", value: c?.opened ?? 0, icon: Eye, color: "text-gray-900", hint: "Vezes que a página da pesquisa foi carregada" },
+          { label: "Em andamento", value: c?.inProgress ?? 0, icon: Clock, color: "text-amber-600", hint: "Começaram e ainda não concluíram (respondentes logados)" },
+          { label: "Inelegíveis", value: c?.ineligiblePeople ?? 0, icon: ShieldX, color: "text-red-500", hint: "Bloqueados pela regra de elegibilidade da pesquisa" },
+          { label: "Concluídas", value: c?.completed ?? 0, icon: Check, color: "text-green-600", hint: "Respostas registradas" },
+        ];
+
+        return (
+          <div className="space-y-4">
+            {activityLoading && !activity ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+              </div>
+            ) : (
+              <>
+                {/* Funil de atividade */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {funnel.map((f) => (
+                    <div key={f.label} className="bg-white border border-gray-200 rounded-xl p-4" title={f.hint}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{f.label}</span>
+                        <f.icon className="w-3.5 h-3.5 text-gray-300" />
+                      </div>
+                      <p className={`text-2xl font-bold ${f.color}`}>{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Inelegíveis */}
+                <div className="bg-white border border-gray-200 rounded-xl">
+                  <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                    <ShieldX className="w-4 h-4 text-red-500" />
+                    <h3 className="text-sm font-medium text-gray-900">Inelegíveis</h3>
+                    {(activity?.counts.ineligibleAttempts ?? 0) > (activity?.ineligible.length ?? 0) && (
+                      <span className="text-[11px] text-gray-400">
+                        {activity?.counts.ineligibleAttempts} tentativa(s)
+                      </span>
+                    )}
+                  </div>
+                  {activity && activity.ineligible.length > 0 ? (
+                    <div className="divide-y divide-gray-50">
+                      {activity.ineligible.map((p, i) => (
+                        <div key={p.respondentId ?? p.email ?? i} className="px-5 py-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
+                            <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+                              <Mail className="w-3 h-3" />{p.email}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            {p.reason && <p className="text-xs text-red-500">{p.reason}</p>}
+                            <p className="text-[11px] text-gray-400 flex items-center gap-1 justify-end">
+                              <Clock className="w-3 h-3" />{formatDate(p.lastAt)}
+                              {p.attempts > 1 && <span>· {p.attempts}×</span>}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="px-5 py-6 text-sm text-gray-400 text-center">Ninguém foi bloqueado por elegibilidade.</p>
+                  )}
+                </div>
+
+                {/* Em andamento (abandonados) */}
+                <div className="bg-white border border-gray-200 rounded-xl">
+                  <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <h3 className="text-sm font-medium text-gray-900">Começaram e não concluíram</h3>
+                  </div>
+                  {activity && activity.inProgress.length > 0 ? (
+                    <div className="divide-y divide-gray-50">
+                      {activity.inProgress.map((p) => (
+                        <div key={p.respondentId} className="px-5 py-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
+                            <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+                              <Mail className="w-3 h-3" />{p.email}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs text-gray-700">
+                              {p.answeredCount}{totalQuestions > 0 ? `/${totalQuestions}` : ""} respondida(s)
+                            </p>
+                            <p className="text-[11px] text-gray-400 flex items-center gap-1 justify-end">
+                              <Clock className="w-3 h-3" />{formatDate(p.savedAt)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="px-5 py-6 text-sm text-gray-400 text-center">Ninguém com progresso parcial no momento.</p>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-gray-400 flex items-start gap-1.5 px-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                  <span>
+                    &quot;Em andamento&quot; e &quot;Inelegíveis&quot; só são registrados para respondentes com login.
+                    Abandono anônimo não é rastreável. Aberturas passaram a ser contadas a partir de agora.
+                  </span>
+                </p>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
       {activeTab === "collaborators" && isOwner && (
         <CollaboratorsPanel surveyId={id} />
       )}

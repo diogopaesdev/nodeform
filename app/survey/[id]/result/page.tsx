@@ -15,7 +15,7 @@ export default function ResultPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEmbedMode = searchParams.get("embed") === "true";
-  const { survey, totalScore, answers, isCompleted, resetSurvey, getResult, visitedNodeIds } =
+  const { survey, totalScore, isCompleted, resetSurvey, getResult, visitedNodeIds, submitResponse } =
     useRuntimeStore();
 
   const [showConfetti, setShowConfetti] = useState(false);
@@ -28,6 +28,8 @@ export default function ResultPage({
 
   useEmbedResize(isEmbedMode);
 
+  // O save é centralizado no runtime store e é idempotente: se a tela final já
+  // computou a resposta (fluxo normal), aqui só refletimos o sucesso sem novo POST.
   const saveResponseToFirebase = useCallback(async () => {
     if (!isCompleted || !survey) return;
 
@@ -36,40 +38,19 @@ export default function ResultPage({
     setSaveError(null);
     setSessionExpired(false);
 
-    try {
-      const presentationAnswer = answers.find(
-        (a) => a.respondentName || a.respondentEmail
-      );
+    const outcome = await submitResponse(id);
+    setIsSaving(false);
 
-      const response = await fetch(`/api/public/surveys/${id}/responses`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          answers,
-          totalScore,
-          path: visitedNodeIds,
-          respondentName: presentationAnswer?.respondentName,
-          respondentEmail: presentationAnswer?.respondentEmail,
-        }),
-      });
-
-      if (response.status === 401) {
-        setSessionExpired(true);
-        hasSaved.current = false;
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Falha ao salvar resposta");
-      }
+    if (outcome === "saved") {
       setSaveSucceeded(true);
-    } catch (error) {
-      console.error("Error saving response:", error);
+    } else if (outcome === "session_expired") {
+      setSessionExpired(true);
+      hasSaved.current = false;
+    } else {
       setSaveError("Não foi possível salvar sua resposta");
-    } finally {
-      setIsSaving(false);
+      hasSaved.current = false;
     }
-  }, [isCompleted, survey, answers, totalScore, visitedNodeIds, id]);
+  }, [isCompleted, survey, submitResponse, id]);
 
   // Salvar resposta no Firebase
   useEffect(() => {

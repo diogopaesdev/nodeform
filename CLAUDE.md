@@ -49,6 +49,7 @@ Workspace identity is the admin's `userId` — the same ID is used as `workspace
 | `respondentSessions` | Token → respondent mapping, 24 h TTL |
 | `surveyParticipations` | Tracks who participated in which survey; bonus status |
 | `surveyProgress` | Partial save; doc ID `{respondentId}_{surveyId}` |
+| `surveyEvents` | Activity telemetry (`opened`, `blocked_ineligible`) powering the survey **Atividades** tab |
 | `workspaceApiKeys` | API keys stored as SHA-256 hash; prefix `nfk_` |
 | `ssoTokens` | One-time SSO tokens; 5 min TTL, single-use |
 
