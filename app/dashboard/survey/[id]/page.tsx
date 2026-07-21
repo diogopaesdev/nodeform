@@ -150,6 +150,10 @@ function useQuestionAnalytics(survey: Survey | null, responses: SurveyResponse[]
 
         if (type === "singleChoice" || type === "multipleChoice") {
           const counts: Record<string, number> = {};
+          // Denominador = quem REALMENTE respondeu esta pergunta. Perguntas
+          // puladas pelo fluxo condicional não devem contar o respondente aqui,
+          // senão viram "1 resp." com barras vazias e diluem as porcentagens.
+          let answered = 0;
           responses.forEach((r) => {
             const answer = r.answers.find((a) => a.nodeId === node.id);
             if (!answer) return;
@@ -159,6 +163,8 @@ function useQuestionAnalytics(survey: Survey | null, responses: SurveyResponse[]
                   ? [answer.selectedOptionId]
                   : []
                 : answer.selectedOptionIds ?? [];
+            if (ids.length === 0) return;
+            answered += 1;
             ids.forEach((id) => {
               counts[id] = (counts[id] || 0) + 1;
             });
@@ -168,10 +174,10 @@ function useQuestionAnalytics(survey: Survey | null, responses: SurveyResponse[]
           const chartData = options.map((opt) => ({
             name: opt.label.length > 28 ? opt.label.slice(0, 28) + "…" : opt.label,
             value: counts[opt.id] || 0,
-            pct: responses.length > 0 ? Math.round(((counts[opt.id] || 0) / responses.length) * 100) : 0,
+            pct: answered > 0 ? Math.round(((counts[opt.id] || 0) / answered) * 100) : 0,
           }));
 
-          return { node, type, chartData, total: responses.length };
+          return { node, type, chartData, total: answered };
         }
 
         if (type === "rating") {
@@ -1164,6 +1170,7 @@ export default function SurveyDetailPage({
   });
   const [activity, setActivity] = useState<ActivityData | null>(null);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [resetActivityModal, setResetActivityModal] = useState<{ open: boolean; loading: boolean }>({ open: false, loading: false });
 
   // STATUS_META built inside component so labels are translated
   const STATUS_META: Record<Survey["status"], { label: string; badge: string }> = {
@@ -1183,17 +1190,38 @@ export default function SurveyDetailPage({
     if (survey && survey.responseCount > 0) fetchResponses();
   }, [survey]);
 
+  const fetchActivity = async () => {
+    setActivityLoading(true);
+    try {
+      const res = await fetch(`/api/surveys/${id}/activity`);
+      if (res.ok) setActivity((await res.json()) as ActivityData);
+    } catch {
+      // silencioso — a aba mostra o estado atual
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab !== "activity" || !survey) return;
-    let cancelled = false;
-    setActivityLoading(true);
-    fetch(`/api/surveys/${id}/activity`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (!cancelled && data) setActivity(data as ActivityData); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setActivityLoading(false); });
-    return () => { cancelled = true; };
+    fetchActivity();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, survey, id]);
+
+  const confirmResetActivity = async () => {
+    setResetActivityModal((m) => ({ ...m, loading: true }));
+    try {
+      const res = await fetch(`/api/surveys/${id}/activity`, { method: "DELETE" });
+      if (res.ok) {
+        setResetActivityModal({ open: false, loading: false });
+        await fetchActivity();
+      } else {
+        setResetActivityModal((m) => ({ ...m, loading: false }));
+      }
+    } catch {
+      setResetActivityModal((m) => ({ ...m, loading: false }));
+    }
+  };
 
   // Reparo do contador: se o responseCount estiver corrompido (negativo por
   // ações antigas de bonificação), o dono recalcula a partir das respostas reais.
@@ -2046,6 +2074,20 @@ export default function SurveyDetailPage({
               </div>
             ) : (
               <>
+                {/* Cabeçalho + reset dos logs */}
+                {isOwner && (
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-gray-900">Atividade da pesquisa</h3>
+                    <button
+                      onClick={() => setResetActivityModal({ open: true, loading: false })}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-md transition-colors"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      Limpar logs
+                    </button>
+                  </div>
+                )}
+
                 {/* Funil de atividade */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {funnel.map((f) => (
@@ -2153,6 +2195,20 @@ export default function SurveyDetailPage({
         loading={deleteResponseModal.loading}
         labels={{
           deleteButton: t.surveyDetail.deleteResponseModal.deleteButton,
+          cancelButton: t.common.cancel,
+          cannotBeUndone: t.surveyDetail.deleteResponseModal.cannotBeUndone,
+        }}
+      />
+
+      <DeleteConfirmModal
+        open={resetActivityModal.open}
+        onOpenChange={(open) => !resetActivityModal.loading && setResetActivityModal((m) => ({ ...m, open }))}
+        title="Limpar logs de atividade"
+        description="Isso apaga os registros de aberturas e de bloqueios por elegibilidade desta pesquisa. As respostas e participações não são afetadas. Útil para zerar dados de teste."
+        onConfirm={confirmResetActivity}
+        loading={resetActivityModal.loading}
+        labels={{
+          deleteButton: "Limpar logs",
           cancelButton: t.common.cancel,
           cannotBeUndone: t.surveyDetail.deleteResponseModal.cannotBeUndone,
         }}
