@@ -58,6 +58,7 @@ export default function SurveyPage({
     resetSurvey,
     goBack,
     canGoBack,
+    submitResponse,
   } = useRuntimeStore();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +101,15 @@ export default function SurveyPage({
       if (!surveyData || surveyData.nodes.length === 0) {
         setError("Esta pesquisa ainda não tem perguntas");
         return;
+      }
+
+      // Telemetria de abertura (aba Atividades). Fire-and-forget; não em preview.
+      if (!isPreviewMode) {
+        fetch(`/api/public/surveys/${id}/events`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "opened" }),
+        }).catch(() => {});
       }
 
       if (surveyData.requiresRespondentLogin && !isPreviewMode) {
@@ -237,6 +247,18 @@ export default function SurveyPage({
     }, 500);
     return () => clearTimeout(timeout);
   }, [answers, currentNodeId, totalScore, visitedNodeIds, respondent, survey, id]);
+
+  // Computa a resposta assim que a tela final é ALCANÇADA — não ao clicar em
+  // "Finalizar". Muitos respondentes fechavam a aba na tela final sem clicar, e
+  // a resposta se perdia. O botão "Finalizar" passa a servir só para o redirect.
+  // Idempotente no store: a tela de resultado não salva de novo. Preview não salva.
+  useEffect(() => {
+    if (!survey || !currentNodeId || isPreviewMode) return;
+    const node = survey.nodes.find((n) => n.id === currentNodeId);
+    if (node?.data.type === "endScreen") {
+      submitResponse(id);
+    }
+  }, [survey, currentNodeId, isPreviewMode, submitResponse, id]);
 
   useEffect(() => {
     if (isCompleted) {
@@ -475,7 +497,9 @@ export default function SurveyPage({
 
           <QuestionRenderer key={currentNode.id} node={currentNode} onAnswer={handleAnswer} totalScore={totalScore} brandColor={brand.brandColor || undefined} />
 
-          {canGoBack() && (
+          {/* Na tela final a resposta já foi computada; voltar e reeditar não
+              atualizaria o registro salvo, então o botão fica oculto ali. */}
+          {canGoBack() && currentNode.data.type !== "endScreen" && (
             <div className="flex justify-center">
               <button
                 onClick={goBack}

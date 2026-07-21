@@ -124,30 +124,65 @@ export default function EditorPage({
     setSaving(true);
     setSaved(false);
     try {
-      await fetch(`/api/surveys/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: surveyTitle,
-          description: surveyDescription,
-          nodes,
-          edges,
-          enableScoring,
-          timeLimit: timeLimit || null,
-          prize: prize || null,
-          requiresRespondentLogin,
-          maxResponses: maxResponses || null,
-          eligibilityRules,
-        }),
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      const payload = {
+        title: surveyTitle,
+        description: surveyDescription,
+        nodes,
+        edges,
+        enableScoring,
+        timeLimit: timeLimit || null,
+        prize: prize || null,
+        requiresRespondentLogin,
+        maxResponses: maxResponses || null,
+        eligibilityRules,
+      };
+
+      const send = (force: boolean) =>
+        fetch(`/api/surveys/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(force ? { ...payload, force: true } : payload),
+        });
+
+      let res = await send(false);
+
+      // A pesquisa já tem respostas e a alteração removeria perguntas/opções,
+      // o que desalinha a análise das respostas já coletadas. Confirma antes.
+      if (res.status === 409) {
+        const data = await res.json().catch(() => null);
+        if (data?.code === "WOULD_ORPHAN_RESPONSES") {
+          const nQ = data.removedNodes?.length ?? 0;
+          const nO = data.removedOptions?.length ?? 0;
+          const parts = [
+            nQ > 0 ? `${nQ} pergunta(s)` : null,
+            nO > 0 ? `${nO} opção(ões)` : null,
+          ].filter(Boolean).join(" e ");
+          const ok = window.confirm(
+            `Esta pesquisa já tem ${data.responseCount} resposta(s).\n\n` +
+              `Você está removendo ${parts}. As respostas já coletadas para esses ` +
+              `itens deixarão de aparecer na análise e não podem ser recuperadas.\n\n` +
+              `Deseja salvar mesmo assim?`
+          );
+          if (!ok) {
+            setSaving(false);
+            return;
+          }
+          res = await send(true);
+        }
+      }
+
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } else {
+        console.error("Error saving survey:", res.status);
+      }
     } catch (error) {
       console.error("Error saving survey:", error);
     } finally {
       setSaving(false);
     }
-  }, [id, surveyTitle, surveyDescription, nodes, edges, enableScoring, timeLimit, prize]);
+  }, [id, surveyTitle, surveyDescription, nodes, edges, enableScoring, timeLimit, prize, requiresRespondentLogin, maxResponses, eligibilityRules]);
 
   const handleOpenConfig = () => {
     setConfigTitle(surveyTitle);

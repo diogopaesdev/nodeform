@@ -318,6 +318,46 @@ export async function deleteProgress(
   await db.collection("surveyProgress").doc(docId).delete();
 }
 
+export interface ProgressWithRespondent {
+  respondentId: string;
+  name: string;
+  email: string;
+  currentNodeId: string;
+  answeredCount: number;
+  visitedCount: number;
+  savedAt: string;
+}
+
+// Lista quem começou e ainda não concluiu (o progresso é apagado ao concluir).
+// Só existe para respondentes logados. Junta nome/e-mail do respondente.
+export async function getSurveyProgressList(
+  surveyId: string
+): Promise<ProgressWithRespondent[]> {
+  const { db } = getFirebaseAdmin();
+  const snap = await db
+    .collection("surveyProgress")
+    .where("surveyId", "==", surveyId)
+    .get();
+
+  const rows = await Promise.all(
+    snap.docs.map(async (d) => {
+      const p = d.data() as SurveyProgressData;
+      const respondent = await getRespondentById(p.respondentId);
+      return {
+        respondentId: p.respondentId,
+        name: respondent?.name ?? "—",
+        email: respondent?.email ?? "—",
+        currentNodeId: p.currentNodeId,
+        answeredCount: Array.isArray(p.answers) ? p.answers.length : 0,
+        visitedCount: Array.isArray(p.visitedNodeIds) ? p.visitedNodeIds.length : 0,
+        savedAt: p.savedAt,
+      } as ProgressWithRespondent;
+    })
+  );
+
+  return rows.sort((a, b) => ((a.savedAt ?? "") < (b.savedAt ?? "") ? 1 : -1));
+}
+
 export async function getWorkspaceRespondents(workspaceId: string): Promise<Respondent[]> {
   const { db } = getFirebaseAdmin();
   const snapshot = await db

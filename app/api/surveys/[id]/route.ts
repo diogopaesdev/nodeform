@@ -76,6 +76,56 @@ export async function PATCH(
 
     // Se tem nodes/edges, salvar conteúdo
     if (body.nodes !== undefined || body.edges !== undefined) {
+      // Proteção contra orfanamento de respostas: as respostas guardam apenas o
+      // `id` da opção/pergunta (não o texto), então remover uma opção ou uma
+      // pergunta de uma pesquisa que já tem respostas desalinha a análise de
+      // forma irreversível. Editar texto/ordem/pontuação é seguro e passa livre.
+      // O admin pode confirmar a remoção reenviando com `force: true`.
+      if ((survey.responseCount ?? 0) > 0 && body.nodes !== undefined && body.force !== true) {
+        const questionTypes = ["singleChoice", "multipleChoice", "rating", "textInput"];
+        const isQuestion = (n: { data?: { type?: string } }) =>
+          questionTypes.includes(n?.data?.type ?? "");
+
+        const oldNodes = (survey.nodes ?? []).filter(isQuestion);
+        const newById = new Map(
+          (body.nodes as Array<{ id: string; data?: { options?: Array<{ id: string }> } }>).map(
+            (n) => [n.id, n]
+          )
+        );
+
+        const removedNodes: string[] = [];
+        const removedOptions: { nodeId: string; optionId: string }[] = [];
+
+        for (const oldNode of oldNodes) {
+          const newNode = newById.get(oldNode.id);
+          if (!newNode) {
+            removedNodes.push(oldNode.id);
+            continue;
+          }
+          const oldOptions = (oldNode.data as { options?: Array<{ id: string }> })?.options ?? [];
+          if (oldOptions.length === 0) continue;
+          const newOptionIds = new Set((newNode.data?.options ?? []).map((o) => o.id));
+          for (const opt of oldOptions) {
+            if (!newOptionIds.has(opt.id)) {
+              removedOptions.push({ nodeId: oldNode.id, optionId: opt.id });
+            }
+          }
+        }
+
+        if (removedNodes.length > 0 || removedOptions.length > 0) {
+          return NextResponse.json(
+            {
+              error: "Esta alteração remove perguntas ou opções de uma pesquisa que já tem respostas.",
+              code: "WOULD_ORPHAN_RESPONSES",
+              responseCount: survey.responseCount,
+              removedNodes,
+              removedOptions,
+            },
+            { status: 409 }
+          );
+        }
+      }
+
       await saveSurveyContent(
         id,
         body.nodes ?? survey.nodes,
