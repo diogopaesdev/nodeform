@@ -5,6 +5,7 @@ import { getSurvey, getSurveyResponses, deleteResponse } from "@/lib/services/su
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { getCollaboratorAccessForUser } from "@/lib/services/collaborators";
 import { getRespondentById, getParticipationByResponseId, deleteParticipation } from "@/lib/services/respondents";
+import { scrubRespondentFromEvents } from "@/lib/services/survey-events";
 import { getProfileSchema } from "@/lib/services/profile-schema";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { BonusCoupon } from "@/types/survey";
@@ -146,6 +147,10 @@ export async function DELETE(
         }
       }
       await deleteParticipation(participation.id);
+
+      // Mantém os eventos de atividade (o funil reflete tráfego real), mas
+      // remove o vínculo pessoal do respondente cuja resposta foi apagada.
+      await scrubRespondentFromEvents(surveyId, participation.respondentId).catch(() => {});
     }
 
     return NextResponse.json({ success: true });

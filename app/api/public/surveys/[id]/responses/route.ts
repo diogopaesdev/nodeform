@@ -11,6 +11,7 @@ import {
   completeParticipation,
   createParticipation,
   getRespondentById,
+  deleteProgress,
 } from "@/lib/services/respondents";
 import { evaluateEligibility } from "@/lib/utils/eligibility";
 
@@ -185,6 +186,10 @@ export async function POST(
         await createParticipation(respondentId, surveyId, survey.userId);
       }
       await completeParticipation(respondentId, surveyId, response.id, initialBonusStatus);
+      // Apaga o progresso parcial no servidor: como a resposta é computada ao
+      // ALCANÇAR a tela final (não ao clicar "Finalizar"), o cleanup do cliente
+      // pode não rodar, e o progresso órfão apareceria em "Em andamento".
+      await deleteProgress(respondentId, surveyId).catch(() => {});
     }
 
     return NextResponse.json({ response }, { status: 201 });

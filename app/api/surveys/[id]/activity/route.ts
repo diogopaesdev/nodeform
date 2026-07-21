@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSurvey } from "@/lib/services/surveys";
-import { getSurveyEvents } from "@/lib/services/survey-events";
+import { getSurveyEvents, deleteSurveyEvents } from "@/lib/services/survey-events";
 import { getSurveyProgressList } from "@/lib/services/respondents";
 import { resolveWorkspace } from "@/lib/services/resolve-workspace";
 import { getCollaboratorAccessForUser } from "@/lib/services/collaborators";
@@ -46,7 +46,7 @@ export async function GET(
       } else {
         ineligibleMap.set(key, {
           respondentId: e.respondentId,
-          name: e.respondentName ?? "—",
+          name: e.respondentName ?? (e.anonymized ? "Respondente removido" : "—"),
           email: e.respondentEmail ?? "—",
           reason: e.reason,
           attempts: 1,
@@ -72,5 +72,30 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching survey activity:", error);
     return NextResponse.json({ error: "Erro ao buscar atividades" }, { status: 500 });
+  }
+}
+
+// Reseta os logs de atividade (aberturas + inelegível). Apenas o dono.
+// Não afeta respostas nem participações.
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await resolveWorkspace(request);
+    if (!auth) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    const { id: surveyId } = await params;
+    const survey = await getSurvey(surveyId);
+    if (!survey) return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
+    if (survey.userId !== auth.workspaceId) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+    }
+
+    const deleted = await deleteSurveyEvents(surveyId);
+    return NextResponse.json({ ok: true, deleted });
+  } catch (error) {
+    console.error("Error resetting survey activity:", error);
+    return NextResponse.json({ error: "Erro ao resetar atividades" }, { status: 500 });
   }
 }

@@ -15,6 +15,9 @@ export interface SurveyEvent {
   respondentEmail?: string;
   reason?: string; // rótulo da regra que falhou (blocked_ineligible)
   createdAt: string;
+  // Marcado quando a resposta do respondente foi apagada: o evento é mantido
+  // para o funil, mas o vínculo pessoal (id/nome/e-mail) é removido.
+  anonymized?: boolean;
 }
 
 // Tipos que a rota pública aceita gravar (sem sessão de admin).
