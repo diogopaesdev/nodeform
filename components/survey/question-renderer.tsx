@@ -159,7 +159,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           {presentationData.description && (
             <HtmlDescription
               html={presentationData.description}
-              className="text-base text-gray-500 max-w-lg mx-auto text-left [&>p]:mb-2 [&>br]:block"
+              className="text-base text-black max-w-lg mx-auto text-left [&>p]:mb-2 [&>br]:block"
             />
           )}
         </div>
@@ -265,7 +265,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           {singleChoiceData.description && (
             <HtmlDescription
               html={singleChoiceData.description}
-              className="text-sm text-gray-500 [&>p]:mb-2 [&>br]:block"
+              className="text-sm text-black [&>p]:mb-2 [&>br]:block"
             />
           )}
         </div>
@@ -328,7 +328,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           {multipleChoiceData.description && (
             <HtmlDescription
               html={multipleChoiceData.description}
-              className="text-sm text-gray-500 [&>p]:mb-2 [&>br]:block"
+              className="text-sm text-black [&>p]:mb-2 [&>br]:block"
             />
           )}
           <p className="text-xs text-gray-400 italic">Selecione todas que se aplicam</p>
@@ -395,7 +395,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           {ratingData.description && (
             <HtmlDescription
               html={ratingData.description}
-              className="text-sm text-gray-500 [&>p]:mb-2 [&>br]:block"
+              className="text-sm text-black [&>p]:mb-2 [&>br]:block"
             />
           )}
         </div>
@@ -418,7 +418,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
                   }`}
                   strokeWidth={1.5}
                 />
-                <span className="text-xs font-medium text-gray-500">{value}</span>
+                <span className="text-xs font-medium text-black">{value}</span>
               </button>
             ))}
           </div>
@@ -457,7 +457,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           {textData.description && (
             <HtmlDescription
               html={textData.description}
-              className="text-sm text-gray-500 [&>p]:mb-2 [&>br]:block"
+              className="text-sm text-black [&>p]:mb-2 [&>br]:block"
             />
           )}
         </div>
@@ -523,7 +523,7 @@ export function QuestionRenderer({ node, onAnswer, totalScore = 0, brandColor }:
           {endData.description && (
             <HtmlDescription
               html={endData.description}
-              className="text-base text-gray-500 max-w-lg mx-auto text-left [&>p]:mb-2 [&>br]:block"
+              className="text-base text-black max-w-lg mx-auto text-left [&>p]:mb-2 [&>br]:block"
             />
           )}
         </div>
