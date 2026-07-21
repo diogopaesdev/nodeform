@@ -7,7 +7,11 @@ export function useEmbedResize(isEmbed: boolean) {
     if (!isEmbed) return;
 
     const sendHeight = () => {
-      const height = document.documentElement.scrollHeight;
+      // Measure the body, not documentElement: the root element is always at
+      // least as tall as the viewport (initial containing block), so
+      // documentElement.scrollHeight would inflate the iframe to a full screen
+      // and leave blank space below shorter questions.
+      const height = document.body.scrollHeight;
       window.parent.postMessage({ type: "surveyflow-resize", height }, "*");
     };
 
