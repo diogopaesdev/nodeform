@@ -214,6 +214,17 @@ export default function SurveyPage({
     }
   };
 
+  // Scroll to the top whenever the question changes so long descriptions don't
+  // leave the next question stranded at the bottom. In embed mode the iframe
+  // itself doesn't scroll, so ask the host page to bring the iframe into view.
+  useEffect(() => {
+    if (!currentNodeId) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (isEmbedMode) {
+      window.parent.postMessage({ type: "surveyflow-scroll-top" }, "*");
+    }
+  }, [currentNodeId, isEmbedMode]);
+
   // Save progress after each answer (only for authenticated respondents)
   useEffect(() => {
     if (!survey || !currentNodeId || answers.length === 0 || !respondent) return;
