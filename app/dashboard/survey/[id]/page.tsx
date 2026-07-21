@@ -1296,7 +1296,7 @@ export default function SurveyDetailPage({
   const getEmbedCode = (showHeader = embedShowHeader) => {
     const url = getSurveyUrl();
     const params = ["embed=true", ...(!showHeader ? ["hide_header=true"] : [])].join("&");
-    return `<iframe\n  id="surveyflow-survey"\n  src="${url}?${params}"\n  frameborder="0"\n  style="width: 100%; border: none; overflow: hidden;"\n  scrolling="no"\n></iframe>\n<script>\nwindow.addEventListener("message", function(e) {\n  if (e.data && e.data.type === "surveyflow-resize") {\n    document.getElementById("surveyflow-survey").style.height = e.data.height + "px";\n  }\n});\n</script>`;
+    return `<iframe\n  id="surveyflow-survey"\n  src="${url}?${params}"\n  frameborder="0"\n  style="width: 100%; border: none; overflow: hidden;"\n  scrolling="no"\n></iframe>\n<script>\nwindow.addEventListener("message", function(e) {\n  if (e.data && e.data.type === "surveyflow-resize") {\n    document.getElementById("surveyflow-survey").style.height = e.data.height + "px";\n  }\n  if (e.data && e.data.type === "surveyflow-scroll-top") {\n    document.getElementById("surveyflow-survey").scrollIntoView({ behavior: "smooth", block: "start" });\n  }\n});\n</script>`;
   };
 
   const handleCopyEmbed = async () => {

@@ -299,6 +299,26 @@ O parâmetro `&embed=true` faz duas coisas:
 
 > ⚠️ O token continua sendo de **uso único e 5 min de validade**. Gere um token novo a cada carregamento da página que contém o iframe; **não** faça cache do HTML com o token embutido. Se o iframe recarregar após o token já ter sido usado, o respondente cai na tela de login por OTP.
 
+### Rolagem ao topo a cada pergunta (embed)
+
+Como o iframe cresce para caber todo o conteúdo (sem barra de rolagem própria), quem rola é a **página pai**. Ao avançar de uma pergunta com descrição/enunciado longo para a próxima, a janela pode continuar na posição anterior — deixando a nova pergunta lá embaixo.
+
+Para evitar isso, o SurveyFlow emite um `postMessage` `{ type: "surveyflow-scroll-top" }` sempre que a pergunta muda. Basta a página pai escutar essa mensagem e rolar o iframe de volta ao topo (no mesmo listener onde você já trata o `surveyflow-resize`):
+
+```js
+window.addEventListener("message", (event) => {
+  // Opcional, mas recomendado: valide event.origin === "https://surveyflowapp.com"
+  if (event.data?.type === "surveyflow-resize") {
+    document.getElementById("surveyflow-survey").style.height = event.data.height + "px";
+  }
+  if (event.data?.type === "surveyflow-scroll-top") {
+    document.getElementById("surveyflow-survey").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
+```
+
+> ℹ️ Se você não tratar essa mensagem, a pesquisa continua funcionando — apenas a rolagem automática ao topo a cada pergunta não acontecerá. O código de embed copiado no dashboard já inclui esse listener.
+
 ### Redirect da tela final dentro do embed
 
 O elemento **Tela Final** (endScreen) do editor pode ter uma **URL de redirect**: ao concluir a pesquisa, o respondente é levado a essa URL (com contagem regressiva ou imediatamente, se a opção "pular tela de conclusão" estiver marcada).
