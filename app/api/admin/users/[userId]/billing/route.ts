@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { requireAdmin } from "@/lib/services/admin";
 import { getFirebaseAdmin } from "@/lib/firebase-admin";
 import { stripe } from "@/lib/stripe";
@@ -26,16 +27,34 @@ export async function GET(
     return NextResponse.json({ hasStripeCustomer: false });
   }
 
-  const subs = await stripe.subscriptions.list({
-    customer: customerId,
-    limit: 1,
-    status: "all",
-    expand: ["data.latest_invoice.payments.data.payment.payment_intent"],
-  });
-  const sub = subs.data[0] ?? null;
+  let sub: Stripe.Subscription | null = null;
+  let invoice: Stripe.Invoice | null = null;
+  try {
+    const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: "all" });
+    sub = subs.data[0] ?? null;
 
-  const invoice =
-    sub?.latest_invoice && typeof sub.latest_invoice !== "string" ? sub.latest_invoice : null;
+    // Fetch the invoice separately (rather than expanding it off the
+    // subscriptions list) to stay within Stripe's 4-level expand depth limit —
+    // "data.latest_invoice.payments.data.payment.payment_intent" exceeds it
+    // and Stripe rejects the request outright.
+    const latestInvoiceId = sub?.latest_invoice
+      ? typeof sub.latest_invoice === "string"
+        ? sub.latest_invoice
+        : sub.latest_invoice.id
+      : null;
+    if (latestInvoiceId) {
+      invoice = await stripe.invoices.retrieve(latestInvoiceId, {
+        expand: ["payments.data.payment.payment_intent"],
+      });
+    }
+  } catch (err) {
+    const stripeErr = err as Stripe.errors.StripeError;
+    return NextResponse.json(
+      { error: stripeErr.message ?? "Erro ao consultar o Stripe" },
+      { status: 502 }
+    );
+  }
+
   const invoicePayment = invoice?.payments?.data[0];
   const paymentIntent =
     invoicePayment?.payment.payment_intent && typeof invoicePayment.payment.payment_intent !== "string"

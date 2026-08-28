@@ -56,11 +56,12 @@ export async function POST(
     );
   }
 
-  const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: "all" });
-  const sub = subs.data[0] ?? null;
   const trialEndTs = Math.floor(Date.now() / 1000) + days * 86400;
 
   try {
+    const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: "all" });
+    const sub = subs.data[0] ?? null;
+
     const resultSub =
       sub && sub.status !== "canceled"
         ? await stripe.subscriptions.update(sub.id, {
