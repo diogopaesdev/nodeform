@@ -48,15 +48,15 @@ export async function POST(
     );
   }
 
-  const subs = await stripe.subscriptions.list({
-    customer: customerId,
-    limit: 1,
-    status: "all",
-    expand: ["data.latest_invoice"],
-  });
-  const sub = subs.data[0] ?? null;
-
   try {
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      limit: 1,
+      status: "all",
+      expand: ["data.latest_invoice"],
+    });
+    const sub = subs.data[0] ?? null;
+
     if (sub && sub.status !== "canceled") {
       const invoice =
         sub.latest_invoice && typeof sub.latest_invoice !== "string" ? sub.latest_invoice : null;
