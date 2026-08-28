@@ -74,10 +74,11 @@ export async function POST(
             trial_period_days: days,
           });
 
-    await syncSubscriptionToFirestore(userId, resultSub, planId);
+    const { subscriptionStatus } = await syncSubscriptionToFirestore(userId, resultSub, planId);
 
     return NextResponse.json({
       ok: true,
+      status: subscriptionStatus,
       trialEnd: resultSub.trial_end ? new Date(resultSub.trial_end * 1000).toISOString() : null,
     });
   } catch (err) {

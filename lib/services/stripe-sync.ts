@@ -21,7 +21,7 @@ export async function syncSubscriptionToFirestore(
   userId: string,
   sub: Stripe.Subscription,
   planId: PlanId
-): Promise<void> {
+): Promise<{ subscriptionStatus: string }> {
   const { db } = getFirebaseAdmin();
   const periodEnd =
     sub.items.data[0]?.current_period_end ??
@@ -29,10 +29,11 @@ export async function syncSubscriptionToFirestore(
 
   const userRef = db.collection("users").doc(userId);
   const previousPlanId = (await userRef.get()).data()?.planId as PlanId | undefined;
+  const subscriptionStatus = mapSubscriptionStatus(sub);
 
   await userRef.update({
     stripeSubscriptionId: sub.id,
-    subscriptionStatus: mapSubscriptionStatus(sub),
+    subscriptionStatus,
     subscriptionCurrentPeriodEnd: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
     trialEnd: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
     planId,
@@ -41,4 +42,6 @@ export async function syncSubscriptionToFirestore(
   if (planId !== previousPlanId) {
     await resetCreditsForPlan(userId, planId);
   }
+
+  return { subscriptionStatus };
 }
