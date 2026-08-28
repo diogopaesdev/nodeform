@@ -22,6 +22,13 @@ interface AdminUser {
 
 interface BillingInfo {
   hasStripeCustomer: boolean;
+  firestore?: {
+    planId: string | null;
+    subscriptionStatus: string | null;
+    trialEnd: string | null;
+    subscriptionCurrentPeriodEnd: string | null;
+    updatedAt: string | null;
+  };
   subscription?: {
     id: string;
     status: string;
@@ -53,6 +60,13 @@ const STATUS_LABELS: Record<string, string> = {
   incomplete: "Incompleto",
   incomplete_expired: "Expirado sem pagamento",
 };
+
+// Firestore only ever stores active/trialing/past_due/unpaid/inactive —
+// Stripe's raw subscription.status has a couple of extra terminal states.
+function normalizeStripeStatus(status: string): string {
+  if (status === "canceled" || status === "incomplete_expired") return "inactive";
+  return status;
+}
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -228,6 +242,13 @@ export default function AdminUsersPage() {
         setActionResult({ ok: false, message: data.error ?? "Cobrança recusada" });
       } else {
         setActionResult({ ok: true, message: `Cobrança bem-sucedida — status: ${STATUS_LABELS[data.status] ?? data.status}` });
+        // Keep the row's dropdown in sync with what's now really saved in
+        // Firestore, so clicking "Salvar" afterwards doesn't silently revert
+        // the status back to whatever was showing before this action.
+        setRowStates((prev) => ({
+          ...prev,
+          [billingUser.id]: { ...prev[billingUser.id], subscriptionStatus: data.status, saved: false },
+        }));
         await openBillingModal(billingUser);
       }
     } catch {
@@ -252,6 +273,10 @@ export default function AdminUsersPage() {
         setActionResult({ ok: false, message: data.error ?? "Erro ao conceder carência" });
       } else {
         setActionResult({ ok: true, message: `Carência concedida até ${formatDate(data.trialEnd)}, sem cobrar.` });
+        setRowStates((prev) => ({
+          ...prev,
+          [billingUser.id]: { ...prev[billingUser.id], subscriptionStatus: data.status, saved: false },
+        }));
         await openBillingModal(billingUser);
       }
     } catch {
@@ -491,6 +516,20 @@ export default function AdminUsersPage() {
                   </div>
                 ) : (
                   <div className="text-gray-500">Nenhuma assinatura encontrada no Stripe para este cliente.</div>
+                )}
+
+                {billingData.firestore && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 text-gray-500">
+                    No banco (Firestore): status <span className="font-medium text-gray-700">{billingData.firestore.subscriptionStatus ?? "—"}</span>
+                    {billingData.firestore.trialEnd && <> · trial até {formatDate(billingData.firestore.trialEnd)}</>}
+                    {billingData.subscription &&
+                      normalizeStripeStatus(billingData.subscription.status) !== (billingData.firestore.subscriptionStatus ?? "inactive") && (
+                        <div className="mt-1 flex items-center gap-1 text-amber-600">
+                          <AlertTriangle className="w-3 h-3" />
+                          Diferente do status real no Stripe — o acesso do usuário usa o que está aqui no banco, não o que aparece acima.
+                        </div>
+                      )}
+                  </div>
                 )}
 
                 {billingData.lastPaymentError && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   Loader2,
@@ -80,15 +81,53 @@ const PRO_ADDONS = [
   },
 ];
 
+// Mirrors lib/services/plan.ts hasValidAccess() — kept in sync manually since
+// that one is server-only (imports firebase-admin, can't run in a client page).
+function hasValidAccess(data: { subscriptionStatus?: string | null; trialEnd?: string | null }): boolean {
+  if (data.subscriptionStatus && ["active", "trialing"].includes(data.subscriptionStatus)) return true;
+  if (data.trialEnd && new Date(data.trialEnd).getTime() > Date.now()) return true;
+  return false;
+}
+
 export default function UpgradePage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const { t } = useI18n();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
 
-  const subscriptionStatus = session?.user?.subscriptionStatus;
-  const alreadyUsedTrial = !!session?.user?.trialEnd;
+  // The JWT session only refreshes on login or when planId is null (see
+  // lib/auth.ts jwt callback), so it can go stale after an admin recovers a
+  // subscription outside the normal checkout flow. Fetch the real, current
+  // state from Firestore instead of trusting session.user here.
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [liveUser, setLiveUser] = useState<{ subscriptionStatus?: string | null; trialEnd?: string | null } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/user")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const user = data?.user ?? null;
+        if (user && hasValidAccess(user)) {
+          router.replace("/dashboard");
+          return;
+        }
+        setLiveUser(user);
+        setCheckingAccess(false);
+      })
+      .catch(() => {
+        if (!cancelled) setCheckingAccess(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  const subscriptionStatus = liveUser?.subscriptionStatus ?? session?.user?.subscriptionStatus;
+  const alreadyUsedTrial = !!(liveUser?.trialEnd ?? session?.user?.trialEnd);
   const isPastDue = subscriptionStatus === "past_due";
   const isUnpaid = subscriptionStatus === "unpaid";
   const isCancelled = subscriptionStatus === "inactive";
@@ -131,6 +170,14 @@ export default function UpgradePage() {
       setLoadingPlan(null);
     }
   };
+
+  if (checkingAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-50 px-4 py-12">

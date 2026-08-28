@@ -22,9 +22,18 @@ export async function GET(
     return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
   }
 
-  const customerId = userDoc.data()?.stripeCustomerId as string | undefined;
+  const userData = userDoc.data()!;
+  const firestoreState = {
+    planId: userData.planId ?? null,
+    subscriptionStatus: userData.subscriptionStatus ?? null,
+    trialEnd: userData.trialEnd ?? null,
+    subscriptionCurrentPeriodEnd: userData.subscriptionCurrentPeriodEnd ?? null,
+    updatedAt: userData.updatedAt ?? null,
+  };
+
+  const customerId = userData.stripeCustomerId as string | undefined;
   if (!customerId) {
-    return NextResponse.json({ hasStripeCustomer: false });
+    return NextResponse.json({ hasStripeCustomer: false, firestore: firestoreState });
   }
 
   let sub: Stripe.Subscription | null = null;
@@ -75,6 +84,7 @@ export async function GET(
 
   return NextResponse.json({
     hasStripeCustomer: true,
+    firestore: firestoreState,
     subscription: sub
       ? {
           id: sub.id,

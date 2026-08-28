@@ -64,8 +64,8 @@ export async function POST(
         await stripe.invoices.pay(invoice.id);
       }
       const refreshed = await stripe.subscriptions.retrieve(sub.id);
-      await syncSubscriptionToFirestore(userId, refreshed, planId);
-      return NextResponse.json({ ok: true, status: refreshed.status });
+      const { subscriptionStatus } = await syncSubscriptionToFirestore(userId, refreshed, planId);
+      return NextResponse.json({ ok: true, status: subscriptionStatus });
     }
 
     const newSub = await stripe.subscriptions.create({
@@ -73,8 +73,8 @@ export async function POST(
       items: [{ price: priceId }],
       payment_behavior: "error_if_incomplete",
     });
-    await syncSubscriptionToFirestore(userId, newSub, planId);
-    return NextResponse.json({ ok: true, status: newSub.status });
+    const { subscriptionStatus } = await syncSubscriptionToFirestore(userId, newSub, planId);
+    return NextResponse.json({ ok: true, status: subscriptionStatus });
   } catch (err) {
     const stripeErr = err as Stripe.errors.StripeError;
     return NextResponse.json(
