@@ -29,7 +29,16 @@ export async function GET(
       brandDescription: userData.brandDescription || null,
     };
 
+    // Mesma regra que o POST de respostas aplica: finalizada/arquivada ou cota
+    // atingida. Calculado aqui para o respondente ser barrado ao abrir, e não só
+    // depois de responder tudo. A contagem em si não é exposta.
+    const closed =
+      survey.status === "finished" ||
+      survey.status === "archived" ||
+      (!!survey.maxResponses && (survey.responseCount ?? 0) >= survey.maxResponses);
+
     return NextResponse.json({
+      closed,
       survey: {
         id: survey.id,
         title: survey.title,

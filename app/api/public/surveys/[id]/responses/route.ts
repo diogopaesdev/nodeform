@@ -48,7 +48,7 @@ export async function POST(
       return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
     }
 
-    if (survey.status === "finished") {
+    if (survey.status === "finished" || survey.status === "archived") {
       return NextResponse.json({ error: "Esta pesquisa foi encerrada" }, { status: 410 });
     }
 

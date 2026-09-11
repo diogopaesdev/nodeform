@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { X, ArrowLeft, Loader2, CheckCircle, ShieldX, RotateCcw, Play } from "lucide-react";
+import { X, ArrowLeft, Loader2, CheckCircle, ShieldX, RotateCcw, Play, Lock } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { RespondentLoginGate } from "@/components/survey/respondent-login-gate";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
@@ -28,7 +28,8 @@ type AuthStatus =
   | "unauthenticated"
   | "authenticated"
   | "already_completed"
-  | "ineligible";
+  | "ineligible"
+  | "closed";
 
 export default function SurveyPage({
   params,
@@ -100,6 +101,13 @@ export default function SurveyPage({
 
       if (!surveyData || surveyData.nodes.length === 0) {
         setError("Esta pesquisa ainda não tem perguntas");
+        return;
+      }
+
+      // Encerrada (manualmente ou por cota): barra antes de login/SSO e de o
+      // respondente gastar tempo respondendo. O preview do editor passa livre.
+      if (data.closed && !isPreviewMode) {
+        setAuthStatus("closed");
         return;
       }
 
@@ -316,6 +324,22 @@ export default function SurveyPage({
         brandColor={brand.brandColor || undefined}
         onAuthenticated={handleRespondentAuthenticated}
       />
+    );
+  }
+
+  if (authStatus === "closed") {
+    return (
+      <div className={`min-h-screen flex items-center justify-center px-4 ${isEmbedMode ? "bg-white" : "bg-gray-50"}`}>
+        <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
+          <Lock className="w-10 h-10 text-gray-400 mx-auto" />
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-gray-900">Pesquisa encerrada</h2>
+            <p className="text-sm text-gray-500">
+              Esta pesquisa não está mais recebendo respostas.
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 
