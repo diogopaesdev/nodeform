@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
 
     const { email, surveyId, code } = parsed.data;
 
+    // Mesmo contrato do SSO: `?embed=true` sinaliza iframe cross-origin.
+    const isEmbed = new URL(request.url).searchParams.get("embed") === "true";
+
     const survey = await getSurvey(surveyId);
     if (!survey) {
       return NextResponse.json({ error: "Pesquisa não encontrada" }, { status: 404 });
@@ -45,8 +48,13 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      // SameSite=None exige Secure; sem isto o navegador descarta o cookie do
+      // embed sem avisar, e o login por OTP dentro do iframe nunca persistia.
+      secure: isEmbed || process.env.NODE_ENV === "production",
+      sameSite: isEmbed ? "none" : "lax",
+      // Partitioned (CHIPS): exigido para cookie de terceiro nos navegadores que
+      // bloqueiam esse tipo de cookie. Igual ao fluxo de SSO.
+      ...(isEmbed ? { partitioned: true } : {}),
       maxAge: SESSION_TTL_SECONDS,
       path: "/",
     });
