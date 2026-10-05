@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { X, ArrowLeft, Loader2, CheckCircle, ShieldX, RotateCcw, Play, Lock } from "lucide-react";
+import { X, ArrowLeft, Loader2, CheckCircle, ShieldX, RotateCcw, Play, Lock, KeyRound } from "lucide-react";
 import { QuestionRenderer } from "@/components/survey/question-renderer";
 import { RespondentLoginGate } from "@/components/survey/respondent-login-gate";
 import { useRuntimeStore } from "@/lib/stores/runtime-store";
@@ -29,6 +29,7 @@ type AuthStatus =
   | "authenticated"
   | "already_completed"
   | "ineligible"
+  | "session_lost"
   | "closed";
 
 export default function SurveyPage({
@@ -183,12 +184,34 @@ export default function SurveyPage({
         setAuthStatus("already_completed");
         return;
       }
+
+      // A sessão não chegou ao servidor: cookie de terceiro bloqueado no iframe
+      // ou sessão expirada. Tem de ser tratado aqui porque a checagem de
+      // elegibilidade responde "unauthenticated" do mesmo jeito, e isso era
+      // exibido como "Fora do perfil elegível" — culpando o cadastro do
+      // respondente por um problema de sessão.
+      if (statusData.status === "unauthenticated") {
+        setAuthStatus("session_lost");
+        return;
+      }
     }
 
     // Check survey-level eligibility
     if (surveyData.eligibilityRules && surveyData.eligibilityRules.length > 0) {
       const eligRes = await fetch(`/api/respondent/survey/${id}/eligibility`);
       const eligData = await eligRes.json();
+
+      // Falha na checagem não é reprovação de perfil: sem isto um 500 chegava
+      // como `eligible: undefined` e caía na tela de inelegível.
+      if (!eligRes.ok) {
+        setError("Não foi possível verificar sua elegibilidade. Tente novamente em instantes.");
+        return;
+      }
+
+      if (eligData.reason === "unauthenticated") {
+        setAuthStatus("session_lost");
+        return;
+      }
 
       if (!eligData.eligible) {
         setIneligibleReason(eligData.failedRule?.label ?? null);
@@ -289,17 +312,6 @@ export default function SurveyPage({
     );
   }
 
-  if (isLoading || authStatus === "loading") {
-    return (
-      <div className={`flex items-center justify-center ${isEmbedMode ? "min-h-screen bg-white py-12" : "min-h-screen bg-gray-50"}`}>
-        <div className="text-center space-y-3">
-          <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
-          <p className="text-sm text-gray-500">Carregando pesquisa...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className={`flex items-center justify-center ${isEmbedMode ? "min-h-screen bg-white py-12" : "min-h-screen bg-gray-50"}`}>
@@ -316,14 +328,61 @@ export default function SurveyPage({
     );
   }
 
+  if (isLoading || authStatus === "loading") {
+    return (
+      <div className={`flex items-center justify-center ${isEmbedMode ? "min-h-screen bg-white py-12" : "min-h-screen bg-gray-50"}`}>
+        <div className="text-center space-y-3">
+          <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
+          <p className="text-sm text-gray-500">Carregando pesquisa...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (authStatus === "unauthenticated") {
     return (
       <RespondentLoginGate
         surveyId={id}
         surveyTitle={survey?.title || ""}
         brandColor={brand.brandColor || undefined}
+        isEmbed={isEmbedMode}
         onAuthenticated={handleRespondentAuthenticated}
       />
+    );
+  }
+
+  if (authStatus === "session_lost") {
+    return (
+      <div className={`min-h-screen flex items-center justify-center px-4 ${isEmbedMode ? "bg-white" : "bg-gray-50"}`}>
+        <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center space-y-4">
+          <KeyRound className="w-10 h-10 text-blue-500 mx-auto" />
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-gray-900">Não foi possível confirmar sua sessão</h2>
+            <p className="text-sm text-gray-500">
+              {isEmbedMode
+                ? "Seu navegador está bloqueando os cookies desta pesquisa por ela estar incorporada em outra página. Abra em uma nova aba para continuar."
+                : "Sua sessão expirou ou não foi encontrada. Entre novamente para continuar."}
+            </p>
+          </div>
+          {isEmbedMode ? (
+            <a
+              href={`/survey/${id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:opacity-90 rounded-lg transition-opacity"
+            >
+              Abrir em nova aba
+            </a>
+          ) : (
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:opacity-90 rounded-lg transition-opacity"
+            >
+              Tentar de novo
+            </button>
+          )}
+        </div>
+      </div>
     );
   }
 

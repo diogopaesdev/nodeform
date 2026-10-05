@@ -56,9 +56,16 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE, sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // SameSite=None exige Secure; sem isto o navegador descarta o cookie do
+      // embed sem avisar, e o SSO "funciona" mas a sessão não persiste.
+      secure: isEmbed || process.env.NODE_ENV === "production",
       // SameSite=none required for cross-origin iframes (embed mode)
       sameSite: isEmbed ? "none" : "lax",
+      // Partitioned (CHIPS): guarda o cookie numa partição por site incorporador.
+      // É o que Chrome (incluindo janela anônima), Safari e Firefox passaram a
+      // exigir de cookie de terceiro — sem isso o respondente autentica pelo SSO
+      // e as chamadas seguintes chegam sem sessão.
+      ...(isEmbed ? { partitioned: true } : {}),
       maxAge: SESSION_TTL_SECONDS,
       path: "/",
     });

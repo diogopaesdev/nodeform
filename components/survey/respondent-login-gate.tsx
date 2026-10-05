@@ -13,12 +13,14 @@ interface Props {
   surveyId: string;
   surveyTitle: string;
   brandColor?: string;
+  /** Dentro de iframe: a sessão precisa de cookie particionado (ver verify-otp). */
+  isEmbed?: boolean;
   onAuthenticated: (respondent: RespondentInfo) => void;
 }
 
 type Step = "email" | "code";
 
-export function RespondentLoginGate({ surveyId, surveyTitle, brandColor, onAuthenticated }: Props) {
+export function RespondentLoginGate({ surveyId, surveyTitle, brandColor, isEmbed, onAuthenticated }: Props) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -58,7 +60,7 @@ export function RespondentLoginGate({ surveyId, surveyTitle, brandColor, onAuthe
     setLoading(true);
 
     try {
-      const res = await fetch("/api/respondent/auth/verify-otp", {
+      const res = await fetch(`/api/respondent/auth/verify-otp${isEmbed ? "?embed=true" : ""}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, surveyId, code }),
