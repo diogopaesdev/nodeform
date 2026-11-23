@@ -559,9 +559,9 @@ export default function SurveyPage({
 
         <div className={`mx-auto space-y-6 ${isEmbedMode ? "max-w-full" : "max-w-4xl space-y-8"}`}>
           {!hideHeader && (brand.logoUrl || brand.displayName) && (
-            <div className="flex items-center justify-center gap-2.5">
+            <div className="flex flex-col items-center text-center gap-2">
               {brand.logoUrl && (
-                <Image src={brand.logoUrl} alt={brand.displayName || "Logo"} width={28} height={28} className="rounded-lg object-contain" />
+                <Image src={brand.logoUrl} alt={brand.displayName || "Logo"} width={48} height={48} className="rounded-lg object-contain" />
               )}
               {brand.displayName && (
                 <span className="text-sm font-semibold text-gray-700">{brand.displayName}</span>
