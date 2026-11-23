@@ -1,11 +1,23 @@
 import type { NextConfig } from "next";
 
+// Bucket do Firebase Storage: restringe o host público só ao nosso bucket, para
+// o otimizador de imagens não virar proxy de qualquer objeto no storage.googleapis.com.
+const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
+      },
+      // Logo da marca e imagens enviadas pelo admin: /api/user/logo e /api/upload
+      // gravam no Firebase Storage e devolvem URL em storage.googleapis.com.
+      // Sem esta entrada o next/image recusa a origem e a logo aparece quebrada.
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
+        ...(storageBucket ? { pathname: `/${storageBucket}/**` } : {}),
       },
     ],
   },
